@@ -1,0 +1,293 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import {
+  Calendar,
+  Fuel,
+  Gauge,
+  Settings2,
+  Palette,
+  MapPin,
+  ShieldCheck,
+  CheckCircle2,
+  Car,
+  Ship,
+  FileText,
+} from "lucide-react";
+import { VehicleGallery } from "@/components/vehicles/vehicle-gallery";
+import { SellerContact } from "@/components/vehicles/seller-contact";
+import { FinancingWidget } from "@/components/vehicles/financing-widget";
+import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
+import { VehicleCard } from "@/components/vehicles/vehicle-card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { getExpandedVehicles, SAMPLE_VEHICLES } from "@/lib/sample-data";
+import { calculateDuty } from "@/lib/duty-calculator";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+
+function getVehicle(slug: string) {
+  return getExpandedVehicles().find((v) => v.slug === slug);
+}
+
+export function generateStaticParams() {
+  return SAMPLE_VEHICLES.map((v) => ({ slug: v.slug }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const vehicle = getVehicle(params.slug);
+  if (!vehicle) return { title: "Vehicle not found" };
+  return {
+    title: `${vehicle.title} for sale in ${vehicle.city}`,
+    description: vehicle.description,
+    alternates: { canonical: `/vehicles/${vehicle.slug}` },
+    openGraph: {
+      title: vehicle.title,
+      description: vehicle.description,
+      images: [vehicle.images[0]],
+    },
+  };
+}
+
+const CONDITION_LABELS: Record<string, string> = {
+  NEW: "Brand New",
+  FOREIGN_USED: "Foreign Used",
+  GHANA_USED: "Ghana Used",
+  SALVAGE: "Salvage",
+};
+
+export default function VehicleDetailPage({ params }: { params: { slug: string } }) {
+  const vehicle = getVehicle(params.slug);
+  if (!vehicle) notFound();
+
+  const canImport = vehicle.importStatus === "AVAILABLE_FOR_IMPORT";
+  const duty = canImport
+    ? calculateDuty({
+        cifValue: Math.round((vehicle.price / 15.5) * 0.85),
+        currency: "USD",
+        exchangeRate: 15.5,
+        manufactureYear: vehicle.year,
+        engineSizeCc: Math.round(vehicle.engineSize * 1000),
+        fuelType: vehicle.fuelType as never,
+        bodyType: vehicle.bodyType as never,
+        shippingCost: 18000,
+      })
+    : null;
+
+  const specs = [
+    { icon: Calendar, label: "Year", value: vehicle.year },
+    { icon: Gauge, label: "Mileage", value: `${formatNumber(vehicle.mileage)} km` },
+    { icon: Fuel, label: "Fuel", value: vehicle.fuelType.toLowerCase() },
+    { icon: Settings2, label: "Transmission", value: vehicle.transmission.toLowerCase() },
+    { icon: Car, label: "Body type", value: vehicle.bodyType.toLowerCase() },
+    { icon: Palette, label: "Colour", value: vehicle.color },
+  ];
+
+  const similar = getExpandedVehicles()
+    .filter((v) => v.brand === vehicle.brand && v.slug !== vehicle.slug)
+    .slice(0, 3);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Car",
+    name: vehicle.title,
+    brand: { "@type": "Brand", name: vehicle.brand },
+    model: vehicle.model,
+    vehicleModelDate: vehicle.year,
+    mileageFromOdometer: { "@type": "QuantitativeValue", value: vehicle.mileage, unitCode: "KMT" },
+    fuelType: vehicle.fuelType,
+    color: vehicle.color,
+    offers: {
+      "@type": "Offer",
+      price: vehicle.price,
+      priceCurrency: "GHS",
+      availability: "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: vehicle.dealer.name },
+    },
+    image: vehicle.images,
+  };
+
+  return (
+    <div className="container-page py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      {/* Breadcrumb */}
+      <nav className="mb-5 flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Link href="/" className="hover:text-foreground">
+          Home
+        </Link>
+        <span>/</span>
+        <Link href="/vehicles" className="hover:text-foreground">
+          Vehicles
+        </Link>
+        <span>/</span>
+        <span className="truncate text-foreground">{vehicle.title}</span>
+      </nav>
+
+      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+        <div>
+          <VehicleGallery images={vehicle.images} title={vehicle.title} />
+
+          {/* Title + price */}
+          <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="brand">{CONDITION_LABELS[vehicle.condition]}</Badge>
+                {vehicle.verified && (
+                  <Badge variant="success">
+                    <ShieldCheck className="h-3.5 w-3.5" /> Verified
+                  </Badge>
+                )}
+                {vehicle.auctionGrade && (
+                  <Badge variant="secondary">Auction Grade {vehicle.auctionGrade}</Badge>
+                )}
+              </div>
+              <h1 className="mt-3 font-display text-3xl font-bold tracking-tight">
+                {vehicle.title}
+              </h1>
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4" /> {vehicle.location}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-display text-3xl font-bold text-brand-700 dark:text-brand-400">
+                {formatCurrency(vehicle.price)}
+              </p>
+              <div className="mt-2 flex justify-end">
+                <SaveVehicleButton vehicleId={vehicle.id} />
+              </div>
+            </div>
+          </div>
+
+          {/* Specs grid */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {specs.map((spec) => (
+              <div key={spec.label} className="rounded-xl border bg-card p-4">
+                <spec.icon className="h-5 w-5 text-brand-500" />
+                <p className="mt-2 text-xs text-muted-foreground">{spec.label}</p>
+                <p className="font-semibold capitalize">{spec.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Description */}
+          <section className="mt-8">
+            <h2 className="text-xl font-bold">Description</h2>
+            <p className="mt-3 leading-relaxed text-muted-foreground">{vehicle.description}</p>
+          </section>
+
+          {/* Features */}
+          <section className="mt-8">
+            <h2 className="text-xl font-bold">Features & equipment</h2>
+            <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              {vehicle.features.map((f) => (
+                <div key={f} className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+                  {f}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* History / import */}
+          <section className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border bg-card p-5">
+              <h3 className="flex items-center gap-2 font-semibold">
+                <FileText className="h-4 w-4 text-brand-500" /> Vehicle history
+              </h3>
+              <dl className="mt-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">VIN</dt>
+                  <dd className="font-medium">{vehicle.vin ?? "Available on request"}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Service history</dt>
+                  <dd className="font-medium text-success">Available</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Accident history</dt>
+                  <dd className="font-medium text-success">Clean</dd>
+                </div>
+              </dl>
+            </div>
+            <div className="rounded-xl border bg-card p-5">
+              <h3 className="flex items-center gap-2 font-semibold">
+                <Ship className="h-4 w-4 text-brand-500" /> Import status
+              </h3>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {vehicle.importStatus === "CLEARED"
+                  ? "This vehicle is already in Ghana with duty paid — ready for registration and delivery."
+                  : vehicle.importStatus === "AVAILABLE_FOR_IMPORT"
+                    ? "Available to import to order. See the estimated landed cost below."
+                    : vehicle.importStatus === "IMPORT_IN_PROGRESS"
+                      ? "Currently being imported. Contact the seller for the latest tracking update."
+                      : "Local vehicle."}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">Origin: {vehicle.countryOfOrigin ?? "—"}</p>
+            </div>
+          </section>
+
+          {/* Duty estimate for importable vehicles */}
+          {duty && (
+            <section className="mt-8 rounded-2xl border bg-gradient-to-br from-brand-50 to-background p-6 dark:from-brand-900/20">
+              <h2 className="text-xl font-bold">Estimated landed cost (import to order)</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Based on current GRA duty rates. Final assessment by Customs.
+              </p>
+              <div className="mt-4 space-y-2">
+                {duty.lineItems
+                  .filter((li) => ["cif", "importDuty", "vat", "shipping"].includes(li.key))
+                  .map((li) => (
+                    <div key={li.key} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{li.label}</span>
+                      <span className="font-medium">{formatCurrency(li.amount)}</span>
+                    </div>
+                  ))}
+                <Separator className="my-2" />
+                <div className="flex justify-between">
+                  <span className="font-semibold">Total landed cost</span>
+                  <span className="font-display text-lg font-bold text-brand-700">
+                    {formatCurrency(duty.totalLandedCost)}
+                  </span>
+                </div>
+              </div>
+              <Link
+                href="/calculators/import-duty"
+                className="mt-4 inline-block text-sm font-medium text-brand-600 hover:underline"
+              >
+                Customise this estimate →
+              </Link>
+            </section>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <aside className="space-y-5">
+          <div className="lg:sticky lg:top-24 lg:space-y-5">
+            <SellerContact
+              dealerName={vehicle.dealer.name}
+              verified={vehicle.dealer.verified}
+              vehicleTitle={vehicle.title}
+              price={formatCurrency(vehicle.price)}
+            />
+            <FinancingWidget price={vehicle.price} />
+          </div>
+        </aside>
+      </div>
+
+      {/* Similar vehicles */}
+      {similar.length > 0 && (
+        <section className="mt-14">
+          <h2 className="mb-6 text-2xl font-bold">Similar vehicles</h2>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {similar.map((v) => (
+              <VehicleCard key={v.id} vehicle={v} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}

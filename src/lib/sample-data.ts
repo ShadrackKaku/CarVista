@@ -23,6 +23,8 @@ export interface SampleVehicle {
   condition: string;
   importStatus: string;
   city: string;
+  region?: string;
+  countryOfOrigin?: string;
   location: string;
   featured: boolean;
   verified: boolean;
@@ -691,6 +693,58 @@ export const SAMPLE_BLOG_POSTS: SampleBlogPost[] = [
     readTime: 5,
   },
 ];
+
+/**
+ * Expand the base catalogue into a fuller marketplace by generating realistic
+ * variants (different trims, years, colours, cities). Deterministic so SSR and
+ * client render identically.
+ */
+const CITY_REGION: Record<string, string> = {
+  Accra: "Greater Accra",
+  Tema: "Greater Accra",
+  Kumasi: "Ashanti",
+  Takoradi: "Western",
+  "Cape Coast": "Central",
+  Tamale: "Northern",
+};
+
+export function getExpandedVehicles(): SampleVehicle[] {
+  const cities = ["Accra", "Kumasi", "Tema", "Takoradi", "Cape Coast", "Tamale"];
+  const regions = ["Greater Accra", "Ashanti", "Greater Accra", "Western", "Central", "Northern"];
+  const base = SAMPLE_VEHICLES.map((v) => ({
+    ...v,
+    region: v.region ?? CITY_REGION[v.city] ?? "Greater Accra",
+    countryOfOrigin: v.countryOfOrigin ?? "United States",
+  }));
+  const colors = ["Silver", "Black", "White", "Grey", "Blue", "Red"];
+  const conditions = ["FOREIGN_USED", "GHANA_USED", "NEW"];
+  const extra: SampleVehicle[] = [];
+
+  base.forEach((item, bi) => {
+    for (let i = 0; i < 3; i++) {
+      const seed = bi * 3 + i;
+      const cityIdx = seed % cities.length;
+      const yearDelta = (seed % 4) - 1;
+      const priceFactor = 1 + ((seed % 5) - 2) * 0.06;
+      extra.push({
+        ...item,
+        id: `${item.id}-v${i}`,
+        slug: `${item.slug}-${i + 2}`,
+        year: item.year + yearDelta,
+        price: Math.round((item.price * priceFactor) / 1000) * 1000,
+        mileage: item.mileage + seed * 3200,
+        color: colors[seed % colors.length],
+        condition: conditions[seed % conditions.length],
+        city: cities[cityIdx],
+        region: regions[cityIdx],
+        featured: false,
+        images: [item.images[(i + 1) % item.images.length], ...item.images],
+      });
+    }
+  });
+
+  return [...base, ...extra];
+}
 
 export const HOME_STATS = [
   { label: "Vehicles Listed", value: "12,400+" },
