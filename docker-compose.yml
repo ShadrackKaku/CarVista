@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carvista
+      POSTGRES_PASSWORD: carvista
+      POSTGRES_DB: carvista
+    ports:
+      - "5432:5432"
+    volumes:
+      - carvista_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carvista"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://carvista:carvista@db:5432/carvista?schema=public"
+      NEXTAUTH_SECRET: "change-me-in-production"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+    ports:
+      - "3000:3000"
+
+volumes:
+  carvista_pgdata:

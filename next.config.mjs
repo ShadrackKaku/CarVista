@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Produces a minimal standalone server bundle for Docker deployments.
+  output: "standalone",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
