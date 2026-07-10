@@ -1,0 +1,1048 @@
+// ─────────────────────────────────────────────────────────────
+// CarVista — Prisma Schema
+// Ghana's Automotive Marketplace & Car Import Platform
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ══════════════════════════════════════════════════════════════
+//  AUTH & USERS
+// ══════════════════════════════════════════════════════════════
+
+enum UserRole {
+  CUSTOMER
+  DEALER
+  PARTS_SELLER
+  SERVICE_PROVIDER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+}
+
+model User {
+  id              String     @id @default(cuid())
+  name            String?
+  email           String     @unique
+  emailVerified   DateTime?
+  hashedPassword  String?
+  image           String?
+  phone           String?
+  role            UserRole   @default(CUSTOMER)
+  status          UserStatus @default(ACTIVE)
+  city            String?
+  region          String?
+  bio             String?    @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts             Account[]
+  sessions             Session[]
+  dealer               Dealer?
+  partsStore           PartsStore?
+  serviceProvider      ServiceProvider?
+  vehicles             Vehicle[]           @relation("VehicleSeller")
+  parts                Part[]              @relation("PartSeller")
+  orders               Order[]
+  reviewsWritten       Review[]            @relation("ReviewAuthor")
+  importRequests       ImportRequest[]
+  savedVehicles        SavedVehicle[]
+  savedParts           SavedPart[]
+  cartItems            CartItem[]
+  quotationRequests    QuotationRequest[]
+  sentMessages         Message[]           @relation("MessageSender")
+  receivedMessages     Message[]           @relation("MessageRecipient")
+  notifications        Notification[]
+  blogPosts            BlogPost[]
+  passwordResetTokens  PasswordResetToken[]
+  verificationTokens   VerificationToken[]
+  serviceBookings      ServiceBooking[]
+  inspectionBookings   InspectionBooking[]
+
+  @@index([role])
+  @@index([email])
+}
+
+// NextAuth adapter models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  id      String   @id @default(cuid())
+  userId  String
+  token   String   @unique
+  expires DateTime
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  userId  String
+  token   String   @unique
+  expires DateTime
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DEALERS / STORES / SERVICE PROVIDERS
+// ══════════════════════════════════════════════════════════════
+
+model Dealer {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  businessName  String
+  slug          String   @unique
+  description   String?  @db.Text
+  logo          String?
+  coverImage    String?
+  phone         String?
+  whatsapp      String?
+  email         String?
+  website       String?
+  address       String?
+  city          String?
+  region        String?
+  latitude      Float?
+  longitude     Float?
+  verified      Boolean  @default(false)
+  featured      Boolean  @default(false)
+  rating        Float    @default(0)
+  reviewCount   Int      @default(0)
+  yearsInBusiness Int?
+  totalSales    Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicles Vehicle[]
+  reviews  Review[]  @relation("DealerReviews")
+
+  @@index([verified])
+  @@index([city])
+}
+
+model PartsStore {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  storeName    String
+  slug         String   @unique
+  description  String?  @db.Text
+  logo         String?
+  coverImage   String?
+  phone        String?
+  whatsapp     String?
+  address      String?
+  city         String?
+  region       String?
+  verified     Boolean  @default(false)
+  rating       Float    @default(0)
+  reviewCount  Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parts Part[]
+
+  @@index([verified])
+}
+
+enum ServiceType {
+  MECHANIC
+  AUTO_ELECTRICIAN
+  SPRAY_PAINTER
+  CAR_WASH
+  DETAILING
+  INSURANCE
+  DRIVING_SCHOOL
+  INSPECTION
+  TOWING
+  TYRE_SERVICE
+}
+
+model ServiceProvider {
+  id           String       @id @default(cuid())
+  userId       String       @unique
+  businessName String
+  slug         String       @unique
+  serviceType  ServiceType
+  description  String?      @db.Text
+  logo         String?
+  coverImage   String?
+  phone        String?
+  whatsapp     String?
+  address      String?
+  city         String?
+  region       String?
+  latitude     Float?
+  longitude    Float?
+  verified     Boolean      @default(false)
+  rating       Float        @default(0)
+  reviewCount  Int          @default(0)
+  priceRange   String?
+  services     String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings ServiceBooking[]
+  reviews  Review[]         @relation("ServiceReviews")
+
+  @@index([serviceType])
+  @@index([city])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  VEHICLES & CATALOG
+// ══════════════════════════════════════════════════════════════
+
+model Brand {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  slug     String  @unique
+  logo     String?
+  country  String?
+  featured Boolean @default(false)
+
+  models   VehicleModel[]
+  vehicles Vehicle[]
+}
+
+model VehicleModel {
+  id       String  @id @default(cuid())
+  name     String
+  slug     String
+  brandId  String
+  bodyType BodyType?
+
+  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  vehicles Vehicle[]
+
+  @@unique([brandId, slug])
+  @@index([brandId])
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  HYBRID
+  ELECTRIC
+  PLUGIN_HYBRID
+  LPG
+}
+
+enum Transmission {
+  AUTOMATIC
+  MANUAL
+  CVT
+  DUAL_CLUTCH
+}
+
+enum BodyType {
+  SEDAN
+  SUV
+  HATCHBACK
+  COUPE
+  CONVERTIBLE
+  WAGON
+  PICKUP
+  VAN
+  MINIVAN
+  TRUCK
+  BUS
+}
+
+enum VehicleCondition {
+  NEW
+  FOREIGN_USED
+  GHANA_USED
+  SALVAGE
+}
+
+enum ImportStatus {
+  NOT_IMPORTED
+  AVAILABLE_FOR_IMPORT
+  IMPORT_IN_PROGRESS
+  CLEARED
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  SOLD
+  ARCHIVED
+  REJECTED
+}
+
+model Vehicle {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  title          String
+  brandId        String
+  modelId        String?
+  year           Int
+  price          Decimal          @db.Decimal(12, 2)
+  currency       String           @default("GHS")
+  negotiable     Boolean          @default(true)
+  mileage        Int              @default(0)
+  fuelType       FuelType
+  transmission   Transmission
+  engineSize     Float? // in litres
+  bodyType       BodyType
+  color          String?
+  interiorColor  String?
+  doors          Int?
+  seats          Int?
+  drivetrain     String? // FWD, RWD, AWD, 4WD
+  condition      VehicleCondition
+  vin            String?
+  registrationNumber String?
+  auctionGrade   String?
+  location       String?
+  city           String?
+  region         String?
+
+  description    String?          @db.Text
+  features       String[]
+
+  // history / import
+  serviceHistory String?          @db.Text
+  accidentHistory String?         @db.Text
+  importStatus   ImportStatus     @default(NOT_IMPORTED)
+  countryOfOrigin String?
+
+  status         ListingStatus    @default(ACTIVE)
+  featured       Boolean          @default(false)
+  verified       Boolean          @default(false)
+  views          Int              @default(0)
+
+  sellerId       String
+  dealerId       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand    Brand          @relation(fields: [brandId], references: [id])
+  model    VehicleModel?  @relation(fields: [modelId], references: [id])
+  seller   User           @relation("VehicleSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  dealer   Dealer?        @relation(fields: [dealerId], references: [id])
+  images   VehicleImage[]
+  videos   VehicleVideo[]
+  savedBy  SavedVehicle[]
+  reviews  Review[]       @relation("VehicleReviews")
+  importRequests ImportRequest[]
+
+  @@index([brandId])
+  @@index([status])
+  @@index([featured])
+  @@index([price])
+  @@index([year])
+  @@index([condition])
+  @@index([city])
+}
+
+model VehicleImage {
+  id        String  @id @default(cuid())
+  vehicleId String
+  url       String
+  alt       String?
+  isPrimary Boolean @default(false)
+  category  String? // exterior, interior, engine, wheels
+  order     Int     @default(0)
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+}
+
+enum VideoSource {
+  UPLOAD
+  YOUTUBE
+  VIMEO
+}
+
+enum VideoCategory {
+  WALKAROUND
+  ENGINE
+  INTERIOR
+  DRIVING
+  REVIEW
+  TOUR_360
+}
+
+model VehicleVideo {
+  id        String        @id @default(cuid())
+  vehicleId String
+  url       String
+  thumbnail String?
+  title     String?
+  source    VideoSource   @default(UPLOAD)
+  category  VideoCategory @default(WALKAROUND)
+  order     Int           @default(0)
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+}
+
+model SavedVehicle {
+  id        String   @id @default(cuid())
+  userId    String
+  vehicleId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vehicleId])
+  @@index([userId])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CAR PARTS MARKETPLACE
+// ══════════════════════════════════════════════════════════════
+
+model PartCategory {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  slug     String  @unique
+  icon     String?
+  parentId String?
+
+  parent   PartCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children PartCategory[] @relation("CategoryTree")
+  parts    Part[]
+}
+
+enum PartCondition {
+  NEW
+  USED
+  REFURBISHED
+}
+
+model Part {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  name           String
+  description    String?       @db.Text
+  categoryId     String
+  brand          String? // part manufacturer (Bosch, Denso...)
+  oemNumber      String?
+  partNumber     String?
+  condition      PartCondition @default(NEW)
+
+  price          Decimal       @db.Decimal(10, 2)
+  currency       String        @default("GHS")
+  discountPrice  Decimal?      @db.Decimal(10, 2)
+  stock          Int           @default(0)
+  sku            String?
+
+  // compatibility
+  compatibleMakes  String[]
+  compatibleModels String[]
+  yearFrom         Int?
+  yearTo           Int?
+  fitmentPosition  String? // front, rear, left, right
+
+  featured  Boolean       @default(false)
+  status    ListingStatus @default(ACTIVE)
+  rating    Float         @default(0)
+  reviewCount Int         @default(0)
+  views     Int           @default(0)
+
+  sellerId  String
+  storeId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category  PartCategory @relation(fields: [categoryId], references: [id])
+  seller    User         @relation("PartSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  store     PartsStore?  @relation(fields: [storeId], references: [id])
+  images    PartImage[]
+  savedBy   SavedPart[]
+  cartItems CartItem[]
+  orderItems OrderItem[]
+  reviews   Review[]     @relation("PartReviews")
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([featured])
+  @@index([oemNumber])
+  @@index([partNumber])
+}
+
+model PartImage {
+  id        String  @id @default(cuid())
+  partId    String
+  url       String
+  alt       String?
+  isPrimary Boolean @default(false)
+  order     Int     @default(0)
+
+  part Part @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@index([partId])
+}
+
+model SavedPart {
+  id        String   @id @default(cuid())
+  userId    String
+  partId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  part Part @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, partId])
+  @@index([userId])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CART / ORDERS / PAYMENTS
+// ══════════════════════════════════════════════════════════════
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  partId    String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  part Part @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, partId])
+  @@index([userId])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  MOBILE_MONEY
+  PAYSTACK
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique
+  userId        String
+  status        OrderStatus @default(PENDING)
+
+  subtotal      Decimal     @db.Decimal(10, 2)
+  shippingFee   Decimal     @db.Decimal(10, 2) @default(0)
+  discount      Decimal     @db.Decimal(10, 2) @default(0)
+  total         Decimal     @db.Decimal(10, 2)
+  currency      String      @default("GHS")
+
+  couponCode    String?
+
+  // shipping details
+  fullName      String
+  phone         String
+  email         String?
+  address       String
+  city          String
+  region        String
+  notes         String?     @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User        @relation(fields: [userId], references: [id])
+  items   OrderItem[]
+  payment Payment?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  partId    String
+  name      String
+  price     Decimal @db.Decimal(10, 2)
+  quantity  Int
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  part  Part  @relation(fields: [partId], references: [id])
+
+  @@index([orderId])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String        @unique
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("GHS")
+  reference     String        @unique
+  providerRef   String?
+  paidAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Coupon {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  description  String?
+  discountType String   @default("PERCENT") // PERCENT | FIXED
+  amount       Decimal  @db.Decimal(10, 2)
+  minPurchase  Decimal? @db.Decimal(10, 2)
+  maxUses      Int?
+  usedCount    Int      @default(0)
+  active       Boolean  @default(true)
+  expiresAt    DateTime?
+
+  createdAt DateTime @default(now())
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CAR IMPORT SYSTEM
+// ══════════════════════════════════════════════════════════════
+
+enum ImportStage {
+  REQUESTED
+  QUOTED
+  VEHICLE_SELECTED
+  PURCHASED
+  SHIPPING_PENDING
+  IN_TRANSIT
+  ARRIVED_AT_PORT
+  CUSTOMS_CLEARANCE
+  READY_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+model ImportRequest {
+  id              String      @id @default(cuid())
+  requestNumber   String      @unique
+  userId          String
+  vehicleId       String?
+
+  // request details
+  countryOfOrigin String
+  auctionSource   String?
+  make            String
+  model           String
+  year            Int
+  budget          Decimal?    @db.Decimal(12, 2)
+  fuelType        FuelType?
+  transmission    Transmission?
+  color           String?
+  notes           String?     @db.Text
+  auctionLink     String?
+
+  // quotation
+  quotedCif       Decimal?    @db.Decimal(12, 2)
+  quotedDuty      Decimal?    @db.Decimal(12, 2)
+  quotedShipping  Decimal?    @db.Decimal(12, 2)
+  quotedTotal     Decimal?    @db.Decimal(12, 2)
+
+  stage           ImportStage @default(REQUESTED)
+  trackingNumber  String?
+  estimatedArrival DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle        Vehicle?             @relation(fields: [vehicleId], references: [id])
+  trackingEvents ImportTrackingEvent[]
+
+  @@index([userId])
+  @@index([stage])
+}
+
+model ImportTrackingEvent {
+  id              String      @id @default(cuid())
+  importRequestId String
+  stage           ImportStage
+  title           String
+  description     String?     @db.Text
+  location        String?
+  timestamp       DateTime    @default(now())
+
+  importRequest ImportRequest @relation(fields: [importRequestId], references: [id], onDelete: Cascade)
+
+  @@index([importRequestId])
+}
+
+model QuotationRequest {
+  id          String   @id @default(cuid())
+  userId      String?
+  name        String
+  email       String
+  phone       String
+  subject     String
+  message     String   @db.Text
+  type        String   @default("GENERAL") // GENERAL | IMPORT | SOURCING | PART
+  status      String   @default("OPEN") // OPEN | RESPONDED | CLOSED
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([status])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DUTY & SHIPPING RATES (admin-configurable)
+// ══════════════════════════════════════════════════════════════
+
+model DutyRate {
+  id             String  @id @default(cuid())
+  // matching criteria
+  category       String // e.g. "SEDAN_UNDER_1900CC", "SUV_OVER_3000CC"
+  label          String
+  engineMin      Int? // cc
+  engineMax      Int? // cc
+  bodyTypes      String[] // applicable body types
+  fuelTypes      String[]
+
+  // rates (percentages, 0-100)
+  importDutyRate Float   @default(20)
+  vatRate        Float   @default(15)
+  nhilRate       Float   @default(2.5)
+  getfundRate    Float   @default(2.5)
+  covidLevyRate  Float   @default(1)
+  ecowasLevyRate Float   @default(0.5)
+  examinationFee Float   @default(0.5)
+  networkCharge  Float   @default(0.4)
+
+  active         Boolean @default(true)
+  effectiveFrom  DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+// Depreciation schedule for over-age penalties / valuation
+model OverageRate {
+  id          String @id @default(cuid())
+  minAge      Int // years
+  maxAge      Int
+  penaltyRate Float // % penalty on CIF for over-aged vehicles
+  active      Boolean @default(true)
+}
+
+model ShippingRate {
+  id             String  @id @default(cuid())
+  originCountry  String
+  originPort     String
+  destinationPort String @default("Tema")
+  method         String // RORO | CONTAINER_20 | CONTAINER_40
+  vehicleClass   String // SEDAN | SUV | PICKUP | BUS
+  cost           Decimal @db.Decimal(10, 2)
+  currency       String  @default("USD")
+  transitDaysMin Int     @default(21)
+  transitDaysMax Int     @default(45)
+  active         Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([originCountry])
+  @@index([method])
+}
+
+// Saved calculation results (for logged-in users / analytics)
+model DutyCalculation {
+  id             String   @id @default(cuid())
+  userId         String?
+  make           String?
+  model          String?
+  year           Int
+  cifValue       Decimal  @db.Decimal(12, 2)
+  engineSize     Int
+  fuelType       String
+  bodyType       String
+
+  importDuty     Decimal  @db.Decimal(12, 2)
+  vat            Decimal  @db.Decimal(12, 2)
+  nhil           Decimal  @db.Decimal(12, 2)
+  getfund        Decimal  @db.Decimal(12, 2)
+  otherLevies    Decimal  @db.Decimal(12, 2)
+  processingFees Decimal  @db.Decimal(12, 2)
+  totalLandedCost Decimal @db.Decimal(12, 2)
+  currency       String   @default("GHS")
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  REVIEWS / MESSAGING / NOTIFICATIONS / BLOG
+// ══════════════════════════════════════════════════════════════
+
+model Review {
+  id          String   @id @default(cuid())
+  authorId    String
+  rating      Int // 1-5
+  title       String?
+  comment     String   @db.Text
+  verified    Boolean  @default(false)
+
+  // polymorphic-ish targets (one set per review)
+  vehicleId        String?
+  partId           String?
+  dealerId         String?
+  serviceProviderId String?
+
+  createdAt DateTime @default(now())
+
+  author          User             @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  vehicle         Vehicle?         @relation("VehicleReviews", fields: [vehicleId], references: [id], onDelete: Cascade)
+  part            Part?            @relation("PartReviews", fields: [partId], references: [id], onDelete: Cascade)
+  dealer          Dealer?          @relation("DealerReviews", fields: [dealerId], references: [id], onDelete: Cascade)
+  serviceProvider ServiceProvider? @relation("ServiceReviews", fields: [serviceProviderId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@index([partId])
+  @@index([dealerId])
+  @@index([serviceProviderId])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  subject     String?
+  body        String   @db.Text
+  read        Boolean  @default(false)
+
+  // optional context
+  vehicleId String?
+  partId    String?
+
+  createdAt DateTime @default(now())
+
+  sender    User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([senderId])
+}
+
+enum NotificationType {
+  ORDER
+  IMPORT
+  MESSAGE
+  REVIEW
+  SYSTEM
+  PROMOTION
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  userId  String
+  type    NotificationType @default(SYSTEM)
+  title   String
+  body    String?          @db.Text
+  link    String?
+  read    Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+}
+
+model BlogCategory {
+  id    String     @id @default(cuid())
+  name  String     @unique
+  slug  String     @unique
+  posts BlogPost[]
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?  @db.Text
+  content     String   @db.Text
+  coverImage  String?
+  published   Boolean  @default(false)
+  featured    Boolean  @default(false)
+  views       Int      @default(0)
+  readTime    Int      @default(5)
+  authorId    String
+  categoryId  String?
+  tags        String[]
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  author   User          @relation(fields: [authorId], references: [id])
+  category BlogCategory? @relation(fields: [categoryId], references: [id])
+
+  @@index([published])
+  @@index([slug])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SERVICES / INSPECTION BOOKINGS
+// ══════════════════════════════════════════════════════════════
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model ServiceBooking {
+  id                String        @id @default(cuid())
+  bookingNumber     String        @unique
+  userId            String
+  serviceProviderId String
+  serviceType       ServiceType
+  scheduledAt       DateTime
+  status            BookingStatus @default(PENDING)
+  notes             String?       @db.Text
+  vehicleInfo       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([serviceProviderId])
+}
+
+model InspectionBooking {
+  id             String        @id @default(cuid())
+  bookingNumber  String        @unique
+  userId         String
+  vehicleInfo    String
+  location       String
+  scheduledAt    DateTime
+  status         BookingStatus @default(PENDING)
+  notes          String?       @db.Text
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MARKETING / ADS / NEWSLETTER / SETTINGS
+// ══════════════════════════════════════════════════════════════
+
+model Advertisement {
+  id        String   @id @default(cuid())
+  title     String
+  image     String
+  link      String?
+  placement String // HOME_HERO | SIDEBAR | MARKETPLACE_TOP
+  active    Boolean  @default(true)
+  startDate DateTime?
+  endDate   DateTime?
+  clicks    Int      @default(0)
+  impressions Int    @default(0)
+
+  createdAt DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.Text
+}
