@@ -418,6 +418,14 @@ export const SAMPLE_PARTS: SamplePart[] = [
   },
 ];
 
+export function getPartById(id: string): SamplePart | undefined {
+  return SAMPLE_PARTS.find((p) => p.id === id);
+}
+
+export function getPartBySlug(slug: string): SamplePart | undefined {
+  return SAMPLE_PARTS.find((p) => p.slug === slug);
+}
+
 export interface SampleDealer {
   id: string;
   slug: string;
