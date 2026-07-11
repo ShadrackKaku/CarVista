@@ -1,0 +1,32 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-20-bookworm
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    environment:
+      DATABASE_URL: "postgresql://carvista:carvista@db:5432/carvista?schema=public"
+      NEXTAUTH_SECRET: "codespaces-dev-secret-change-me"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carvista
+      POSTGRES_PASSWORD: carvista
+      POSTGRES_DB: carvista
+    volumes:
+      - carvista-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carvista"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  carvista-pgdata:
