@@ -83,6 +83,11 @@ export default function CheckoutPage() {
         return;
       }
       clear();
+      // If Paystack returned a hosted-checkout URL, send the customer there to pay.
+      if (data.authorizationUrl) {
+        window.location.href = data.authorizationUrl;
+        return;
+      }
       setDone(data.orderNumber ?? "CV-ORDER");
     } catch {
       toast.error("Something went wrong. Please try again.");
