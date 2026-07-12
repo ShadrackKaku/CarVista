@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { ServicesBrowser } from "@/components/services/services-browser";
-import { SAMPLE_SERVICES } from "@/lib/sample-data";
+import { getServices } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "Automotive Services in Ghana — Mechanics, Detailing & More",
@@ -10,7 +10,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/services" },
 };
 
-export default function ServicesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ServicesPage() {
+  const services = await getServices();
   return (
     <div>
       <PageHeader
@@ -19,7 +22,7 @@ export default function ServicesPage() {
         description="From routine servicing to full detailing — find and book trusted automotive professionals across Ghana."
       />
       <div className="container-page py-10">
-        <ServicesBrowser services={SAMPLE_SERVICES} />
+        <ServicesBrowser services={services} />
       </div>
     </div>
   );

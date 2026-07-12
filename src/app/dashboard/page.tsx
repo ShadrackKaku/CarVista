@@ -1,16 +1,32 @@
 import Link from "next/link";
 import { Heart, Ship, ShoppingBag, MessageSquare, ArrowRight, Calculator, Car } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
+import { getCustomerStats, getSavedVehicles, getUserImports } from "@/lib/queries";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { ImportTimeline } from "@/components/import/import-timeline";
 import { Button } from "@/components/ui/button";
-import { SAMPLE_VEHICLES } from "@/lib/sample-data";
+import { IMPORT_STAGES } from "@/lib/constants";
+
+export const dynamic = "force-dynamic";
+
+function stageLabel(stage: string) {
+  return IMPORT_STAGES.find((s) => s.value === stage)?.label ?? stage;
+}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const firstName = user?.name?.split(" ")[0] ?? "there";
-  const saved = SAMPLE_VEHICLES.slice(0, 3);
+
+  const [stats, saved, imports] = user
+    ? await Promise.all([
+        getCustomerStats(user.id),
+        getSavedVehicles(user.id),
+        getUserImports(user.id),
+      ])
+    : [{ saved: 0, imports: 0, orders: 0, unread: 0 }, [], []];
+
+  const latestImport = imports[0];
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -20,10 +36,10 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Saved vehicles" value={saved.length} icon={Heart} />
-        <StatCard label="Active imports" value={1} icon={Ship} trend="In transit" />
-        <StatCard label="Orders" value={2} icon={ShoppingBag} />
-        <StatCard label="Unread messages" value={3} icon={MessageSquare} />
+        <StatCard label="Saved vehicles" value={stats.saved} icon={Heart} />
+        <StatCard label="Active imports" value={stats.imports} icon={Ship} />
+        <StatCard label="Orders" value={stats.orders} icon={ShoppingBag} />
+        <StatCard label="Unread messages" value={stats.unread} icon={MessageSquare} />
       </div>
 
       {/* Quick actions */}
@@ -58,11 +74,21 @@ export default async function DashboardPage() {
               <Link href="/dashboard/saved">View all</Link>
             </Button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {saved.slice(0, 2).map((v) => (
-              <VehicleCard key={v.id} vehicle={v} />
-            ))}
-          </div>
+          {saved.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {saved.slice(0, 2).map((v) => (
+                <VehicleCard key={v.id} vehicle={v} />
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+              No saved vehicles yet.{" "}
+              <Link href="/vehicles" className="font-medium text-brand-600 hover:underline">
+                Browse the marketplace
+              </Link>
+              .
+            </p>
+          )}
         </section>
 
         {/* Import status */}
@@ -73,18 +99,28 @@ export default async function DashboardPage() {
               <Link href="/dashboard/imports">Details</Link>
             </Button>
           </div>
-          <div className="rounded-xl border bg-card p-5 shadow-soft">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="font-semibold">2019 Toyota Highlander</p>
-                <p className="text-xs text-muted-foreground">Ref: IMP-8K2L-A9F3</p>
+          {latestImport ? (
+            <div className="rounded-xl border bg-card p-5 shadow-soft">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold">{latestImport.title}</p>
+                  <p className="text-xs text-muted-foreground">Ref: {latestImport.ref}</p>
+                </div>
+                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                  {stageLabel(latestImport.stage)}
+                </span>
               </div>
-              <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
-                In Transit
-              </span>
+              <ImportTimeline currentStage={latestImport.stage} />
             </div>
-            <ImportTimeline currentStage="IN_TRANSIT" />
-          </div>
+          ) : (
+            <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+              No active imports.{" "}
+              <Link href="/import" className="font-medium text-brand-600 hover:underline">
+                Start one
+              </Link>
+              .
+            </div>
+          )}
         </section>
       </div>
     </div>

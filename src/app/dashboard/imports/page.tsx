@@ -1,32 +1,23 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Ship } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ImportTimeline } from "@/components/import/import-timeline";
-import { formatCurrency } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/session";
+import { getUserImports } from "@/lib/queries";
+import { IMPORT_STAGES } from "@/lib/constants";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
-const imports = [
-  {
-    ref: "IMP-8K2L-A9F3",
-    title: "2019 Toyota Highlander",
-    origin: "United States",
-    stage: "IN_TRANSIT",
-    stageLabel: "In Transit",
-    total: 385000,
-    eta: "Mar 2025",
-  },
-  {
-    ref: "IMP-5J1M-B7C2",
-    title: "2020 Honda Accord",
-    origin: "United States",
-    stage: "CUSTOMS_CLEARANCE",
-    stageLabel: "Customs Clearance",
-    total: 298000,
-    eta: "Feb 2025",
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function ImportsPage() {
+function stageLabel(stage: string) {
+  return IMPORT_STAGES.find((s) => s.value === stage)?.label ?? stage;
+}
+
+export default async function ImportsPage() {
+  const user = await getCurrentUser();
+  const imports = user ? await getUserImports(user.id) : [];
+
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
@@ -41,41 +32,57 @@ export default function ImportsPage() {
         </Button>
       </div>
 
-      <div className="mt-8 space-y-6">
-        {imports.map((imp) => (
-          <div key={imp.ref} className="rounded-2xl border bg-card p-6 shadow-soft">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold">{imp.title}</h2>
-                  <Badge variant="brand">{imp.stageLabel}</Badge>
+      {imports.length === 0 ? (
+        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+          <Ship className="h-8 w-8 text-muted-foreground" />
+          <p className="mt-3 font-semibold">No imports yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Request a vehicle import and we'll source, ship and clear it for you.
+          </p>
+          <Button asChild variant="gradient" className="mt-5">
+            <Link href="/import">Start an import</Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-8 space-y-6">
+          {imports.map((imp) => (
+            <div key={imp.ref} className="rounded-2xl border bg-card p-6 shadow-soft">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold">{imp.title}</h2>
+                    <Badge variant="brand">{stageLabel(imp.stage)}</Badge>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Ref {imp.ref} · From {imp.origin}
+                    {imp.eta ? ` · ETA ${formatDate(imp.eta)}` : ""}
+                  </p>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Ref {imp.ref} · From {imp.origin} · ETA {imp.eta}
-                </p>
+                {imp.total > 0 && (
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Quoted total</p>
+                    <p className="font-display text-xl font-bold text-brand-700 dark:text-brand-400">
+                      {formatCurrency(imp.total)}
+                    </p>
+                  </div>
+                )}
               </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Total landed cost</p>
-                <p className="font-display text-xl font-bold text-brand-700 dark:text-brand-400">
-                  {formatCurrency(imp.total)}
-                </p>
+              <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                <ImportTimeline currentStage={imp.stage} />
+                <div className="rounded-xl bg-muted/40 p-5">
+                  <h3 className="text-sm font-semibold">Need an update?</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Contact your dedicated import agent for the latest on your shipment.
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-4">
+                    Message agent
+                  </Button>
+                </div>
               </div>
             </div>
-            <div className="mt-6 grid gap-6 lg:grid-cols-2">
-              <ImportTimeline currentStage={imp.stage} />
-              <div className="rounded-xl bg-muted/40 p-5">
-                <h3 className="text-sm font-semibold">Need an update?</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Contact your dedicated import agent for the latest on your shipment.
-                </p>
-                <Button variant="outline" size="sm" className="mt-4">
-                  Message agent
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,13 @@
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
-import { SAMPLE_VEHICLES } from "@/lib/sample-data";
+import { getCurrentUser } from "@/lib/session";
+import { getSavedVehicles } from "@/lib/queries";
 
-export default function SavedPage() {
-  const saved = SAMPLE_VEHICLES.filter((v) => v.featured).slice(0, 4);
+export const dynamic = "force-dynamic";
+
+export default async function SavedPage() {
+  const user = await getCurrentUser();
+  const saved = user ? await getSavedVehicles(user.id) : [];
+
   return (
     <div className="mx-auto max-w-6xl">
       <h1 className="font-display text-2xl font-bold">Saved Vehicles</h1>
@@ -15,7 +20,7 @@ export default function SavedPage() {
         </div>
       ) : (
         <p className="mt-8 rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-          You haven't saved any vehicles yet.
+          You haven't saved any vehicles yet. Browse the marketplace and tap the heart to save.
         </p>
       )}
     </div>

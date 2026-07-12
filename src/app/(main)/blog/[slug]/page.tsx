@@ -4,15 +4,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { SAMPLE_BLOG_POSTS } from "@/lib/sample-data";
+import { getBlogPosts, getBlogPostBySlug } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return SAMPLE_BLOG_POSTS.map((p) => ({ slug: p.slug }));
-}
+export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const post = SAMPLE_BLOG_POSTS.find((p) => p.slug === params.slug);
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const post = await getBlogPostBySlug(params.slug);
   if (!post) return { title: "Article not found" };
   return {
     title: post.title,
@@ -30,11 +32,11 @@ const bodyParagraphs = (title: string) => [
   "Finally, remember that trust matters. Look for verified badges, read genuine reviews, inspect vehicles in person, and never make full payment before seeing what you're buying. Following these principles will keep your automotive journey smooth and secure.",
 ];
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = SAMPLE_BLOG_POSTS.find((p) => p.slug === params.slug);
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const post = await getBlogPostBySlug(params.slug);
   if (!post) notFound();
 
-  const related = SAMPLE_BLOG_POSTS.filter((p) => p.slug !== post.slug).slice(0, 3);
+  const related = (await getBlogPosts()).filter((p) => p.slug !== post.slug).slice(0, 3);
 
   const jsonLd = {
     "@context": "https://schema.org",

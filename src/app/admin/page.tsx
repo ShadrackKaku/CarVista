@@ -11,7 +11,10 @@ import {
 } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
+import { getAdminStats } from "@/lib/queries";
+import { formatNumber } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 const recentActivity = [
   { type: "New dealer", detail: "Spintex Car Centre applied for verification", time: "2h ago" },
@@ -21,7 +24,8 @@ const recentActivity = [
   { type: "Review flagged", detail: "Report on West Coast Autos", time: "1d ago" },
 ];
 
-export default function AdminOverviewPage() {
+export default async function AdminOverviewPage() {
+  const stats = await getAdminStats();
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
@@ -30,14 +34,14 @@ export default function AdminOverviewPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total users" value="28,412" icon={Users} trend="+312 this week" />
-        <StatCard label="Active listings" value="12,408" icon={Car} />
-        <StatCard label="Verified dealers" value="342" icon={Store} />
-        <StatCard label="Parts listed" value="9,120" icon={Package} />
-        <StatCard label="Imports in progress" value="187" icon={Ship} />
-        <StatCard label="Revenue (MTD)" value={formatCurrency(1284000)} icon={DollarSign} trend="+18% MoM" />
-        <StatCard label="Pending reviews" value="24" icon={FileText} />
-        <StatCard label="Open reports" value="6" icon={FileText} />
+        <StatCard label="Total users" value={formatNumber(stats.users)} icon={Users} />
+        <StatCard label="Vehicle listings" value={formatNumber(stats.vehicles)} icon={Car} />
+        <StatCard label="Verified dealers" value={formatNumber(stats.dealers)} icon={Store} />
+        <StatCard label="Parts listed" value={formatNumber(stats.parts)} icon={Package} />
+        <StatCard label="Import requests" value={formatNumber(stats.imports)} icon={Ship} />
+        <StatCard label="Orders" value={formatNumber(stats.orders)} icon={DollarSign} />
+        <StatCard label="Pending listings" value={formatNumber(stats.pendingVehicles)} icon={FileText} />
+        <StatCard label="Reviews" value={formatNumber(stats.reviews)} icon={FileText} />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr]">

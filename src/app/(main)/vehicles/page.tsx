@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { VehicleBrowser } from "@/components/vehicles/vehicle-browser";
-import { getExpandedVehicles } from "@/lib/sample-data";
+import { getVehicles } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "Vehicle Marketplace — Buy Cars in Ghana",
@@ -9,12 +9,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/vehicles" },
 };
 
-export default function VehiclesPage({
+export const dynamic = "force-dynamic";
+
+export default async function VehiclesPage({
   searchParams,
 }: {
   searchParams: { brand?: string; bodyType?: string; q?: string; importStatus?: string };
 }) {
-  const vehicles = getExpandedVehicles();
+  const vehicles = await getVehicles();
 
   return (
     <div className="container-page py-10">
