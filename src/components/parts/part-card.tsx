@@ -58,7 +58,7 @@ export function PartCard({ part }: { part: SamplePart }) {
             {part.store.verified && <ShieldCheck className="h-3 w-3 text-success" />}
             {part.store.name}
           </p>
-          <AddToCartButton partId={part.id} className="mt-3 w-full" />
+          <AddToCartButton part={part} className="mt-3 w-full" />
         </div>
       </div>
     </div>

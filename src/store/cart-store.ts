@@ -3,14 +3,28 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export interface CartLine {
+/**
+ * A snapshot of a product captured when it's added to the cart. Storing the
+ * display fields here (rather than only an ID) means the cart and checkout can
+ * render without re-fetching — and, crucially, it works for database-backed
+ * products whose IDs aren't known to any static list.
+ */
+export interface CartItemSnapshot {
   partId: string;
+  name: string;
+  slug: string;
+  price: number; // effective (already discounted) price
+  image: string;
+  storeName: string;
+}
+
+export interface CartLine extends CartItemSnapshot {
   quantity: number;
 }
 
 interface CartState {
   items: CartLine[];
-  addItem: (partId: string, quantity?: number) => void;
+  addItem: (item: CartItemSnapshot, quantity?: number) => void;
   removeItem: (partId: string) => void;
   setQuantity: (partId: string, quantity: number) => void;
   clear: () => void;
@@ -21,17 +35,17 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      addItem: (partId, quantity = 1) =>
+      addItem: (item, quantity = 1) =>
         set((state) => {
-          const existing = state.items.find((i) => i.partId === partId);
+          const existing = state.items.find((i) => i.partId === item.partId);
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.partId === partId ? { ...i, quantity: i.quantity + quantity } : i,
+                i.partId === item.partId ? { ...i, ...item, quantity: i.quantity + quantity } : i,
               ),
             };
           }
-          return { items: [...state.items, { partId, quantity }] };
+          return { items: [...state.items, { ...item, quantity }] };
         }),
       removeItem: (partId) =>
         set((state) => ({ items: state.items.filter((i) => i.partId !== partId) })),
@@ -44,7 +58,13 @@ export const useCartStore = create<CartState>()(
       clear: () => set({ items: [] }),
       totalCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
     }),
-    { name: "carvista-cart" },
+    {
+      name: "carvista-cart",
+      version: 1,
+      // v0 stored only { partId, quantity } with no product snapshot, which the
+      // new UI can't render — reset those old carts on upgrade.
+      migrate: () => ({ items: [] as CartLine[] }),
+    },
   ),
 );
 

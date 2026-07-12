@@ -6,27 +6,16 @@ import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useCartStore } from "@/store/cart-store";
-import { getPartById } from "@/lib/sample-data";
 import { formatCurrency } from "@/lib/utils";
 
 export default function CartPage() {
   const { items, setQuantity, removeItem } = useCartStore();
 
-  const lines = items
-    .map((line) => {
-      const part = getPartById(line.partId);
-      return part ? { part, quantity: line.quantity } : null;
-    })
-    .filter(Boolean) as { part: NonNullable<ReturnType<typeof getPartById>>; quantity: number }[];
-
-  const subtotal = lines.reduce(
-    (sum, l) => sum + (l.part.discountPrice ?? l.part.price) * l.quantity,
-    0,
-  );
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const shipping = subtotal > 0 ? (subtotal > 2000 ? 0 : 60) : 0;
   const total = subtotal + shipping;
 
-  if (lines.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="container-page flex flex-col items-center justify-center py-24 text-center">
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
@@ -46,21 +35,21 @@ export default function CartPage() {
       <h1 className="font-display text-3xl font-bold tracking-tight">Shopping Cart</h1>
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">
-          {lines.map(({ part, quantity }) => (
-            <div key={part.id} className="flex gap-4 rounded-xl border bg-card p-4">
+          {items.map((item) => (
+            <div key={item.partId} className="flex gap-4 rounded-xl border bg-card p-4">
               <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                <Image src={part.image} alt={part.name} fill sizes="96px" className="object-cover" />
+                <Image src={item.image} alt={item.name} fill sizes="96px" className="object-cover" />
               </div>
               <div className="flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <Link href={`/parts/${part.slug}`} className="font-semibold hover:text-brand-600">
-                      {part.name}
+                    <Link href={`/parts/${item.slug}`} className="font-semibold hover:text-brand-600">
+                      {item.name}
                     </Link>
-                    <p className="text-xs text-muted-foreground">{part.brand} · {part.store.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.storeName}</p>
                   </div>
                   <button
-                    onClick={() => removeItem(part.id)}
+                    onClick={() => removeItem(item.partId)}
                     className="text-muted-foreground hover:text-destructive"
                     aria-label="Remove"
                   >
@@ -70,15 +59,15 @@ export default function CartPage() {
                 <div className="mt-auto flex items-center justify-between pt-3">
                   <div className="flex items-center rounded-lg border">
                     <button
-                      onClick={() => setQuantity(part.id, quantity - 1)}
+                      onClick={() => setQuantity(item.partId, item.quantity - 1)}
                       className="flex h-8 w-8 items-center justify-center hover:bg-accent"
                       aria-label="Decrease"
                     >
                       <Minus className="h-3.5 w-3.5" />
                     </button>
-                    <span className="w-8 text-center text-sm font-medium">{quantity}</span>
+                    <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                     <button
-                      onClick={() => setQuantity(part.id, quantity + 1)}
+                      onClick={() => setQuantity(item.partId, item.quantity + 1)}
                       className="flex h-8 w-8 items-center justify-center hover:bg-accent"
                       aria-label="Increase"
                     >
@@ -86,7 +75,7 @@ export default function CartPage() {
                     </button>
                   </div>
                   <span className="font-semibold text-brand-700 dark:text-brand-400">
-                    {formatCurrency((part.discountPrice ?? part.price) * quantity)}
+                    {formatCurrency(item.price * item.quantity)}
                   </span>
                 </div>
               </div>

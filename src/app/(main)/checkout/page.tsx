@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCartStore } from "@/store/cart-store";
-import { getPartById } from "@/lib/sample-data";
 import { GHANA_REGIONS } from "@/lib/constants";
 import { formatCurrency, cn } from "@/lib/utils";
 
@@ -44,14 +43,7 @@ export default function CheckoutPage() {
     notes: "",
   });
 
-  const lines = items
-    .map((line) => {
-      const part = getPartById(line.partId);
-      return part ? { part, quantity: line.quantity } : null;
-    })
-    .filter(Boolean) as { part: NonNullable<ReturnType<typeof getPartById>>; quantity: number }[];
-
-  const subtotal = lines.reduce((s, l) => s + (l.part.discountPrice ?? l.part.price) * l.quantity, 0);
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const shipping = subtotal > 2000 ? 0 : 60;
   const total = subtotal + shipping;
 
@@ -69,11 +61,11 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           ...form,
           method,
-          items: lines.map((l) => ({
-            partId: l.part.id,
-            name: l.part.name,
-            price: l.part.discountPrice ?? l.part.price,
-            quantity: l.quantity,
+          items: items.map((i) => ({
+            partId: i.partId,
+            name: i.name,
+            price: i.price,
+            quantity: i.quantity,
           })),
         }),
       });
@@ -117,7 +109,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (lines.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="container-page py-24 text-center">
         <h1 className="font-display text-2xl font-bold">Your cart is empty</h1>
@@ -205,17 +197,17 @@ export default function CheckoutPage() {
           <div className="sticky top-24 rounded-xl border bg-card p-6 shadow-soft">
             <h2 className="font-semibold">Your order</h2>
             <div className="mt-4 space-y-3">
-              {lines.map(({ part, quantity }) => (
-                <div key={part.id} className="flex items-center gap-3">
+              {items.map((item) => (
+                <div key={item.partId} className="flex items-center gap-3">
                   <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-muted">
-                    <Image src={part.image} alt={part.name} fill sizes="48px" className="object-cover" />
+                    <Image src={item.image} alt={item.name} fill sizes="48px" className="object-cover" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{part.name}</p>
-                    <p className="text-xs text-muted-foreground">Qty {quantity}</p>
+                    <p className="truncate text-sm font-medium">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">Qty {item.quantity}</p>
                   </div>
                   <span className="text-sm font-medium">
-                    {formatCurrency((part.discountPrice ?? part.price) * quantity)}
+                    {formatCurrency(item.price * item.quantity)}
                   </span>
                 </div>
               ))}
