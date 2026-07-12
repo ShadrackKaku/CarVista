@@ -21,20 +21,18 @@ import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getExpandedVehicles, SAMPLE_VEHICLES } from "@/lib/sample-data";
+import { getVehicleBySlug, getVehicles } from "@/lib/queries";
 import { calculateDuty } from "@/lib/duty-calculator";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-function getVehicle(slug: string) {
-  return getExpandedVehicles().find((v) => v.slug === slug);
-}
+export const dynamic = "force-dynamic";
 
-export function generateStaticParams() {
-  return SAMPLE_VEHICLES.map((v) => ({ slug: v.slug }));
-}
-
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const vehicle = getVehicle(params.slug);
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const vehicle = await getVehicleBySlug(params.slug);
   if (!vehicle) return { title: "Vehicle not found" };
   return {
     title: `${vehicle.title} for sale in ${vehicle.city}`,
@@ -55,8 +53,8 @@ const CONDITION_LABELS: Record<string, string> = {
   SALVAGE: "Salvage",
 };
 
-export default function VehicleDetailPage({ params }: { params: { slug: string } }) {
-  const vehicle = getVehicle(params.slug);
+export default async function VehicleDetailPage({ params }: { params: { slug: string } }) {
+  const vehicle = await getVehicleBySlug(params.slug);
   if (!vehicle) notFound();
 
   const canImport = vehicle.importStatus === "AVAILABLE_FOR_IMPORT";
@@ -82,7 +80,7 @@ export default function VehicleDetailPage({ params }: { params: { slug: string }
     { icon: Palette, label: "Colour", value: vehicle.color },
   ];
 
-  const similar = getExpandedVehicles()
+  const similar = (await getVehicles())
     .filter((v) => v.brand === vehicle.brand && v.slug !== vehicle.slug)
     .slice(0, 3);
 

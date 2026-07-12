@@ -12,23 +12,31 @@ import { ServiceCard } from "@/components/services/service-card";
 import { TestimonialCard } from "@/components/testimonial-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SAMPLE_TESTIMONIALS } from "@/lib/sample-data";
 import {
-  SAMPLE_VEHICLES,
-  SAMPLE_PARTS,
-  SAMPLE_DEALERS,
-  SAMPLE_SERVICES,
-  SAMPLE_TESTIMONIALS,
-  SAMPLE_BLOG_POSTS,
-} from "@/lib/sample-data";
+  getFeaturedVehicles,
+  getLatestImports,
+  getFeaturedParts,
+  getDealers,
+  getServices,
+  getBlogPosts,
+} from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
 import Image from "next/image";
 
-export default function HomePage() {
-  const featuredVehicles = SAMPLE_VEHICLES.filter((v) => v.featured).slice(0, 8);
-  const latestImports = SAMPLE_VEHICLES.filter(
-    (v) => v.importStatus !== "NOT_IMPORTED",
-  ).slice(0, 4);
-  const featuredParts = SAMPLE_PARTS.filter((p) => p.featured).slice(0, 5);
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const [featuredVehicles, latestImports, featuredParts, dealers, services, blogPosts] =
+    await Promise.all([
+      getFeaturedVehicles(8),
+      getLatestImports(4),
+      getFeaturedParts(5),
+      getDealers(),
+      getServices(),
+      getBlogPosts(),
+    ]);
+  const testimonials = SAMPLE_TESTIMONIALS;
 
   return (
     <>
@@ -96,7 +104,7 @@ export default function HomePage() {
             action={{ label: "View dealer directory", href: "/dealers" }}
           />
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {SAMPLE_DEALERS.map((d) => (
+            {dealers.slice(0, 4).map((d) => (
               <DealerCard key={d.id} dealer={d} />
             ))}
           </div>
@@ -112,7 +120,7 @@ export default function HomePage() {
           action={{ label: "Find services", href: "/services" }}
         />
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {SAMPLE_SERVICES.map((s) => (
+          {services.slice(0, 4).map((s) => (
             <ServiceCard key={s.id} service={s} />
           ))}
         </div>
@@ -127,7 +135,7 @@ export default function HomePage() {
             align="center"
           />
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {SAMPLE_TESTIMONIALS.map((t) => (
+            {testimonials.map((t) => (
               <TestimonialCard key={t.id} testimonial={t} />
             ))}
           </div>
@@ -143,7 +151,7 @@ export default function HomePage() {
           action={{ label: "Read the blog", href: "/blog" }}
         />
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {SAMPLE_BLOG_POSTS.map((post) => (
+          {blogPosts.slice(0, 4).map((post) => (
             <Link
               key={post.id}
               href={`/blog/${post.slug}`}

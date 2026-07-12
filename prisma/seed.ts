@@ -1,9 +1,31 @@
 /**
  * CarVista database seed.
  * Run with: npm run db:seed
+ *
+ * Populates the database with a full, realistic starting catalogue (dealers,
+ * vehicles, parts stores, parts, service providers, blog) plus reference data
+ * (brands, categories, duty & shipping rates) and demo accounts. Idempotent:
+ * safe to run multiple times.
  */
-import { PrismaClient, UserRole } from "@prisma/client";
+import {
+  PrismaClient,
+  UserRole,
+  type FuelType,
+  type Transmission,
+  type BodyType,
+  type VehicleCondition,
+  type ImportStatus,
+  type PartCondition,
+  type ServiceType,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
+import {
+  SAMPLE_VEHICLES,
+  SAMPLE_PARTS,
+  SAMPLE_DEALERS,
+  SAMPLE_SERVICES,
+  SAMPLE_BLOG_POSTS,
+} from "../src/lib/sample-data";
 
 const prisma = new PrismaClient();
 
@@ -17,10 +39,9 @@ function slugify(text: string) {
 
 async function main() {
   console.log("🌱 Seeding CarVista database...");
-
-  // ── Users ────────────────────────────────────────────────────
   const password = await bcrypt.hash("Password123", 12);
 
+  // ── Core demo accounts ───────────────────────────────────────
   const admin = await prisma.user.upsert({
     where: { email: "admin@carvista.com.gh" },
     update: {},
@@ -32,32 +53,6 @@ async function main() {
       emailVerified: new Date(),
     },
   });
-
-  const dealerUser = await prisma.user.upsert({
-    where: { email: "dealer@carvista.com.gh" },
-    update: {},
-    create: {
-      name: "Prime Motors Ghana",
-      email: "dealer@carvista.com.gh",
-      hashedPassword: password,
-      role: UserRole.DEALER,
-      emailVerified: new Date(),
-      phone: "0201234567",
-    },
-  });
-
-  const sellerUser = await prisma.user.upsert({
-    where: { email: "seller@carvista.com.gh" },
-    update: {},
-    create: {
-      name: "GenuineParts GH",
-      email: "seller@carvista.com.gh",
-      hashedPassword: password,
-      role: UserRole.PARTS_SELLER,
-      emailVerified: new Date(),
-    },
-  });
-
   await prisma.user.upsert({
     where: { email: "customer@carvista.com.gh" },
     update: {},
@@ -70,172 +65,248 @@ async function main() {
     },
   });
 
-  // ── Brands & models ──────────────────────────────────────────
-  const brands = [
-    "Toyota",
-    "Honda",
-    "Hyundai",
-    "Kia",
-    "Nissan",
-    "Mercedes-Benz",
-    "BMW",
-    "Ford",
-    "Lexus",
-    "Volkswagen",
-  ];
-  for (const name of brands) {
-    await prisma.brand.upsert({
+  // ── Brands (from the catalogue) ──────────────────────────────
+  const brandNames = Array.from(new Set(SAMPLE_VEHICLES.map((v) => v.brand)));
+  const brandBySlug = new Map<string, string>();
+  for (const name of brandNames) {
+    const brand = await prisma.brand.upsert({
       where: { slug: slugify(name) },
       update: {},
       create: { name, slug: slugify(name), featured: ["Toyota", "Honda", "Kia"].includes(name) },
     });
+    brandBySlug.set(name, brand.id);
   }
-  const toyota = await prisma.brand.findUnique({ where: { slug: "toyota" } });
-  if (toyota) {
-    for (const model of ["Camry", "Corolla", "RAV4", "Highlander", "Tacoma"]) {
-      await prisma.vehicleModel.upsert({
-        where: { brandId_slug: { brandId: toyota.id, slug: slugify(model) } },
-        update: {},
-        create: { name: model, slug: slugify(model), brandId: toyota.id },
-      });
-    }
-  }
-
-  // ── Dealer profile ───────────────────────────────────────────
-  const dealer = await prisma.dealer.upsert({
-    where: { userId: dealerUser.id },
-    update: {},
-    create: {
-      userId: dealerUser.id,
-      businessName: "Prime Motors Ghana",
-      slug: "prime-motors-ghana",
-      description: "Ghana's premier importer of luxury and executive vehicles.",
-      city: "Accra",
-      region: "Greater Accra",
-      verified: true,
-      featured: true,
-      rating: 4.8,
-      reviewCount: 214,
-      yearsInBusiness: 12,
-      phone: "0201234567",
-      whatsapp: "233201234567",
-    },
-  });
-
-  // ── Parts store ──────────────────────────────────────────────
-  const store = await prisma.partsStore.upsert({
-    where: { userId: sellerUser.id },
-    update: {},
-    create: {
-      userId: sellerUser.id,
-      storeName: "GenuineParts GH",
-      slug: "genuineparts-gh",
-      description: "Genuine OEM parts for all makes and models.",
-      city: "Accra",
-      region: "Greater Accra",
-      verified: true,
-      rating: 4.7,
-      reviewCount: 96,
-    },
-  });
 
   // ── Part categories ──────────────────────────────────────────
-  const categories = [
-    "Engine Parts",
-    "Body Parts",
-    "Electrical Parts",
-    "Brake Parts",
-    "Suspension Parts",
-    "Tyres & Wheels",
-    "Batteries",
-    "Filters",
-    "Lights",
-    "Accessories",
-    "Car Electronics",
-    "Interior Accessories",
-  ];
-  for (const name of categories) {
-    await prisma.partCategory.upsert({
-      where: { slug: slugify(name) },
+  const categoryNames = Array.from(
+    new Map(SAMPLE_PARTS.map((p) => [p.categorySlug, p.category])).entries(),
+  );
+  const categoryBySlug = new Map<string, string>();
+  for (const [slug, name] of categoryNames) {
+    const cat = await prisma.partCategory.upsert({
+      where: { slug },
       update: {},
-      create: { name, slug: slugify(name) },
+      create: { name, slug },
     });
+    categoryBySlug.set(slug, cat.id);
   }
 
-  // ── Sample vehicle ───────────────────────────────────────────
-  if (toyota) {
-    await prisma.vehicle.upsert({
-      where: { slug: "2021-toyota-camry-se-seed" },
+  // ── Dealers (each backed by a user) ──────────────────────────
+  const dealerBySlug = new Map<string, string>();
+  for (const d of SAMPLE_DEALERS) {
+    const user = await prisma.user.upsert({
+      where: { email: `${d.slug}@dealers.carvista.com.gh` },
       update: {},
       create: {
-        slug: "2021-toyota-camry-se-seed",
-        title: "2021 Toyota Camry SE",
-        brandId: toyota.id,
-        year: 2021,
-        price: 285000,
-        mileage: 42000,
-        fuelType: "PETROL",
-        transmission: "AUTOMATIC",
-        engineSize: 2.5,
-        bodyType: "SEDAN",
-        condition: "FOREIGN_USED",
-        color: "Pearl White",
-        city: "Accra",
-        region: "Greater Accra",
-        importStatus: "CLEARED",
-        countryOfOrigin: "United States",
-        description: "Clean 2021 Toyota Camry SE, foreign used, accident-free.",
-        features: ["Reverse Camera", "Apple CarPlay", "Alloy Wheels", "Leather Seats"],
-        verified: true,
+        name: d.name,
+        email: `${d.slug}@dealers.carvista.com.gh`,
+        hashedPassword: password,
+        role: UserRole.DEALER,
+        emailVerified: new Date(),
+        city: d.city,
+        region: d.region,
+      },
+    });
+    const dealer = await prisma.dealer.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: {
+        userId: user.id,
+        businessName: d.name,
+        slug: d.slug,
+        description: d.description,
+        logo: d.logo,
+        coverImage: d.cover,
+        city: d.city,
+        region: d.region,
+        verified: d.verified,
         featured: true,
-        sellerId: dealerUser.id,
-        dealerId: dealer.id,
+        rating: d.rating,
+        reviewCount: d.reviewCount,
+        yearsInBusiness: d.yearsInBusiness,
+      },
+    });
+    dealerBySlug.set(d.slug, dealer.id);
+  }
+
+  // ── Vehicles ─────────────────────────────────────────────────
+  for (const v of SAMPLE_VEHICLES) {
+    const brandId = brandBySlug.get(v.brand);
+    if (!brandId) continue;
+    const dealerId = dealerBySlug.get(v.dealer.slug);
+    const dealerUser = await prisma.dealer.findUnique({
+      where: { id: dealerId },
+      select: { userId: true },
+    });
+    const sellerId = dealerUser?.userId ?? admin.id;
+
+    await prisma.vehicle.upsert({
+      where: { slug: v.slug },
+      update: {},
+      create: {
+        slug: v.slug,
+        title: v.title,
+        brandId,
+        year: v.year,
+        price: v.price,
+        mileage: v.mileage,
+        fuelType: v.fuelType as FuelType,
+        transmission: v.transmission as Transmission,
+        engineSize: v.engineSize,
+        bodyType: v.bodyType as BodyType,
+        condition: v.condition as VehicleCondition,
+        color: v.color,
+        city: v.city,
+        region: v.region ?? null,
+        location: v.location,
+        importStatus: v.importStatus as ImportStatus,
+        countryOfOrigin: v.countryOfOrigin ?? null,
+        auctionGrade: v.auctionGrade ?? null,
+        vin: v.vin ?? null,
+        description: v.description,
+        features: v.features,
+        verified: v.verified,
+        featured: v.featured,
+        status: "ACTIVE",
+        sellerId,
+        dealerId: dealerId ?? null,
         images: {
-          create: [
-            {
-              url: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1200&q=80",
-              isPrimary: true,
-              category: "exterior",
-            },
-          ],
+          create: v.images.map((url, i) => ({
+            url,
+            isPrimary: i === 0,
+            order: i,
+            category: i === 0 ? "exterior" : undefined,
+          })),
         },
       },
     });
   }
 
-  // ── Sample part ──────────────────────────────────────────────
-  const brakeCategory = await prisma.partCategory.findUnique({ where: { slug: "brake-parts" } });
-  if (brakeCategory) {
-    await prisma.part.upsert({
-      where: { slug: "toyota-corolla-front-brake-pads-seed" },
+  // ── Parts stores (each backed by a user) ─────────────────────
+  const storeBySlug = new Map<string, string>();
+  const storeMeta = new Map(SAMPLE_PARTS.map((p) => [p.store.slug, p.store]));
+  for (const [slug, store] of storeMeta) {
+    const user = await prisma.user.upsert({
+      where: { email: `${slug}@stores.carvista.com.gh` },
       update: {},
       create: {
-        slug: "toyota-corolla-front-brake-pads-seed",
-        name: "Front Brake Pads — Ceramic",
-        description: "Premium ceramic front brake pads for Toyota Corolla.",
-        categoryId: brakeCategory.id,
-        brand: "Bosch",
-        oemNumber: "04465-02220",
-        condition: "NEW",
-        price: 420,
-        discountPrice: 350,
-        stock: 34,
-        compatibleMakes: ["Toyota"],
-        compatibleModels: ["Corolla", "Camry"],
-        yearFrom: 2014,
-        yearTo: 2019,
-        fitmentPosition: "Front",
-        featured: true,
-        sellerId: sellerUser.id,
-        storeId: store.id,
-        images: {
-          create: [
-            {
-              url: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1200&q=80",
-              isPrimary: true,
-            },
-          ],
-        },
+        name: store.name,
+        email: `${slug}@stores.carvista.com.gh`,
+        hashedPassword: password,
+        role: UserRole.PARTS_SELLER,
+        emailVerified: new Date(),
+      },
+    });
+    const partsStore = await prisma.partsStore.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: {
+        userId: user.id,
+        storeName: store.name,
+        slug,
+        verified: store.verified,
+        rating: 4.7,
+        reviewCount: 60,
+      },
+    });
+    storeBySlug.set(slug, partsStore.id);
+  }
+
+  // ── Parts ────────────────────────────────────────────────────
+  for (const p of SAMPLE_PARTS) {
+    const categoryId = categoryBySlug.get(p.categorySlug);
+    if (!categoryId) continue;
+    const storeId = storeBySlug.get(p.store.slug);
+    const storeUser = await prisma.partsStore.findUnique({
+      where: { id: storeId },
+      select: { userId: true },
+    });
+    const sellerId = storeUser?.userId ?? admin.id;
+
+    await prisma.part.upsert({
+      where: { slug: p.slug },
+      update: {},
+      create: {
+        slug: p.slug,
+        name: p.name,
+        categoryId,
+        brand: p.brand,
+        oemNumber: p.oemNumber ?? null,
+        condition: p.condition as PartCondition,
+        price: p.price,
+        discountPrice: p.discountPrice ?? null,
+        stock: p.stock,
+        compatibleMakes: p.compatibleMakes,
+        rating: p.rating,
+        reviewCount: p.reviewCount,
+        featured: p.featured,
+        status: "ACTIVE",
+        sellerId,
+        storeId: storeId ?? null,
+        images: { create: [{ url: p.image, isPrimary: true, order: 0 }] },
+      },
+    });
+  }
+
+  // ── Service providers (each backed by a user) ────────────────
+  for (const s of SAMPLE_SERVICES) {
+    const user = await prisma.user.upsert({
+      where: { email: `${s.slug}@services.carvista.com.gh` },
+      update: {},
+      create: {
+        name: s.name,
+        email: `${s.slug}@services.carvista.com.gh`,
+        hashedPassword: password,
+        role: UserRole.SERVICE_PROVIDER,
+        emailVerified: new Date(),
+        city: s.city,
+        region: s.region,
+      },
+    });
+    await prisma.serviceProvider.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: {
+        userId: user.id,
+        businessName: s.name,
+        slug: s.slug,
+        serviceType: s.type as ServiceType,
+        coverImage: s.image,
+        city: s.city,
+        region: s.region,
+        verified: s.verified,
+        rating: s.rating,
+        reviewCount: s.reviewCount,
+        priceRange: s.priceRange,
+        services: s.services,
+      },
+    });
+  }
+
+  // ── Blog ─────────────────────────────────────────────────────
+  for (const b of SAMPLE_BLOG_POSTS) {
+    const category = await prisma.blogCategory.upsert({
+      where: { slug: slugify(b.category) },
+      update: {},
+      create: { name: b.category, slug: slugify(b.category) },
+    });
+    await prisma.blogPost.upsert({
+      where: { slug: b.slug },
+      update: {},
+      create: {
+        slug: b.slug,
+        title: b.title,
+        excerpt: b.excerpt,
+        content:
+          "Full article content. Replace this with the complete post body from your CMS or editor.",
+        coverImage: b.cover,
+        published: true,
+        featured: b.id === SAMPLE_BLOG_POSTS[0].id,
+        readTime: b.readTime,
+        authorId: admin.id,
+        categoryId: category.id,
+        publishedAt: new Date(b.date),
+        tags: [b.category.toLowerCase()],
       },
     });
   }
@@ -302,37 +373,25 @@ async function main() {
     skipDuplicates: true,
   });
 
-  // ── Blog ─────────────────────────────────────────────────────
-  await prisma.blogPost.upsert({
-    where: { slug: "ghana-car-import-duty-guide-2025" },
-    update: {},
-    create: {
-      slug: "ghana-car-import-duty-guide-2025",
-      title: "The Complete Guide to Ghana Car Import Duty in 2025",
-      excerpt: "Everything you need to know about calculating import duty, VAT and levies in Ghana.",
-      content: "Full article content...",
-      coverImage: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=1200&q=80",
-      published: true,
-      featured: true,
-      readTime: 8,
-      authorId: admin.id,
-      publishedAt: new Date(),
-      tags: ["import", "duty", "ghana"],
-    },
-  });
-
   // ── Site settings ────────────────────────────────────────────
   await prisma.siteSetting.upsert({
     where: { key: "exchange_rate_usd_ghs" },
-    update: { value: "15.5" },
+    update: {},
     create: { key: "exchange_rate_usd_ghs", value: "15.5" },
   });
 
+  const counts = await Promise.all([
+    prisma.vehicle.count(),
+    prisma.part.count(),
+    prisma.dealer.count(),
+    prisma.serviceProvider.count(),
+    prisma.blogPost.count(),
+  ]);
   console.log("✅ Seed complete.");
-  console.log("   Admin:    admin@carvista.com.gh / Password123");
-  console.log("   Dealer:   dealer@carvista.com.gh / Password123");
-  console.log("   Seller:   seller@carvista.com.gh / Password123");
-  console.log("   Customer: customer@carvista.com.gh / Password123");
+  console.log(
+    `   Vehicles: ${counts[0]} · Parts: ${counts[1]} · Dealers: ${counts[2]} · Services: ${counts[3]} · Posts: ${counts[4]}`,
+  );
+  console.log("   Admin login: admin@carvista.com.gh / Password123");
 }
 
 main()

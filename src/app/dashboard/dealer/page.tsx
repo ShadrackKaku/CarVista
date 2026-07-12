@@ -1,14 +1,23 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Car, Eye, MessageSquare, Plus, TrendingUp } from "lucide-react";
+import { Car, CircleDollarSign, Plus, ShieldCheck, Star } from "lucide-react";
+import { getCurrentUser } from "@/lib/session";
+import { getDealerListings } from "@/lib/queries";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SAMPLE_VEHICLES } from "@/lib/sample-data";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatCompactCurrency } from "@/lib/utils";
 
-export default function DealerDashboardPage() {
-  const listings = SAMPLE_VEHICLES.slice(0, 5);
+export const dynamic = "force-dynamic";
+
+export default async function DealerDashboardPage() {
+  const user = await getCurrentUser();
+  const listings = user ? await getDealerListings(user.id) : [];
+
+  const totalValue = listings.reduce((sum, v) => sum + v.price, 0);
+  const featured = listings.filter((v) => v.featured).length;
+  const verified = listings.filter((v) => v.verified).length;
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between">
@@ -24,56 +33,68 @@ export default function DealerDashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active listings" value={68} icon={Car} />
-        <StatCard label="Total views" value="12.4K" icon={Eye} trend="+8% this week" />
-        <StatCard label="Inquiries" value={34} icon={MessageSquare} trend="+12 new" />
-        <StatCard label="Sales this month" value={formatCurrency(2450000)} icon={TrendingUp} />
+        <StatCard label="Active listings" value={listings.length} icon={Car} />
+        <StatCard label="Inventory value" value={formatCompactCurrency(totalValue)} icon={CircleDollarSign} />
+        <StatCard label="Verified" value={verified} icon={ShieldCheck} />
+        <StatCard label="Featured" value={featured} icon={Star} />
       </div>
 
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Recent listings</h2>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/dashboard/dealer/listings">Manage all</Link>
-          </Button>
+          <h2 className="text-lg font-semibold">My listings</h2>
         </div>
-        <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Vehicle</th>
-                  <th className="px-4 py-3 font-medium">Price</th>
-                  <th className="px-4 py-3 font-medium">Views</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {listings.map((v) => (
-                  <tr key={v.id} className="hover:bg-accent/40">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-11 w-16 overflow-hidden rounded-lg bg-muted">
-                          <Image src={v.images[0]} alt={v.title} fill sizes="64px" className="object-cover" />
-                        </div>
-                        <span className="font-medium">{v.title}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-medium">{formatCurrency(v.price)}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{formatNumber(1200 + v.year)}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant="success">Active</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button variant="ghost" size="sm">Edit</Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {listings.length === 0 ? (
+          <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+            <Car className="h-8 w-8 text-muted-foreground" />
+            <p className="mt-3 font-semibold">No listings yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">Add your first vehicle to start selling.</p>
+            <Button asChild variant="gradient" className="mt-5">
+              <Link href="/vehicles/new">
+                <Plus className="h-4 w-4" /> Add vehicle
+              </Link>
+            </Button>
           </div>
-        </div>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Vehicle</th>
+                    <th className="px-4 py-3 font-medium">Price</th>
+                    <th className="px-4 py-3 font-medium">Year</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {listings.map((v) => (
+                    <tr key={v.id} className="hover:bg-accent/40">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="relative h-11 w-16 overflow-hidden rounded-lg bg-muted">
+                            <Image src={v.images[0]} alt={v.title} fill sizes="64px" className="object-cover" />
+                          </div>
+                          <span className="font-medium">{v.title}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-medium">{formatCurrency(v.price)}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{v.year}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant={v.verified ? "success" : "warning"}>
+                          {v.verified ? "Verified" : "Pending"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button variant="ghost" size="sm">Edit</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

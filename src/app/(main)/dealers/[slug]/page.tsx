@@ -6,16 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
-import { SAMPLE_DEALERS, getExpandedVehicles } from "@/lib/sample-data";
+import { getDealerBySlug, getVehicles } from "@/lib/queries";
 import { SITE } from "@/lib/constants";
 import { whatsappUrl } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return SAMPLE_DEALERS.map((d) => ({ slug: d.slug }));
-}
+export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const dealer = SAMPLE_DEALERS.find((d) => d.slug === params.slug);
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const dealer = await getDealerBySlug(params.slug);
   if (!dealer) return { title: "Dealer not found" };
   return {
     title: `${dealer.name} — Car Dealer in ${dealer.city}`,
@@ -24,11 +26,11 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function DealerDetailPage({ params }: { params: { slug: string } }) {
-  const dealer = SAMPLE_DEALERS.find((d) => d.slug === params.slug);
+export default async function DealerDetailPage({ params }: { params: { slug: string } }) {
+  const dealer = await getDealerBySlug(params.slug);
   if (!dealer) notFound();
 
-  const vehicles = getExpandedVehicles()
+  const vehicles = (await getVehicles())
     .filter((v) => v.dealer.slug === dealer.slug)
     .slice(0, 8);
 

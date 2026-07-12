@@ -5,16 +5,18 @@ import { CheckCircle2, MapPin, MessageCircle, Phone, ShieldCheck } from "lucide-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
-import { SAMPLE_SERVICES } from "@/lib/sample-data";
+import { getServiceBySlug } from "@/lib/queries";
 import { SITE } from "@/lib/constants";
 import { whatsappUrl } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return SAMPLE_SERVICES.map((s) => ({ slug: s.slug }));
-}
+export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const service = SAMPLE_SERVICES.find((s) => s.slug === params.slug);
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const service = await getServiceBySlug(params.slug);
   if (!service) return { title: "Service not found" };
   return {
     title: `${service.name} — ${service.typeLabel} in ${service.city}`,
@@ -23,8 +25,8 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function ServiceDetailPage({ params }: { params: { slug: string } }) {
-  const service = SAMPLE_SERVICES.find((s) => s.slug === params.slug);
+export default async function ServiceDetailPage({ params }: { params: { slug: string } }) {
+  const service = await getServiceBySlug(params.slug);
   if (!service) notFound();
 
   return (

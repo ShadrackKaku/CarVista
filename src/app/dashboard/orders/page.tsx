@@ -2,33 +2,26 @@ import Link from "next/link";
 import { Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getCurrentUser } from "@/lib/session";
+import { getUserOrders } from "@/lib/queries";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-const orders = [
-  {
-    number: "CV-4H2K-9AF3",
-    date: "2025-01-12",
-    status: "SHIPPED",
-    items: 3,
-    total: 1720,
-  },
-  {
-    number: "CV-2J8L-7BC1",
-    date: "2025-01-05",
-    status: "DELIVERED",
-    items: 1,
-    total: 950,
-  },
-];
+export const dynamic = "force-dynamic";
 
-const statusVariant: Record<string, "success" | "brand" | "warning" | "muted"> = {
+const statusVariant: Record<string, "success" | "brand" | "warning" | "muted" | "destructive"> = {
   DELIVERED: "success",
   SHIPPED: "brand",
   PROCESSING: "warning",
+  PAID: "brand",
   PENDING: "muted",
+  CANCELLED: "destructive",
+  REFUNDED: "destructive",
 };
 
-export default function OrdersPage() {
+export default async function OrdersPage() {
+  const user = await getCurrentUser();
+  const orders = user ? await getUserOrders(user.id) : [];
+
   return (
     <div className="mx-auto max-w-5xl">
       <h1 className="font-display text-2xl font-bold">My Orders</h1>
@@ -53,7 +46,7 @@ export default function OrdersPage() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <Badge variant={statusVariant[order.status]}>{order.status}</Badge>
+                <Badge variant={statusVariant[order.status] ?? "muted"}>{order.status}</Badge>
                 <span className="font-semibold">{formatCurrency(order.total)}</span>
                 <Button variant="outline" size="sm">
                   Details

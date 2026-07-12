@@ -8,15 +8,17 @@ import { Separator } from "@/components/ui/separator";
 import { StarRating } from "@/components/star-rating";
 import { AddToCartButton } from "@/components/parts/add-to-cart-button";
 import { PartCard } from "@/components/parts/part-card";
-import { SAMPLE_PARTS, getPartBySlug } from "@/lib/sample-data";
+import { getPartBySlug, getParts } from "@/lib/queries";
 import { formatCurrency } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return SAMPLE_PARTS.map((p) => ({ slug: p.slug }));
-}
+export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const part = getPartBySlug(params.slug);
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const part = await getPartBySlug(params.slug);
   if (!part) return { title: "Part not found" };
   return {
     title: `${part.name} — ${part.brand}`,
@@ -25,14 +27,14 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function PartDetailPage({ params }: { params: { slug: string } }) {
-  const part = getPartBySlug(params.slug);
+export default async function PartDetailPage({ params }: { params: { slug: string } }) {
+  const part = await getPartBySlug(params.slug);
   if (!part) notFound();
 
   const hasDiscount = part.discountPrice && part.discountPrice < part.price;
-  const related = SAMPLE_PARTS.filter(
-    (p) => p.categorySlug === part.categorySlug && p.id !== part.id,
-  ).slice(0, 4);
+  const related = (await getParts())
+    .filter((p) => p.categorySlug === part.categorySlug && p.id !== part.id)
+    .slice(0, 4);
 
   const jsonLd = {
     "@context": "https://schema.org",

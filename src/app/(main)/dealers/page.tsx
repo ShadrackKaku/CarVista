@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { DealerCard } from "@/components/dealers/dealer-card";
-import { SAMPLE_DEALERS } from "@/lib/sample-data";
+import { getDealers } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "Verified Car Dealers in Ghana",
@@ -11,7 +11,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/dealers" },
 };
 
-export default function DealersPage() {
+export const dynamic = "force-dynamic";
+
+export default async function DealersPage() {
+  const dealers = await getDealers();
   return (
     <div>
       <PageHeader
@@ -28,7 +31,7 @@ export default function DealersPage() {
           </span>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {SAMPLE_DEALERS.map((dealer) => (
+          {dealers.map((dealer) => (
             <DealerCard key={dealer.id} dealer={dealer} />
           ))}
         </div>

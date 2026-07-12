@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import { SAMPLE_BLOG_POSTS } from "@/lib/sample-data";
+import { getBlogPosts } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -12,8 +12,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/blog" },
 };
 
-export default function BlogPage() {
-  const [featured, ...rest] = SAMPLE_BLOG_POSTS;
+export const dynamic = "force-dynamic";
+
+export default async function BlogPage() {
+  const [featured, ...rest] = await getBlogPosts();
 
   return (
     <div>

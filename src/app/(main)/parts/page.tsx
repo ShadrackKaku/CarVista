@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { PartsBrowser } from "@/components/parts/parts-browser";
-import { SAMPLE_PARTS } from "@/lib/sample-data";
+import { getParts } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "Car Parts Marketplace — Genuine & OEM Spare Parts in Ghana",
@@ -10,7 +10,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/parts" },
 };
 
-export default function PartsPage({ searchParams }: { searchParams: { category?: string } }) {
+export const dynamic = "force-dynamic";
+
+export default async function PartsPage({ searchParams }: { searchParams: { category?: string } }) {
+  const parts = await getParts();
   return (
     <div>
       <PageHeader
@@ -19,7 +22,7 @@ export default function PartsPage({ searchParams }: { searchParams: { category?:
         description="Genuine and OEM spare parts for every vehicle — with fitment search so you order the exact part that fits your car."
       />
       <div className="container-page py-10">
-        <PartsBrowser parts={SAMPLE_PARTS} initialCategory={searchParams.category ?? ""} />
+        <PartsBrowser parts={parts} initialCategory={searchParams.category ?? ""} />
       </div>
     </div>
   );
