@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyTransaction } from "@/lib/paystack";
+import { confirmPaidPayment } from "@/lib/fulfill-order";
 
 /**
  * GET /api/payments/paystack/verify?reference=...
@@ -31,13 +32,7 @@ export async function GET(req: Request) {
     const result = await verifyTransaction(reference);
 
     if (result.status === "success") {
-      await prisma.$transaction([
-        prisma.payment.update({
-          where: { id: payment.id },
-          data: { status: "SUCCESS", paidAt: new Date(), providerRef: result.reference },
-        }),
-        prisma.order.update({ where: { id: payment.orderId }, data: { status: "PAID" } }),
-      ]);
+      await confirmPaidPayment(payment.id, result.reference);
       return NextResponse.json({ status: "success", orderNumber: payment.order.orderNumber });
     }
 
