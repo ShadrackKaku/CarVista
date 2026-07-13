@@ -3,6 +3,7 @@ import { getDealers } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
+import { AdminActionButton } from "@/components/admin/admin-action-button";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,25 @@ export default async function AdminDealersPage() {
                       <Button asChild variant="ghost" size="sm">
                         <Link href={`/dealers/${d.slug}`}>View</Link>
                       </Button>
-                      {!d.verified && <Button variant="success" size="sm">Verify</Button>}
+                      {d.verified ? (
+                        <AdminActionButton
+                          endpoint={`/api/admin/dealers/${d.id}`}
+                          body={{ verified: false }}
+                          variant="outline"
+                          successMessage="Dealer un-verified"
+                        >
+                          Un-verify
+                        </AdminActionButton>
+                      ) : (
+                        <AdminActionButton
+                          endpoint={`/api/admin/dealers/${d.id}`}
+                          body={{ verified: true }}
+                          variant="success"
+                          successMessage="Dealer verified"
+                        >
+                          Verify
+                        </AdminActionButton>
+                      )}
                     </div>
                   </td>
                 </tr>
