@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyWebhookSignature } from "@/lib/paystack";
+import { confirmPaidPayment } from "@/lib/fulfill-order";
 
 /**
  * POST /api/webhooks/paystack
@@ -29,15 +30,10 @@ export async function POST(req: Request) {
     if (event.event === "charge.success" && event.data?.reference) {
       const payment = await prisma.payment.findUnique({
         where: { reference: event.data.reference },
+        select: { id: true },
       });
-      if (payment && payment.status !== "SUCCESS") {
-        await prisma.$transaction([
-          prisma.payment.update({
-            where: { id: payment.id },
-            data: { status: "SUCCESS", paidAt: new Date(), providerRef: event.data.reference },
-          }),
-          prisma.order.update({ where: { id: payment.orderId }, data: { status: "PAID" } }),
-        ]);
+      if (payment) {
+        await confirmPaidPayment(payment.id, event.data.reference);
       }
     }
   } catch (error) {
