@@ -605,6 +605,87 @@ export async function getAdminStats(): Promise<AdminStats> {
   }
 }
 
+export interface AdminVehicleRow {
+  id: string;
+  slug: string;
+  title: string;
+  image: string;
+  city: string;
+  dealer: string;
+  price: number;
+  status: string;
+  verified: boolean;
+}
+
+export async function getAdminVehicles(): Promise<AdminVehicleRow[]> {
+  try {
+    const rows = await prisma.vehicle.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: {
+        images: { orderBy: { order: "asc" }, take: 1 },
+        dealer: { select: { businessName: true } },
+        seller: { select: { name: true } },
+      },
+    });
+    if (rows.length) {
+      return rows.map((v) => ({
+        id: v.id,
+        slug: v.slug,
+        title: v.title,
+        image: v.images[0]?.url ?? PLACEHOLDER_VEHICLE,
+        city: v.city ?? "",
+        dealer: v.dealer?.businessName ?? v.seller?.name ?? "Private seller",
+        price: num(v.price),
+        status: v.status,
+        verified: v.verified,
+      }));
+    }
+  } catch {
+    // fall through to sample data
+  }
+  return getExpandedVehicles().map((v) => ({
+    id: v.id,
+    slug: v.slug,
+    title: v.title,
+    image: v.images[0],
+    city: v.city,
+    dealer: v.dealer.name,
+    price: v.price,
+    status: "ACTIVE",
+    verified: v.verified,
+  }));
+}
+
+export interface AdminUserRow {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  joined: Date;
+}
+
+export async function getAllUsers(): Promise<AdminUserRow[]> {
+  try {
+    const rows = await prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
+    });
+    return rows.map((u) => ({
+      id: u.id,
+      name: u.name ?? "Unnamed user",
+      email: u.email,
+      role: u.role,
+      status: u.status,
+      joined: u.createdAt,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 // ══════════════════════════════════════════════════════════════
 //  REVIEWS & MESSAGES (M5)
 // ══════════════════════════════════════════════════════════════

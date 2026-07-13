@@ -1,22 +1,31 @@
+import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SAMPLE_VEHICLES } from "@/lib/sample-data";
+import { AdminActionButton } from "@/components/admin/admin-action-button";
+import { getAdminVehicles } from "@/lib/queries";
 import { formatCurrency } from "@/lib/utils";
 
-export default function AdminVehiclesPage() {
-  const vehicles = SAMPLE_VEHICLES;
+export const dynamic = "force-dynamic";
+
+const statusVariant: Record<string, "success" | "warning" | "destructive" | "muted"> = {
+  ACTIVE: "success",
+  PENDING: "warning",
+  DRAFT: "muted",
+  SOLD: "muted",
+  ARCHIVED: "muted",
+  REJECTED: "destructive",
+};
+
+export default async function AdminVehiclesPage() {
+  const vehicles = await getAdminVehicles();
+
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">Vehicle Listings</h1>
           <p className="mt-1 text-muted-foreground">Review, approve and manage all vehicle listings.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">All</Button>
-          <Button variant="outline" size="sm">Pending</Button>
-          <Button variant="outline" size="sm">Active</Button>
         </div>
       </div>
 
@@ -38,7 +47,7 @@ export default function AdminVehiclesPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="relative h-11 w-16 overflow-hidden rounded-lg bg-muted">
-                        <Image src={v.images[0]} alt={v.title} fill sizes="64px" className="object-cover" />
+                        <Image src={v.image} alt={v.title} fill sizes="64px" className="object-cover" />
                       </div>
                       <div>
                         <p className="font-medium">{v.title}</p>
@@ -46,18 +55,38 @@ export default function AdminVehiclesPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{v.dealer.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{v.dealer}</td>
                   <td className="px-4 py-3 font-medium">{formatCurrency(v.price)}</td>
                   <td className="px-4 py-3">
-                    <Badge variant={v.verified ? "success" : "warning"}>
-                      {v.verified ? "Verified" : "Pending"}
+                    <Badge variant={statusVariant[v.status] ?? "muted"}>
+                      {v.status[0] + v.status.slice(1).toLowerCase()}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm">View</Button>
-                      {!v.verified && (
-                        <Button variant="success" size="sm">Approve</Button>
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/vehicles/${v.slug}`}>View</Link>
+                      </Button>
+                      {v.status !== "ACTIVE" && (
+                        <AdminActionButton
+                          endpoint={`/api/admin/vehicles/${v.id}`}
+                          body={{ action: "approve" }}
+                          variant="success"
+                          successMessage="Listing approved"
+                        >
+                          Approve
+                        </AdminActionButton>
+                      )}
+                      {v.status !== "REJECTED" && (
+                        <AdminActionButton
+                          endpoint={`/api/admin/vehicles/${v.id}`}
+                          body={{ action: "reject" }}
+                          variant="destructive"
+                          confirmMessage="Reject this listing? It will be hidden from the marketplace."
+                          successMessage="Listing rejected"
+                        >
+                          Reject
+                        </AdminActionButton>
                       )}
                     </div>
                   </td>
