@@ -443,6 +443,39 @@ export async function getSellerProducts(userId: string): Promise<SamplePart[]> {
   }
 }
 
+export interface SellerOrderRow {
+  number: string;
+  date: Date;
+  status: string;
+  customer: string;
+  items: number;
+  total: number;
+}
+
+/** Orders that contain at least one product belonging to this seller. */
+export async function getSellerOrders(userId: string): Promise<SellerOrderRow[]> {
+  try {
+    const rows = await prisma.order.findMany({
+      where: { items: { some: { part: { sellerId: userId } } } },
+      orderBy: { createdAt: "desc" },
+      include: { items: { include: { part: { select: { sellerId: true } } } } },
+    });
+    return rows.map((o) => {
+      const mine = o.items.filter((i) => i.part.sellerId === userId);
+      return {
+        number: o.orderNumber,
+        date: o.createdAt,
+        status: o.status,
+        customer: o.fullName,
+        items: mine.reduce((s, i) => s + i.quantity, 0),
+        total: mine.reduce((s, i) => s + num(i.price) * i.quantity, 0),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 export interface AdminStats {
   users: number;
   vehicles: number;
@@ -452,6 +485,95 @@ export interface AdminStats {
   orders: number;
   pendingVehicles: number;
   reviews: number;
+}
+
+export interface AdminOrderRow {
+  number: string;
+  date: Date;
+  customer: string;
+  items: number;
+  total: number;
+  status: string;
+  method: string;
+}
+
+export async function getAllOrders(): Promise<AdminOrderRow[]> {
+  try {
+    const rows = await prisma.order.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: { _count: { select: { items: true } }, payment: { select: { method: true } } },
+    });
+    return rows.map((o) => ({
+      number: o.orderNumber,
+      date: o.createdAt,
+      customer: o.fullName,
+      items: o._count.items,
+      total: num(o.total),
+      status: o.status,
+      method: o.payment?.method ?? "—",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export interface AdminImportRow {
+  ref: string;
+  date: Date;
+  customer: string;
+  vehicle: string;
+  origin: string;
+  stage: string;
+}
+
+export async function getAllImportRequests(): Promise<AdminImportRow[]> {
+  try {
+    const rows = await prisma.importRequest.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: { user: { select: { name: true } } },
+    });
+    return rows.map((r) => ({
+      ref: r.requestNumber,
+      date: r.createdAt,
+      customer: r.user?.name ?? "—",
+      vehicle: `${r.year} ${r.make} ${r.model}`,
+      origin: r.countryOfOrigin,
+      stage: r.stage,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export interface AdminReviewRow {
+  id: string;
+  author: string;
+  rating: number;
+  comment: string;
+  date: Date;
+  verified: boolean;
+}
+
+export async function getAllReviews(): Promise<AdminReviewRow[]> {
+  try {
+    const rows = await prisma.review.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: { author: { select: { name: true } } },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      author: r.author?.name ?? "Anonymous",
+      rating: r.rating,
+      comment: r.comment,
+      date: r.createdAt,
+      verified: r.verified,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
