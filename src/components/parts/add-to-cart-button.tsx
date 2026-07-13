@@ -4,15 +4,27 @@ import { useState } from "react";
 import { ShoppingCart, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useCartStore } from "@/store/cart-store";
+import { useCartStore, type CartItemSnapshot } from "@/store/cart-store";
 import { cn } from "@/lib/utils";
+import type { SamplePart } from "@/lib/sample-data";
+
+export function toCartItem(part: SamplePart): CartItemSnapshot {
+  return {
+    partId: part.id,
+    name: part.name,
+    slug: part.slug,
+    price: part.discountPrice ?? part.price,
+    image: part.image,
+    storeName: part.store.name,
+  };
+}
 
 export function AddToCartButton({
-  partId,
+  part,
   className,
   size = "sm",
 }: {
-  partId: string;
+  part: SamplePart;
   className?: string;
   size?: "sm" | "default" | "lg";
 }) {
@@ -22,7 +34,7 @@ export function AddToCartButton({
   function onAdd(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    addItem(partId, 1);
+    addItem(toCartItem(part), 1);
     setAdded(true);
     toast.success("Added to cart");
     setTimeout(() => setAdded(false), 1500);

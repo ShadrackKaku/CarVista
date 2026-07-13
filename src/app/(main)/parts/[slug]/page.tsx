@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { StarRating } from "@/components/star-rating";
 import { AddToCartButton } from "@/components/parts/add-to-cart-button";
+import { BuyNowButton } from "@/components/parts/buy-now-button";
 import { PartCard } from "@/components/parts/part-card";
 import { getPartBySlug, getParts } from "@/lib/queries";
 import { formatCurrency } from "@/lib/utils";
@@ -112,8 +113,9 @@ export default async function PartDetailPage({ params }: { params: { slug: strin
             )}
           </p>
 
-          <div className="mt-6 flex gap-3">
-            <AddToCartButton partId={part.id} size="lg" className="flex-1" />
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <AddToCartButton part={part} size="lg" className="flex-1" />
+            <BuyNowButton part={part} size="lg" className="flex-1" />
           </div>
 
           {/* Compatibility */}
