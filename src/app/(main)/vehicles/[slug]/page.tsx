@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { VehicleGallery } from "@/components/vehicles/vehicle-gallery";
 import { SellerContact } from "@/components/vehicles/seller-contact";
+import { ContactSellerDialog } from "@/components/messages/contact-seller-dialog";
+import { InspectionBookingDialog } from "@/components/bookings/inspection-booking-dialog";
+import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { FinancingWidget } from "@/components/vehicles/financing-widget";
 import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
@@ -269,11 +272,26 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
               verified={vehicle.dealer.verified}
               vehicleTitle={vehicle.title}
               price={formatCurrency(vehicle.price)}
-            />
+            >
+              <ContactSellerDialog
+                recipientId={vehicle.sellerId}
+                vehicleId={vehicle.id}
+                vehicleTitle={vehicle.title}
+              />
+              <InspectionBookingDialog
+                vehicleTitle={vehicle.title}
+                triggerLabel="Book an inspection"
+                triggerVariant="ghost"
+                className="w-full"
+              />
+            </SellerContact>
             <FinancingWidget price={vehicle.price} />
           </div>
         </aside>
       </div>
+
+      {/* Reviews */}
+      <ReviewsSection targetType="vehicle" targetId={vehicle.id} />
 
       {/* Similar vehicles */}
       {similar.length > 0 && (

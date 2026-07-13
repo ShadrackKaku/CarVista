@@ -28,6 +28,7 @@ export interface SampleVehicle {
   location: string;
   featured: boolean;
   verified: boolean;
+  sellerId?: string;
   images: string[];
   dealer: { name: string; slug: string; verified: boolean };
   auctionGrade?: string;

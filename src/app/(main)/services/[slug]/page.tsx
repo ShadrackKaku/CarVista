@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import { getServiceBySlug } from "@/lib/queries";
+import { ServiceBookingDialog } from "@/components/bookings/service-booking-dialog";
+import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { SITE } from "@/lib/constants";
 import { whatsappUrl } from "@/lib/utils";
 
@@ -89,11 +91,13 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
                   <Phone className="h-4 w-4" /> Call now
                 </a>
               </Button>
-              <Button variant="gradient" className="w-full">Book an appointment</Button>
+              <ServiceBookingDialog serviceProviderId={service.id} serviceName={service.name} />
             </div>
           </div>
         </aside>
       </div>
+
+      <ReviewsSection targetType="service" targetId={service.id} />
     </div>
   );
 }

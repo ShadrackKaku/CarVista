@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, MessageCircle, ShieldCheck, Mail } from "lucide-react";
+import { Phone, MessageCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SITE } from "@/lib/constants";
 import { whatsappUrl } from "@/lib/utils";
@@ -10,11 +10,13 @@ export function SellerContact({
   verified,
   vehicleTitle,
   price,
+  children,
 }: {
   dealerName: string;
   verified: boolean;
   vehicleTitle: string;
   price: string;
+  children?: React.ReactNode;
 }) {
   const message = `Hi ${dealerName}, I'm interested in the ${vehicleTitle} (${price}) listed on CarVista. Is it still available?`;
 
@@ -46,9 +48,7 @@ export function SellerContact({
             <Phone className="h-4 w-4" /> Call seller
           </a>
         </Button>
-        <Button variant="ghost" className="w-full">
-          <Mail className="h-4 w-4" /> Send a message
-        </Button>
+        {children}
       </div>
 
       <p className="mt-4 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">

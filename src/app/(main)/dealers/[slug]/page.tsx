@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
+import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { getDealerBySlug, getVehicles } from "@/lib/queries";
 import { SITE } from "@/lib/constants";
 import { whatsappUrl } from "@/lib/utils";
@@ -99,6 +100,10 @@ export default async function DealerDetailPage({ params }: { params: { slug: str
             </p>
           )}
         </section>
+
+        <div className="pb-16">
+          <ReviewsSection targetType="dealer" targetId={dealer.id} />
+        </div>
       </div>
     </div>
   );

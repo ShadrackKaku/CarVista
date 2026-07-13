@@ -71,6 +71,7 @@ function mapVehicle(v: VehicleRow): SampleVehicle {
     location: v.location ?? v.city ?? "",
     featured: v.featured,
     verified: v.verified,
+    sellerId: v.sellerId,
     auctionGrade: v.auctionGrade ?? undefined,
     vin: v.vin ?? undefined,
     images,
@@ -601,5 +602,81 @@ export async function getAdminStats(): Promise<AdminStats> {
       pendingVehicles: 0,
       reviews: 0,
     };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  REVIEWS & MESSAGES (M5)
+// ══════════════════════════════════════════════════════════════
+
+export interface ReviewItem {
+  id: string;
+  author: string;
+  rating: number;
+  title: string | null;
+  comment: string;
+  date: Date;
+  verified: boolean;
+}
+
+const REVIEW_FIELD = {
+  vehicle: "vehicleId",
+  part: "partId",
+  dealer: "dealerId",
+  service: "serviceProviderId",
+} as const;
+
+export async function getReviews(
+  targetType: keyof typeof REVIEW_FIELD,
+  targetId: string,
+): Promise<ReviewItem[]> {
+  try {
+    const rows = await prisma.review.findMany({
+      where: { [REVIEW_FIELD[targetType]]: targetId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: { author: { select: { name: true } } },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      author: r.author?.name ?? "Anonymous",
+      rating: r.rating,
+      title: r.title,
+      comment: r.comment,
+      date: r.createdAt,
+      verified: r.verified,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export interface MessageItem {
+  id: string;
+  sender: string;
+  subject: string | null;
+  body: string;
+  date: Date;
+  read: boolean;
+}
+
+export async function getUserMessages(userId: string): Promise<MessageItem[]> {
+  try {
+    const rows = await prisma.message.findMany({
+      where: { recipientId: userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: { sender: { select: { name: true } } },
+    });
+    return rows.map((m) => ({
+      id: m.id,
+      sender: m.sender?.name ?? "Someone",
+      subject: m.subject,
+      body: m.body,
+      date: m.createdAt,
+      read: m.read,
+    }));
+  } catch {
+    return [];
   }
 }
