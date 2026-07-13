@@ -8,8 +8,6 @@ import { Prisma, PaymentMethod } from "@prisma/client";
 
 interface OrderItemInput {
   partId: string;
-  name: string;
-  price: number;
   quantity: number;
 }
 
@@ -29,12 +27,45 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const items: OrderItemInput[] = body.items ?? [];
-    if (!items.length) {
+    const rawItems: OrderItemInput[] = body.items ?? [];
+    if (!rawItems.length) {
       return NextResponse.json({ error: "Your cart is empty" }, { status: 400 });
     }
     if (!body.fullName || !body.phone || !body.address || !body.city) {
       return NextResponse.json({ error: "Delivery details are incomplete" }, { status: 400 });
+    }
+
+    // ── Server-side validation: NEVER trust client-supplied prices/names. ──
+    // Re-fetch every part from the database and use its authoritative price.
+    const partIds = [...new Set(rawItems.map((i) => i.partId))];
+    const dbParts = await prisma.part.findMany({
+      where: { id: { in: partIds }, status: "ACTIVE" },
+      select: { id: true, name: true, price: true, discountPrice: true, stock: true },
+    });
+    const partMap = new Map(dbParts.map((p) => [p.id, p]));
+
+    const items: { partId: string; name: string; price: number; quantity: number }[] = [];
+    for (const raw of rawItems) {
+      const part = partMap.get(raw.partId);
+      if (!part) {
+        return NextResponse.json(
+          { error: "One or more items are no longer available. Please review your cart." },
+          { status: 400 },
+        );
+      }
+      const quantity = Math.max(1, Math.floor(Number(raw.quantity) || 1));
+      if (part.stock < quantity) {
+        return NextResponse.json(
+          { error: `Only ${part.stock} left of "${part.name}". Please adjust the quantity.` },
+          { status: 409 },
+        );
+      }
+      items.push({
+        partId: part.id,
+        name: part.name,
+        price: Number(part.discountPrice ?? part.price),
+        quantity,
+      });
     }
 
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -96,7 +127,6 @@ export async function POST(req: Request) {
         );
       } catch (err) {
         console.error("[orders:paystack-init]", err);
-        // Order is saved; let the customer complete payment another way.
         return NextResponse.json(
           {
             success: true,
@@ -109,7 +139,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // Bank transfer / cash — order recorded as pending.
     return NextResponse.json(
       { success: true, orderNumber: order.orderNumber, paymentPending: true },
       { status: 201 },
