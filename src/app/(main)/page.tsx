@@ -24,7 +24,8 @@ import {
 import { formatDate } from "@/lib/utils";
 import Image from "next/image";
 
-export const dynamic = "force-dynamic";
+// Cache the homepage and revalidate every 60s (ISR) for fast loads.
+export const revalidate = 60;
 
 export default async function HomePage() {
   const [featuredVehicles, latestImports, featuredParts, dealers, services, blogPosts] =

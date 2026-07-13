@@ -25,7 +25,7 @@ import { getVehicleBySlug, getVehicles } from "@/lib/queries";
 import { calculateDuty } from "@/lib/duty-calculator";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,

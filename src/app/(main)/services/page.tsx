@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/services" },
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function ServicesPage() {
   const services = await getServices();

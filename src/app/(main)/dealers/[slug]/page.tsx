@@ -10,7 +10,7 @@ import { getDealerBySlug, getVehicles } from "@/lib/queries";
 import { SITE } from "@/lib/constants";
 import { whatsappUrl } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,
