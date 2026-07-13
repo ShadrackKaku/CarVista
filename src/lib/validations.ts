@@ -134,6 +134,48 @@ export const vehicleListingSchema = z.object({
   videoUrl: z.string().url().optional().or(z.literal("")),
 });
 
+// ── Reviews ───────────────────────────────────────────────────
+export const reviewSchema = z.object({
+  targetType: z.enum(["vehicle", "part", "dealer", "service"]),
+  targetId: z.string().min(1),
+  rating: z.coerce.number().int().min(1).max(5),
+  title: z.string().max(120).optional(),
+  comment: z.string().min(5, "Please write at least a few words").max(2000),
+});
+
+// ── Messaging ─────────────────────────────────────────────────
+// Two flows share the /api/messages endpoint:
+//   • Start a new conversation  → provide `recipientId` (+ optional context).
+//   • Reply in an existing one   → provide `conversationId`.
+export const messageSchema = z
+  .object({
+    conversationId: z.string().min(1).optional(),
+    recipientId: z.string().min(1).optional(),
+    subject: z.string().max(150).optional(),
+    body: z.string().min(2, "Your message is too short").max(2000),
+    vehicleId: z.string().optional(),
+    partId: z.string().optional(),
+  })
+  .refine((d) => Boolean(d.conversationId) || Boolean(d.recipientId), {
+    message: "A recipient or conversation is required",
+    path: ["recipientId"],
+  });
+
+// ── Bookings ──────────────────────────────────────────────────
+export const serviceBookingSchema = z.object({
+  serviceProviderId: z.string().min(1),
+  scheduledAt: z.string().min(1, "Choose a date & time"),
+  vehicleInfo: z.string().max(200).optional(),
+  notes: z.string().max(1000).optional(),
+});
+
+export const inspectionBookingSchema = z.object({
+  vehicleInfo: z.string().min(2, "Describe the vehicle"),
+  location: z.string().min(2, "Enter a location"),
+  scheduledAt: z.string().min(1, "Choose a date & time"),
+  notes: z.string().max(1000).optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type DutyCalcInput = z.infer<typeof dutyCalcSchema>;

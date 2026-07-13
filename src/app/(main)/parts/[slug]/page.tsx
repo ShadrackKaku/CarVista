@@ -10,6 +10,7 @@ import { AddToCartButton } from "@/components/parts/add-to-cart-button";
 import { BuyNowButton } from "@/components/parts/buy-now-button";
 import { PartCard } from "@/components/parts/part-card";
 import { getPartBySlug, getParts } from "@/lib/queries";
+import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -164,6 +165,8 @@ export default async function PartDetailPage({ params }: { params: { slug: strin
           </div>
         </div>
       </div>
+
+      <ReviewsSection targetType="part" targetId={part.id} />
 
       {related.length > 0 && (
         <section className="mt-14">

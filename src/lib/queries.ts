@@ -71,6 +71,7 @@ function mapVehicle(v: VehicleRow): SampleVehicle {
     location: v.location ?? v.city ?? "",
     featured: v.featured,
     verified: v.verified,
+    sellerId: v.sellerId,
     auctionGrade: v.auctionGrade ?? undefined,
     vin: v.vin ?? undefined,
     images,
@@ -601,5 +602,221 @@ export async function getAdminStats(): Promise<AdminStats> {
       pendingVehicles: 0,
       reviews: 0,
     };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  REVIEWS & MESSAGES (M5)
+// ══════════════════════════════════════════════════════════════
+
+export interface ReviewItem {
+  id: string;
+  author: string;
+  rating: number;
+  title: string | null;
+  comment: string;
+  date: Date;
+  verified: boolean;
+}
+
+const REVIEW_FIELD = {
+  vehicle: "vehicleId",
+  part: "partId",
+  dealer: "dealerId",
+  service: "serviceProviderId",
+} as const;
+
+export async function getReviews(
+  targetType: keyof typeof REVIEW_FIELD,
+  targetId: string,
+): Promise<ReviewItem[]> {
+  try {
+    const rows = await prisma.review.findMany({
+      where: { [REVIEW_FIELD[targetType]]: targetId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: { author: { select: { name: true } } },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      author: r.author?.name ?? "Anonymous",
+      rating: r.rating,
+      title: r.title,
+      comment: r.comment,
+      date: r.createdAt,
+      verified: r.verified,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ── Messaging (two-way conversations) ─────────────────────────
+export interface ConversationContext {
+  label: string;
+  href: string;
+}
+
+export interface ConversationSummary {
+  id: string;
+  otherParty: string;
+  subject: string | null;
+  context: ConversationContext | null;
+  lastMessage: string;
+  lastMessageAt: Date;
+  unread: number;
+}
+
+export interface ThreadMessage {
+  id: string;
+  body: string;
+  mine: boolean;
+  senderName: string;
+  read: boolean;
+  createdAt: Date;
+}
+
+export interface ConversationDetail {
+  id: string;
+  otherParty: string;
+  subject: string | null;
+  context: ConversationContext | null;
+  messages: ThreadMessage[];
+}
+
+/** Resolve vehicle/part ids to a display label + link, batched to avoid N+1. */
+async function resolveContexts(
+  vehicleIds: string[],
+  partIds: string[],
+): Promise<Map<string, ConversationContext>> {
+  const map = new Map<string, ConversationContext>();
+  const [vehicles, parts] = await Promise.all([
+    vehicleIds.length
+      ? prisma.vehicle.findMany({
+          where: { id: { in: vehicleIds } },
+          select: { id: true, title: true, slug: true },
+        })
+      : Promise.resolve([]),
+    partIds.length
+      ? prisma.part.findMany({
+          where: { id: { in: partIds } },
+          select: { id: true, name: true, slug: true },
+        })
+      : Promise.resolve([]),
+  ]);
+  for (const v of vehicles) map.set(v.id, { label: v.title, href: `/vehicles/${v.slug}` });
+  for (const p of parts) map.set(p.id, { label: p.name, href: `/parts/${p.slug}` });
+  return map;
+}
+
+export async function getUserConversations(userId: string): Promise<ConversationSummary[]> {
+  try {
+    const rows = await prisma.conversation.findMany({
+      where: { OR: [{ buyerId: userId }, { sellerId: userId }] },
+      orderBy: { lastMessageAt: "desc" },
+      take: 50,
+      include: {
+        buyer: { select: { id: true, name: true } },
+        seller: { select: { id: true, name: true } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
+        _count: {
+          select: {
+            messages: { where: { read: false, senderId: { not: userId } } },
+          },
+        },
+      },
+    });
+
+    const contexts = await resolveContexts(
+      rows.map((r) => r.vehicleId).filter((x): x is string => Boolean(x)),
+      rows.map((r) => r.partId).filter((x): x is string => Boolean(x)),
+    );
+
+    return rows.map((r) => {
+      const other = r.buyerId === userId ? r.seller : r.buyer;
+      const last = r.messages[0];
+      const ctxId = r.vehicleId ?? r.partId ?? "";
+      return {
+        id: r.id,
+        otherParty: other?.name ?? "CarVista member",
+        subject: r.subject,
+        context: contexts.get(ctxId) ?? null,
+        lastMessage: last?.body ?? "",
+        lastMessageAt: last?.createdAt ?? r.lastMessageAt,
+        unread: r._count.messages,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Load a full conversation thread for a participant and mark the other side's
+ * messages as read. Returns null if the conversation doesn't exist or the user
+ * isn't a participant (so callers can 404 / redirect).
+ */
+export async function getConversation(
+  id: string,
+  userId: string,
+): Promise<ConversationDetail | null> {
+  try {
+    const convo = await prisma.conversation.findUnique({
+      where: { id },
+      include: {
+        buyer: { select: { id: true, name: true } },
+        seller: { select: { id: true, name: true } },
+        messages: {
+          orderBy: { createdAt: "asc" },
+          include: { sender: { select: { name: true } } },
+        },
+      },
+    });
+    if (!convo || (convo.buyerId !== userId && convo.sellerId !== userId)) return null;
+
+    // Mark the counterpart's unread messages as read now that we're viewing them.
+    if (convo.messages.some((m) => m.senderId !== userId && !m.read)) {
+      await prisma.message.updateMany({
+        where: { conversationId: id, senderId: { not: userId }, read: false },
+        data: { read: true },
+      });
+    }
+
+    const other = convo.buyerId === userId ? convo.seller : convo.buyer;
+    const contexts = await resolveContexts(
+      convo.vehicleId ? [convo.vehicleId] : [],
+      convo.partId ? [convo.partId] : [],
+    );
+
+    return {
+      id: convo.id,
+      otherParty: other?.name ?? "CarVista member",
+      subject: convo.subject,
+      context: contexts.get(convo.vehicleId ?? convo.partId ?? "") ?? null,
+      messages: convo.messages.map((m) => ({
+        id: m.id,
+        body: m.body,
+        mine: m.senderId === userId,
+        senderName: m.sender?.name ?? "Member",
+        read: m.read,
+        createdAt: m.createdAt,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getUnreadMessageCount(userId: string): Promise<number> {
+  try {
+    return await prisma.message.count({
+      where: {
+        read: false,
+        senderId: { not: userId },
+        conversation: { OR: [{ buyerId: userId }, { sellerId: userId }] },
+      },
+    });
+  } catch {
+    return 0;
   }
 }
