@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ImagePlus, Loader2, Video } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUploader } from "@/components/image-uploader";
 import {
   Select,
   SelectContent,
@@ -46,6 +47,8 @@ export function ListVehicleForm() {
     region: "Greater Accra",
     description: "",
   });
+  const [images, setImages] = useState<string[]>([]);
+  const [videoUrl, setVideoUrl] = useState("");
 
   function update(key: string, value: string | number) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -70,6 +73,8 @@ export function ListVehicleForm() {
           price: Number(form.price),
           mileage: Number(form.mileage),
           engineSize: form.engineSize ? Number(form.engineSize) : undefined,
+          images,
+          videoUrl: videoUrl || undefined,
         }),
       });
       const data = await res.json();
@@ -197,26 +202,29 @@ export function ListVehicleForm() {
         </div>
       </section>
 
-      {/* Media upload (UI) */}
+      {/* Media upload */}
       <section className="rounded-2xl border bg-card p-6 shadow-soft">
-        <h2 className="font-semibold">Photos & videos</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition-colors hover:border-brand-400 hover:bg-accent/40">
-            <ImagePlus className="h-8 w-8 text-brand-500" />
-            <span className="text-sm font-medium">Upload photos</span>
-            <span className="text-xs text-muted-foreground">Interior, exterior, engine — up to 20 images</span>
-            <input type="file" accept="image/*" multiple className="hidden" />
-          </label>
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition-colors hover:border-brand-400 hover:bg-accent/40">
-            <Video className="h-8 w-8 text-brand-500" />
-            <span className="text-sm font-medium">Add videos</span>
-            <span className="text-xs text-muted-foreground">Walk-around, engine, driving — upload or paste YouTube link</span>
-            <input type="file" accept="video/*" multiple className="hidden" />
-          </label>
-        </div>
+        <h2 className="font-semibold">Photos</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Add clear photos — exterior, interior and engine. Great photos sell faster.
+        </p>
         <div className="mt-4">
-          <Label className="text-xs">Or paste a YouTube / Vimeo URL</Label>
-          <Input placeholder="https://youtube.com/watch?v=..." className="mt-1.5" />
+          <ImageUploader
+            value={images}
+            onChange={setImages}
+            max={20}
+            label="Upload photos"
+            hint="Exterior, interior, engine — up to 20 images, 10 MB each."
+          />
+        </div>
+        <div className="mt-6">
+          <Label className="text-xs">Video walk-around (YouTube / Vimeo URL)</Label>
+          <Input
+            placeholder="https://youtube.com/watch?v=..."
+            className="mt-1.5"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+          />
         </div>
       </section>
 

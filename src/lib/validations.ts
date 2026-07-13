@@ -128,7 +128,10 @@ export const vehicleListingSchema = z.object({
   condition: z.enum(["NEW", "FOREIGN_USED", "GHANA_USED", "SALVAGE"]),
   color: z.string().optional(),
   city: z.string().optional(),
+  region: z.string().optional(),
   description: z.string().optional(),
+  images: z.array(z.string().url()).max(20).optional(),
+  videoUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
