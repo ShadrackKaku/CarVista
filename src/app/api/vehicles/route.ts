@@ -89,11 +89,32 @@ export async function POST(req: Request) {
     const d = parsed.data;
     const slug = `${slugify(d.title)}-${generateReference("").slice(1, 6).toLowerCase()}`;
 
+    // The form submits the brand NAME; resolve (or create) the Brand record so
+    // the foreign key is valid.
+    const brand =
+      (await prisma.brand.findFirst({
+        where: { OR: [{ id: d.brandId }, { name: d.brandId }, { slug: slugify(d.brandId) }] },
+      })) ?? (await prisma.brand.create({ data: { name: d.brandId, slug: slugify(d.brandId) } }));
+
+    // Link the listing to the seller's dealer profile if they have one.
+    const dealer = await prisma.dealer.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    const videoSource: "YOUTUBE" | "VIMEO" | "UPLOAD" | null = d.videoUrl
+      ? /youtube|youtu\.be/i.test(d.videoUrl)
+        ? "YOUTUBE"
+        : /vimeo/i.test(d.videoUrl)
+          ? "VIMEO"
+          : "UPLOAD"
+      : null;
+
     const vehicle = await prisma.vehicle.create({
       data: {
         slug,
         title: d.title,
-        brandId: d.brandId,
+        brandId: brand.id,
         modelId: d.modelId || null,
         year: d.year,
         price: new Prisma.Decimal(d.price),
@@ -105,9 +126,20 @@ export async function POST(req: Request) {
         condition: d.condition,
         color: d.color || null,
         city: d.city || null,
+        region: d.region || null,
+        location: d.city || null,
         description: d.description || null,
         sellerId: user.id,
+        dealerId: dealer?.id ?? null,
         status: user.role === "DEALER" ? "ACTIVE" : "PENDING",
+        images:
+          d.images && d.images.length
+            ? { create: d.images.map((url, i) => ({ url, isPrimary: i === 0, order: i })) }
+            : undefined,
+        videos:
+          d.videoUrl && videoSource
+            ? { create: [{ url: d.videoUrl, source: videoSource, category: "WALKAROUND" }] }
+            : undefined,
       },
     });
 
