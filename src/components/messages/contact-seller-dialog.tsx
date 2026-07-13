@@ -60,8 +60,11 @@ export function ContactSellerDialog({
         toast.error(data.error ?? "Could not send message");
         return;
       }
-      toast.success("Message sent! The seller will get back to you.");
+      toast.success("Message sent! Continue the conversation here.");
       setOpen(false);
+      if (data.conversationId) {
+        router.push(`/dashboard/messages/${data.conversationId}`);
+      }
     } catch {
       toast.error("Something went wrong");
     } finally {

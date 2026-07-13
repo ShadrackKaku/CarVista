@@ -85,7 +85,13 @@ const adminNav: { label: string; href: string; icon: IconName }[] = [
   { label: "Blog", href: "/admin/blog", icon: "FileText" },
 ];
 
-export function DashboardSidebar({ role }: { role: UserRole }) {
+export function DashboardSidebar({
+  role,
+  unreadMessages = 0,
+}: {
+  role: UserRole;
+  unreadMessages?: number;
+}) {
   const pathname = usePathname();
   const nav =
     role === "ADMIN"
@@ -105,6 +111,7 @@ export function DashboardSidebar({ role }: { role: UserRole }) {
         {nav.map((item) => {
           const Icon = iconMap[item.icon];
           const active = pathname === item.href;
+          const showBadge = item.href === "/dashboard/messages" && unreadMessages > 0;
           return (
             <Link
               key={item.href}
@@ -117,7 +124,17 @@ export function DashboardSidebar({ role }: { role: UserRole }) {
               )}
             >
               <Icon className="h-4.5 w-4.5" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {showBadge && (
+                <span
+                  className={cn(
+                    "flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
+                    active ? "bg-white text-brand-700" : "bg-brand-600 text-white",
+                  )}
+                >
+                  {unreadMessages > 9 ? "9+" : unreadMessages}
+                </span>
+              )}
             </Link>
           );
         })}

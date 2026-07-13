@@ -144,13 +144,22 @@ export const reviewSchema = z.object({
 });
 
 // ── Messaging ─────────────────────────────────────────────────
-export const messageSchema = z.object({
-  recipientId: z.string().min(1),
-  subject: z.string().max(150).optional(),
-  body: z.string().min(2, "Your message is too short").max(2000),
-  vehicleId: z.string().optional(),
-  partId: z.string().optional(),
-});
+// Two flows share the /api/messages endpoint:
+//   • Start a new conversation  → provide `recipientId` (+ optional context).
+//   • Reply in an existing one   → provide `conversationId`.
+export const messageSchema = z
+  .object({
+    conversationId: z.string().min(1).optional(),
+    recipientId: z.string().min(1).optional(),
+    subject: z.string().max(150).optional(),
+    body: z.string().min(2, "Your message is too short").max(2000),
+    vehicleId: z.string().optional(),
+    partId: z.string().optional(),
+  })
+  .refine((d) => Boolean(d.conversationId) || Boolean(d.recipientId), {
+    message: "A recipient or conversation is required",
+    path: ["recipientId"],
+  });
 
 // ── Bookings ──────────────────────────────────────────────────
 export const serviceBookingSchema = z.object({
