@@ -8,6 +8,7 @@
  *
  * As real dealers/sellers add listings, those records take over automatically.
  */
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import {
@@ -85,7 +86,7 @@ function mapVehicle(v: VehicleRow): SampleVehicle {
   };
 }
 
-export async function getVehicles(): Promise<SampleVehicle[]> {
+export const getVehicles = cache(async (): Promise<SampleVehicle[]> => {
   try {
     const rows = await prisma.vehicle.findMany({
       where: { status: "ACTIVE" },
@@ -97,9 +98,9 @@ export async function getVehicles(): Promise<SampleVehicle[]> {
   } catch {
     return getExpandedVehicles();
   }
-}
+});
 
-export async function getVehicleBySlug(slug: string): Promise<SampleVehicle | null> {
+export const getVehicleBySlug = cache(async (slug: string): Promise<SampleVehicle | null> => {
   try {
     const row = await prisma.vehicle.findUnique({ where: { slug }, include: vehicleInclude });
     if (row) return mapVehicle(row);
@@ -107,7 +108,7 @@ export async function getVehicleBySlug(slug: string): Promise<SampleVehicle | nu
     // fall through to sample
   }
   return getExpandedVehicles().find((v) => v.slug === slug) ?? null;
-}
+});
 
 export async function getFeaturedVehicles(limit = 8): Promise<SampleVehicle[]> {
   const all = await getVehicles();
@@ -156,7 +157,7 @@ function mapPart(p: PartRow): SamplePart {
   };
 }
 
-export async function getParts(): Promise<SamplePart[]> {
+export const getParts = cache(async (): Promise<SamplePart[]> => {
   try {
     const rows = await prisma.part.findMany({
       where: { status: "ACTIVE" },
@@ -168,9 +169,9 @@ export async function getParts(): Promise<SamplePart[]> {
   } catch {
     return SAMPLE_PARTS;
   }
-}
+});
 
-export async function getPartBySlug(slug: string): Promise<SamplePart | null> {
+export const getPartBySlug = cache(async (slug: string): Promise<SamplePart | null> => {
   try {
     const row = await prisma.part.findUnique({ where: { slug }, include: partInclude });
     if (row) return mapPart(row);
@@ -178,7 +179,7 @@ export async function getPartBySlug(slug: string): Promise<SamplePart | null> {
     // fall through
   }
   return SAMPLE_PARTS.find((p) => p.slug === slug) ?? null;
-}
+});
 
 export async function getFeaturedParts(limit = 5): Promise<SamplePart[]> {
   const all = await getParts();
@@ -224,7 +225,7 @@ export async function getDealers(): Promise<SampleDealer[]> {
   }
 }
 
-export async function getDealerBySlug(slug: string): Promise<SampleDealer | null> {
+export const getDealerBySlug = cache(async (slug: string): Promise<SampleDealer | null> => {
   try {
     const row = await prisma.dealer.findUnique({ where: { slug }, include: dealerInclude });
     if (row) return mapDealer(row);
@@ -232,7 +233,7 @@ export async function getDealerBySlug(slug: string): Promise<SampleDealer | null
     // fall through
   }
   return SAMPLE_DEALERS.find((d) => d.slug === slug) ?? null;
-}
+});
 
 // ── Services ──────────────────────────────────────────────────
 function serviceTypeLabel(type: string): string {
@@ -269,7 +270,7 @@ export async function getServices(): Promise<SampleService[]> {
   }
 }
 
-export async function getServiceBySlug(slug: string): Promise<SampleService | null> {
+export const getServiceBySlug = cache(async (slug: string): Promise<SampleService | null> => {
   try {
     const row = await prisma.serviceProvider.findUnique({ where: { slug } });
     if (row) return mapService(row);
@@ -277,7 +278,7 @@ export async function getServiceBySlug(slug: string): Promise<SampleService | nu
     // fall through
   }
   return SAMPLE_SERVICES.find((s) => s.slug === slug) ?? null;
-}
+});
 
 // ── Blog ──────────────────────────────────────────────────────
 const blogInclude = {
@@ -315,7 +316,7 @@ export async function getBlogPosts(): Promise<SampleBlogPost[]> {
   }
 }
 
-export async function getBlogPostBySlug(slug: string): Promise<SampleBlogPost | null> {
+export const getBlogPostBySlug = cache(async (slug: string): Promise<SampleBlogPost | null> => {
   try {
     const row = await prisma.blogPost.findUnique({ where: { slug }, include: blogInclude });
     if (row) return mapBlog(row);
@@ -323,7 +324,7 @@ export async function getBlogPostBySlug(slug: string): Promise<SampleBlogPost | 
     // fall through
   }
   return SAMPLE_BLOG_POSTS.find((b) => b.slug === slug) ?? null;
-}
+});
 
 // ══════════════════════════════════════════════════════════════
 //  USER-SCOPED (dashboard) queries — real data per logged-in user
