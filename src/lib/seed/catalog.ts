@@ -239,45 +239,63 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
     const slug = slugify(d.name);
     const loc = CITIES[d.cityIdx];
     const email = `${slug}@dealers.carvista.com.gh`;
-    if (di === 0) sampleLogins.push(`${email} (dealer)`);
 
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        name: d.name,
-        email,
-        hashedPassword: password,
-        role: "DEALER",
-        emailVerified: now,
-        phone: `+2332${(4 + di).toString()}${(1000000 + di).toString().slice(0, 7)}`,
-        city: loc.city,
-        region: loc.region,
-      },
+    // Reuse a dealer that already owns this slug (from a prior run or an app
+    // signup) rather than colliding on the unique slug — keeps this idempotent.
+    let dealerId: string;
+    let dealerUserId: string;
+    let dealerVerified: boolean;
+    const existingDealer = await prisma.dealer.findUnique({
+      where: { slug },
+      select: { id: true, userId: true, verified: true },
     });
-
-    const dealer = await prisma.dealer.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: {
-        userId: user.id,
-        businessName: d.name,
-        slug,
-        description: `${d.name} is a trusted CarVista dealer in ${loc.city} with ${d.years} years selling quality foreign-used and brand-new vehicles.`,
-        coverImage: pick(VEHICLE_IMAGES, di),
-        logo: `https://i.pravatar.cc/160?u=${slug}`,
-        phone: `+2332${(4 + di).toString()}${(1000000 + di).toString().slice(0, 7)}`,
-        whatsapp: `+2332${(4 + di).toString()}${(1000000 + di).toString().slice(0, 7)}`,
-        address: `${loc.area}, ${loc.city}`,
-        city: loc.city,
-        region: loc.region,
-        verified: di % 3 !== 0 ? true : di === 0, // most verified
-        featured: di < 2,
-        rating: Math.round((4.3 + (di % 5) * 0.12) * 10) / 10,
-        reviewCount: 40 + di * 17,
-        yearsInBusiness: d.years,
-      },
-    });
+    if (existingDealer) {
+      dealerId = existingDealer.id;
+      dealerUserId = existingDealer.userId;
+      dealerVerified = existingDealer.verified;
+    } else {
+      if (di === 0) sampleLogins.push(`${email} (dealer)`);
+      const user = await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: {
+          name: d.name,
+          email,
+          hashedPassword: password,
+          role: "DEALER",
+          emailVerified: now,
+          phone: `+2332${(4 + di).toString()}${(1000000 + di).toString().slice(0, 7)}`,
+          city: loc.city,
+          region: loc.region,
+        },
+      });
+      const dealer = await prisma.dealer.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: {
+          userId: user.id,
+          businessName: d.name,
+          slug,
+          description: `${d.name} is a trusted CarVista dealer in ${loc.city} with ${d.years} years selling quality foreign-used and brand-new vehicles.`,
+          coverImage: pick(VEHICLE_IMAGES, di),
+          logo: `https://i.pravatar.cc/160?u=${slug}`,
+          phone: `+2332${(4 + di).toString()}${(1000000 + di).toString().slice(0, 7)}`,
+          whatsapp: `+2332${(4 + di).toString()}${(1000000 + di).toString().slice(0, 7)}`,
+          address: `${loc.area}, ${loc.city}`,
+          city: loc.city,
+          region: loc.region,
+          verified: di % 3 !== 0 ? true : di === 0, // most verified
+          featured: di < 2,
+          rating: Math.round((4.3 + (di % 5) * 0.12) * 10) / 10,
+          reviewCount: 40 + di * 17,
+          yearsInBusiness: d.years,
+        },
+        select: { id: true, userId: true, verified: true },
+      });
+      dealerId = dealer.id;
+      dealerUserId = dealer.userId;
+      dealerVerified = dealer.verified;
+    }
 
     const vehicles = Array.from({ length: VEHICLES_PER_DEALER }, (_, i) => {
       const t = pick(VEHICLE_TEMPLATES, di * VEHICLES_PER_DEALER + i);
@@ -306,7 +324,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
         countryOfOrigin: importStatus === "AVAILABLE_FOR_IMPORT" ? "United States" : null,
         description: `Clean ${year} ${t.brand} ${t.model} available at ${d.name}. ${condition === "NEW" ? "Brand new with full warranty." : "Foreign-used, accident-free with service history."} Duty paid and ready for registration.`,
         features: VEHICLE_FEATURES.slice((di + i) % 4, ((di + i) % 4) + 5),
-        verified: dealer.verified && i % 4 !== 0,
+        verified: dealerVerified && i % 4 !== 0,
         featured: i < 2 && di < 3,
         images: [pick(VEHICLE_IMAGES, imgStart), pick(VEHICLE_IMAGES, imgStart + 1)],
       };
@@ -339,8 +357,8 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
           verified: v.verified,
           featured: v.featured,
           status: "ACTIVE",
-          sellerId: user.id,
-          dealerId: dealer.id,
+          sellerId: dealerUserId,
+          dealerId,
           images: {
             create: v.images.map((url, i) => ({
               url,
@@ -363,38 +381,52 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
     const slug = slugify(vendor.name);
     const loc = CITIES[vendor.cityIdx];
     const email = `${slug}@stores.carvista.com.gh`;
-    if (vi === 0) sampleLogins.push(`${email} (parts vendor)`);
 
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        name: vendor.name,
-        email,
-        hashedPassword: password,
-        role: "PARTS_SELLER",
-        emailVerified: now,
-        city: loc.city,
-        region: loc.region,
-      },
+    // Reuse an existing store with this slug to stay idempotent / collision-free.
+    let storeId: string;
+    let storeUserId: string;
+    const existingStore = await prisma.partsStore.findUnique({
+      where: { slug },
+      select: { id: true, userId: true },
     });
-
-    const store = await prisma.partsStore.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: {
-        userId: user.id,
-        storeName: vendor.name,
-        slug,
-        description: `${vendor.name} stocks genuine and OEM parts in ${loc.city} with nationwide delivery.`,
-        logo: `https://i.pravatar.cc/160?u=${slug}`,
-        city: loc.city,
-        region: loc.region,
-        verified: vi % 4 !== 3,
-        rating: Math.round((4.5 + (vi % 4) * 0.1) * 10) / 10,
-        reviewCount: 30 + vi * 14,
-      },
-    });
+    if (existingStore) {
+      storeId = existingStore.id;
+      storeUserId = existingStore.userId;
+    } else {
+      if (vi === 0) sampleLogins.push(`${email} (parts vendor)`);
+      const user = await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: {
+          name: vendor.name,
+          email,
+          hashedPassword: password,
+          role: "PARTS_SELLER",
+          emailVerified: now,
+          city: loc.city,
+          region: loc.region,
+        },
+      });
+      const store = await prisma.partsStore.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: {
+          userId: user.id,
+          storeName: vendor.name,
+          slug,
+          description: `${vendor.name} stocks genuine and OEM parts in ${loc.city} with nationwide delivery.`,
+          logo: `https://i.pravatar.cc/160?u=${slug}`,
+          city: loc.city,
+          region: loc.region,
+          verified: vi % 4 !== 3,
+          rating: Math.round((4.5 + (vi % 4) * 0.1) * 10) / 10,
+          reviewCount: 30 + vi * 14,
+        },
+        select: { id: true, userId: true },
+      });
+      storeId = store.id;
+      storeUserId = store.userId;
+    }
 
     const parts = Array.from({ length: PARTS_PER_VENDOR }, (_, i) => {
       const t = pick(PART_TEMPLATES, vi * PARTS_PER_VENDOR + i);
@@ -437,8 +469,8 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
           reviewCount: p.reviewCount,
           featured: p.featured,
           status: "ACTIVE",
-          sellerId: user.id,
-          storeId: store.id,
+          sellerId: storeUserId,
+          storeId,
           images: { create: [{ url: p.image, isPrimary: true, order: 0 }] },
         },
       });
@@ -454,8 +486,15 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
       const slug = slugify(s.name);
       const loc = CITIES[s.cityIdx];
       const email = `${slug}@services.carvista.com.gh`;
-      if (i === 0) sampleLogins.push(`${email} (service provider)`);
 
+      // Skip if a provider already owns this slug (idempotent / collision-free).
+      const existingProvider = await prisma.serviceProvider.findUnique({
+        where: { slug },
+        select: { id: true },
+      });
+      if (existingProvider) return;
+
+      if (i === 0) sampleLogins.push(`${email} (service provider)`);
       const user = await prisma.user.upsert({
         where: { email },
         update: {},
