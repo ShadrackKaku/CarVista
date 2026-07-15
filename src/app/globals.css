@@ -119,6 +119,19 @@
   }
 }
 
+/* Slow zoom used by the hero poster fallback */
+@keyframes kenburns {
+  from {
+    transform: scale(1.02);
+  }
+  to {
+    transform: scale(1.14);
+  }
+}
+.animate-kenburns {
+  animation: kenburns 20s ease-in-out infinite alternate;
+}
+
 /* Skeleton shimmer */
 .skeleton {
   @apply relative overflow-hidden bg-muted;
