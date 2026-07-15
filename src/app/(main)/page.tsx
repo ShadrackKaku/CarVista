@@ -58,13 +58,18 @@ export default async function HomePage() {
       <CategoryStrip />
 
       {/* Featured vehicles */}
-      <SectionBackdrop image={SECTION_BG.vehicles}>
-        <SectionHeading
-          eyebrow="Handpicked"
-          title="Featured Vehicles"
-          description="Premium, verified cars ready for the road."
-          action={{ label: "Browse all vehicles", href: "/vehicles" }}
-        />
+      <SectionBackdrop
+        image={SECTION_BG.vehicles}
+        heading={
+          <SectionHeading
+            onImage
+            eyebrow="Handpicked"
+            title="Featured Vehicles"
+            description="Premium, verified cars ready for the road."
+            action={{ label: "Browse all vehicles", href: "/vehicles" }}
+          />
+        }
+      >
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {featuredVehicles.map((v) => (
             <VehicleCard key={v.id} vehicle={v} />
@@ -75,13 +80,18 @@ export default async function HomePage() {
       <ImportPreview />
 
       {/* Latest imports */}
-      <SectionBackdrop image={SECTION_BG.imports}>
-        <SectionHeading
-          eyebrow="Fresh off the ship"
-          title="Latest Imported Cars"
-          description="Newly arrived and duty-cleared vehicles from top auctions."
-          action={{ label: "See all imports", href: "/vehicles?importStatus=CLEARED" }}
-        />
+      <SectionBackdrop
+        image={SECTION_BG.imports}
+        heading={
+          <SectionHeading
+            onImage
+            eyebrow="Fresh off the ship"
+            title="Latest Imported Cars"
+            description="Newly arrived and duty-cleared vehicles from top auctions."
+            action={{ label: "See all imports", href: "/vehicles?importStatus=CLEARED" }}
+          />
+        }
+      >
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {latestImports.map((v) => (
             <VehicleCard key={v.id} vehicle={v} />
@@ -90,13 +100,18 @@ export default async function HomePage() {
       </SectionBackdrop>
 
       {/* Parts highlights */}
-      <SectionBackdrop image={SECTION_BG.parts}>
-        <SectionHeading
-          eyebrow="Genuine & OEM"
-          title="Popular Car Parts"
-          description="Shop quality spare parts with fitment search for your exact vehicle."
-          action={{ label: "Shop all parts", href: "/parts" }}
-        />
+      <SectionBackdrop
+        image={SECTION_BG.parts}
+        heading={
+          <SectionHeading
+            onImage
+            eyebrow="Genuine & OEM"
+            title="Popular Car Parts"
+            description="Shop quality spare parts with fitment search for your exact vehicle."
+            action={{ label: "Shop all parts", href: "/parts" }}
+          />
+        }
+      >
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {featuredParts.map((p) => (
             <PartCard key={p.id} part={p} />
@@ -107,13 +122,18 @@ export default async function HomePage() {
       <Features />
 
       {/* Verified dealers */}
-      <SectionBackdrop image={SECTION_BG.dealers}>
-        <SectionHeading
-          eyebrow="Trusted partners"
-          title="Verified Dealers"
-          description="Buy with confidence from Ghana's most trusted dealerships."
-          action={{ label: "View dealer directory", href: "/dealers" }}
-        />
+      <SectionBackdrop
+        image={SECTION_BG.dealers}
+        heading={
+          <SectionHeading
+            onImage
+            eyebrow="Trusted partners"
+            title="Verified Dealers"
+            description="Buy with confidence from Ghana's most trusted dealerships."
+            action={{ label: "View dealer directory", href: "/dealers" }}
+          />
+        }
+      >
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {dealers.slice(0, 4).map((d) => (
             <DealerCard key={d.id} dealer={d} />
@@ -122,13 +142,18 @@ export default async function HomePage() {
       </SectionBackdrop>
 
       {/* Services */}
-      <SectionBackdrop image={SECTION_BG.services}>
-        <SectionHeading
-          eyebrow="Keep moving"
-          title="Automotive Services"
-          description="Mechanics, detailers, electricians and more — near you."
-          action={{ label: "Find services", href: "/services" }}
-        />
+      <SectionBackdrop
+        image={SECTION_BG.services}
+        heading={
+          <SectionHeading
+            onImage
+            eyebrow="Keep moving"
+            title="Automotive Services"
+            description="Mechanics, detailers, electricians and more — near you."
+            action={{ label: "Find services", href: "/services" }}
+          />
+        }
+      >
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {services.slice(0, 4).map((s) => (
             <ServiceCard key={s.id} service={s} />
@@ -137,12 +162,17 @@ export default async function HomePage() {
       </SectionBackdrop>
 
       {/* Testimonials */}
-      <SectionBackdrop image={SECTION_BG.testimonials}>
-        <SectionHeading
-          eyebrow="Loved by thousands"
-          title="What our customers say"
-          align="center"
-        />
+      <SectionBackdrop
+        image={SECTION_BG.testimonials}
+        heading={
+          <SectionHeading
+            onImage
+            eyebrow="Loved by thousands"
+            title="What our customers say"
+            align="center"
+          />
+        }
+      >
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {testimonials.map((t) => (
             <TestimonialCard key={t.id} testimonial={t} />
@@ -151,13 +181,18 @@ export default async function HomePage() {
       </SectionBackdrop>
 
       {/* Blog */}
-      <SectionBackdrop image={SECTION_BG.blog}>
-        <SectionHeading
-          eyebrow="Insights & guides"
-          title="From the CarVista Blog"
-          description="Expert advice on buying, importing and maintaining vehicles in Ghana."
-          action={{ label: "Read the blog", href: "/blog" }}
-        />
+      <SectionBackdrop
+        image={SECTION_BG.blog}
+        heading={
+          <SectionHeading
+            onImage
+            eyebrow="Insights & guides"
+            title="From the CarVista Blog"
+            description="Expert advice on buying, importing and maintaining vehicles in Ghana."
+            action={{ label: "Read the blog", href: "/blog" }}
+          />
+        }
+      >
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {blogPosts.slice(0, 4).map((post) => (
             <Link

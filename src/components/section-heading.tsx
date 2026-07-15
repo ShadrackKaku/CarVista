@@ -9,6 +9,7 @@ export function SectionHeading({
   align = "left",
   action,
   className,
+  onImage = false,
 }: {
   eyebrow?: string;
   title: string;
@@ -16,6 +17,8 @@ export function SectionHeading({
   align?: "left" | "center";
   action?: { label: string; href: string };
   className?: string;
+  /** Render for placement over a dark image (light text). */
+  onImage?: boolean;
 }) {
   return (
     <div
@@ -27,19 +30,36 @@ export function SectionHeading({
     >
       <div className={cn(align === "center" && "mx-auto max-w-2xl")}>
         {eyebrow && (
-          <span className="mb-2 inline-block text-sm font-semibold uppercase tracking-wide text-brand-600">
+          <span
+            className={cn(
+              "mb-2 inline-block text-sm font-semibold uppercase tracking-wide",
+              onImage ? "text-brand-200" : "text-brand-600",
+            )}
+          >
             {eyebrow}
           </span>
         )}
-        <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{title}</h2>
+        <h2
+          className={cn(
+            "font-display text-2xl font-bold tracking-tight sm:text-3xl",
+            onImage && "text-white",
+          )}
+        >
+          {title}
+        </h2>
         {description && (
-          <p className="mt-2 max-w-2xl text-muted-foreground">{description}</p>
+          <p className={cn("mt-2 max-w-2xl", onImage ? "text-white/80" : "text-muted-foreground")}>
+            {description}
+          </p>
         )}
       </div>
       {action && (
         <Link
           href={action.href}
-          className="group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700"
+          className={cn(
+            "group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold",
+            onImage ? "text-white hover:text-white/80" : "text-brand-600 hover:text-brand-700",
+          )}
         >
           {action.label}
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
