@@ -17,13 +17,15 @@ import { Input } from "@/components/ui/input";
 import { POPULAR_BRANDS, BODY_TYPES } from "@/lib/constants";
 import { HOME_STATS } from "@/lib/sample-data";
 
+type HomeStat = { label: string; value: string };
+
 // Set NEXT_PUBLIC_HERO_VIDEO_URL to an .mp4 URL (e.g. a Cloudinary upload) to
 // play a looping background video. Without it, the poster image animates.
 const HERO_VIDEO_URL = process.env.NEXT_PUBLIC_HERO_VIDEO_URL;
 const HERO_POSTER =
   "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1920&q=70";
 
-export function Hero() {
+export function Hero({ stats = HOME_STATS }: { stats?: HomeStat[] }) {
   const router = useRouter();
   const [brand, setBrand] = useState("");
   const [bodyType, setBodyType] = useState("");
@@ -98,7 +100,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="mx-auto mt-10 max-w-4xl rounded-2xl border bg-background/95 p-3 shadow-card backdrop-blur"
+          className="mx-auto mt-10 max-w-4xl rounded-2xl border bg-background/95 p-3 backdrop-blur"
         >
           <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
             <Select value={brand} onValueChange={setBrand}>
@@ -159,7 +161,7 @@ export function Hero() {
 
         {/* Stats */}
         <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
-          {HOME_STATS.map((stat) => (
+          {stats.map((stat) => (
             <div key={stat.label} className="text-center">
               <p className="font-display text-2xl font-bold text-white sm:text-3xl">{stat.value}</p>
               <p className="mt-1 text-xs text-white/70 sm:text-sm">{stat.label}</p>

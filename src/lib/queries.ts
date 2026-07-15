@@ -11,12 +11,14 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { formatNumber } from "@/lib/utils";
 import {
   getExpandedVehicles,
   SAMPLE_PARTS,
   SAMPLE_DEALERS,
   SAMPLE_SERVICES,
   SAMPLE_BLOG_POSTS,
+  HOME_STATS,
   type SampleVehicle,
   type SamplePart,
   type SampleDealer,
@@ -186,6 +188,37 @@ export async function getFeaturedParts(limit = 5): Promise<SamplePart[]> {
   const featured = all.filter((p) => p.featured);
   return (featured.length ? featured : all).slice(0, limit);
 }
+
+// ── Homepage stats ────────────────────────────────────────────
+export interface HomeStat {
+  label: string;
+  value: string;
+}
+
+/** Live homepage hero figures. Falls back to marketing numbers if the DB is
+ * empty or unavailable so the hero never shows zeros. */
+export const getHomeStats = cache(async (): Promise<HomeStat[]> => {
+  try {
+    const [vehicles, dealers, imported, customers] = await Promise.all([
+      prisma.vehicle.count(),
+      prisma.dealer.count({ where: { verified: true } }),
+      prisma.vehicle.count({ where: { importStatus: "CLEARED" } }),
+      prisma.user.count(),
+    ]);
+
+    // Nothing meaningful in the DB yet → keep the placeholder figures.
+    if (vehicles === 0 && dealers === 0 && customers === 0) return HOME_STATS;
+
+    return [
+      { label: "Vehicles Listed", value: `${formatNumber(vehicles)}+` },
+      { label: "Verified Dealers", value: `${formatNumber(dealers)}+` },
+      { label: "Cars Imported", value: `${formatNumber(imported)}+` },
+      { label: "Happy Customers", value: `${formatNumber(customers)}+` },
+    ];
+  } catch {
+    return HOME_STATS;
+  }
+});
 
 // ── Dealers ───────────────────────────────────────────────────
 const dealerInclude = {

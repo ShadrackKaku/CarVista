@@ -22,6 +22,7 @@ import {
   getDealers,
   getServices,
   getBlogPosts,
+  getHomeStats,
 } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
 
@@ -41,7 +42,7 @@ const SECTION_BG = {
 };
 
 export default async function HomePage() {
-  const [featuredVehicles, latestImports, featuredParts, dealers, services, blogPosts] =
+  const [featuredVehicles, latestImports, featuredParts, dealers, services, blogPosts, homeStats] =
     await Promise.all([
       getFeaturedVehicles(8),
       getLatestImports(4),
@@ -49,12 +50,13 @@ export default async function HomePage() {
       getDealers(),
       getServices(),
       getBlogPosts(),
+      getHomeStats(),
     ]);
   const testimonials = SAMPLE_TESTIMONIALS;
 
   return (
     <>
-      <Hero />
+      <Hero stats={homeStats} />
       <CategoryStrip />
 
       {/* Featured vehicles */}
