@@ -1,9 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Hero } from "@/components/home/hero";
 import { CategoryStrip } from "@/components/home/category-strip";
 import { Features } from "@/components/home/features";
 import { ImportPreview } from "@/components/home/import-preview";
+import { SectionBackdrop } from "@/components/home/section-backdrop";
 import { SectionHeading } from "@/components/section-heading";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { PartCard } from "@/components/parts/part-card";
@@ -22,10 +24,21 @@ import {
   getBlogPosts,
 } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
-import Image from "next/image";
 
 // Cache the homepage and revalidate every 60s (ISR) for fast loads.
 export const revalidate = 60;
+
+// Section background pictures (royalty-free Unsplash automotive photos).
+const bg = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1600&q=60`;
+const SECTION_BG = {
+  vehicles: bg("photo-1503376780353-7e6692767b70"),
+  imports: bg("photo-1494412574643-ff11b0a5c1c3"),
+  parts: bg("photo-1486262715619-67b85e0b08d3"),
+  dealers: bg("photo-1568844293986-8d0400bd4745"),
+  services: bg("photo-1487754180451-c456f719a1fc"),
+  testimonials: bg("photo-1449965408869-eaa3f722e40d"),
+  blog: bg("photo-1519641471654-76ce0107ad1b"),
+};
 
 export default async function HomePage() {
   const [featuredVehicles, latestImports, featuredParts, dealers, services, blogPosts] =
@@ -45,7 +58,7 @@ export default async function HomePage() {
       <CategoryStrip />
 
       {/* Featured vehicles */}
-      <section className="container-page py-16">
+      <SectionBackdrop image={SECTION_BG.vehicles}>
         <SectionHeading
           eyebrow="Handpicked"
           title="Featured Vehicles"
@@ -57,29 +70,27 @@ export default async function HomePage() {
             <VehicleCard key={v.id} vehicle={v} />
           ))}
         </div>
-      </section>
+      </SectionBackdrop>
 
       <ImportPreview />
 
       {/* Latest imports */}
-      <section className="bg-muted/30 py-16">
-        <div className="container-page">
-          <SectionHeading
-            eyebrow="Fresh off the ship"
-            title="Latest Imported Cars"
-            description="Newly arrived and duty-cleared vehicles from top auctions."
-            action={{ label: "See all imports", href: "/vehicles?importStatus=CLEARED" }}
-          />
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {latestImports.map((v) => (
-              <VehicleCard key={v.id} vehicle={v} />
-            ))}
-          </div>
+      <SectionBackdrop image={SECTION_BG.imports}>
+        <SectionHeading
+          eyebrow="Fresh off the ship"
+          title="Latest Imported Cars"
+          description="Newly arrived and duty-cleared vehicles from top auctions."
+          action={{ label: "See all imports", href: "/vehicles?importStatus=CLEARED" }}
+        />
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {latestImports.map((v) => (
+            <VehicleCard key={v.id} vehicle={v} />
+          ))}
         </div>
-      </section>
+      </SectionBackdrop>
 
       {/* Parts highlights */}
-      <section className="container-page py-16">
+      <SectionBackdrop image={SECTION_BG.parts}>
         <SectionHeading
           eyebrow="Genuine & OEM"
           title="Popular Car Parts"
@@ -91,29 +102,27 @@ export default async function HomePage() {
             <PartCard key={p.id} part={p} />
           ))}
         </div>
-      </section>
+      </SectionBackdrop>
 
       <Features />
 
       {/* Verified dealers */}
-      <section className="bg-muted/30 py-16">
-        <div className="container-page">
-          <SectionHeading
-            eyebrow="Trusted partners"
-            title="Verified Dealers"
-            description="Buy with confidence from Ghana's most trusted dealerships."
-            action={{ label: "View dealer directory", href: "/dealers" }}
-          />
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {dealers.slice(0, 4).map((d) => (
-              <DealerCard key={d.id} dealer={d} />
-            ))}
-          </div>
+      <SectionBackdrop image={SECTION_BG.dealers}>
+        <SectionHeading
+          eyebrow="Trusted partners"
+          title="Verified Dealers"
+          description="Buy with confidence from Ghana's most trusted dealerships."
+          action={{ label: "View dealer directory", href: "/dealers" }}
+        />
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {dealers.slice(0, 4).map((d) => (
+            <DealerCard key={d.id} dealer={d} />
+          ))}
         </div>
-      </section>
+      </SectionBackdrop>
 
       {/* Services */}
-      <section className="container-page py-16">
+      <SectionBackdrop image={SECTION_BG.services}>
         <SectionHeading
           eyebrow="Keep moving"
           title="Automotive Services"
@@ -125,26 +134,24 @@ export default async function HomePage() {
             <ServiceCard key={s.id} service={s} />
           ))}
         </div>
-      </section>
+      </SectionBackdrop>
 
       {/* Testimonials */}
-      <section className="bg-muted/30 py-16">
-        <div className="container-page">
-          <SectionHeading
-            eyebrow="Loved by thousands"
-            title="What our customers say"
-            align="center"
-          />
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {testimonials.map((t) => (
-              <TestimonialCard key={t.id} testimonial={t} />
-            ))}
-          </div>
+      <SectionBackdrop image={SECTION_BG.testimonials}>
+        <SectionHeading
+          eyebrow="Loved by thousands"
+          title="What our customers say"
+          align="center"
+        />
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {testimonials.map((t) => (
+            <TestimonialCard key={t.id} testimonial={t} />
+          ))}
         </div>
-      </section>
+      </SectionBackdrop>
 
       {/* Blog */}
-      <section className="container-page py-16">
+      <SectionBackdrop image={SECTION_BG.blog}>
         <SectionHeading
           eyebrow="Insights & guides"
           title="From the CarVista Blog"
@@ -180,10 +187,10 @@ export default async function HomePage() {
             </Link>
           ))}
         </div>
-      </section>
+      </SectionBackdrop>
 
       {/* CTA */}
-      <section className="container-page pb-20">
+      <section className="container-page py-16">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 px-8 py-14 text-center text-white sm:px-12">
           <h2 className="mx-auto max-w-2xl font-display text-3xl font-bold sm:text-4xl">
             Ready to find, import or sell your next car?
