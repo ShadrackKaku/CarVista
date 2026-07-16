@@ -600,6 +600,7 @@ export async function getAllOrders(): Promise<AdminOrderRow[]> {
 }
 
 export interface AdminImportRow {
+  id: string;
   ref: string;
   date: Date;
   customer: string;
@@ -616,6 +617,7 @@ export async function getAllImportRequests(): Promise<AdminImportRow[]> {
       include: { user: { select: { name: true } } },
     });
     return rows.map((r) => ({
+      id: r.id,
       ref: r.requestNumber,
       date: r.createdAt,
       customer: r.user?.name ?? "—",
@@ -625,6 +627,83 @@ export async function getAllImportRequests(): Promise<AdminImportRow[]> {
     }));
   } catch {
     return [];
+  }
+}
+
+export interface ImportTrackingEventView {
+  id: string;
+  stage: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  timestamp: Date;
+}
+
+export interface ImportRequestDetail {
+  id: string;
+  ref: string;
+  stage: string;
+  customer: string;
+  customerEmail: string | null;
+  vehicle: string;
+  vehicleId: string | null;
+  vehicleSlug: string | null;
+  origin: string;
+  auctionSource: string | null;
+  budget: number | null;
+  notes: string | null;
+  trackingNumber: string | null;
+  estimatedArrival: Date | null;
+  quote: { cif: number | null; duty: number | null; shipping: number | null; total: number | null };
+  createdAt: Date;
+  events: ImportTrackingEventView[];
+}
+
+/** Full import request with its timeline — for the admin management view. */
+export async function getImportRequestDetail(id: string): Promise<ImportRequestDetail | null> {
+  try {
+    const r = await prisma.importRequest.findUnique({
+      where: { id },
+      include: {
+        user: { select: { name: true, email: true } },
+        vehicle: { select: { id: true, slug: true } },
+        trackingEvents: { orderBy: { timestamp: "desc" } },
+      },
+    });
+    if (!r) return null;
+    return {
+      id: r.id,
+      ref: r.requestNumber,
+      stage: r.stage,
+      customer: r.user?.name ?? "—",
+      customerEmail: r.user?.email ?? null,
+      vehicle: `${r.year} ${r.make} ${r.model}`,
+      vehicleId: r.vehicle?.id ?? null,
+      vehicleSlug: r.vehicle?.slug ?? null,
+      origin: r.countryOfOrigin,
+      auctionSource: r.auctionSource,
+      budget: r.budget ? num(r.budget) : null,
+      notes: r.notes,
+      trackingNumber: r.trackingNumber,
+      estimatedArrival: r.estimatedArrival,
+      quote: {
+        cif: r.quotedCif ? num(r.quotedCif) : null,
+        duty: r.quotedDuty ? num(r.quotedDuty) : null,
+        shipping: r.quotedShipping ? num(r.quotedShipping) : null,
+        total: r.quotedTotal ? num(r.quotedTotal) : null,
+      },
+      createdAt: r.createdAt,
+      events: r.trackingEvents.map((e) => ({
+        id: e.id,
+        stage: e.stage,
+        title: e.title,
+        description: e.description,
+        location: e.location,
+        timestamp: e.timestamp,
+      })),
+    };
+  } catch {
+    return null;
   }
 }
 

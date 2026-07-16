@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { Ship } from "lucide-react";
 import { getAllImportRequests } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { IMPORT_STAGES } from "@/lib/constants";
 
@@ -34,11 +36,12 @@ export default async function AdminImportsPage() {
                   <th className="px-4 py-3 font-medium">Origin</th>
                   <th className="px-4 py-3 font-medium">Date</th>
                   <th className="px-4 py-3 font-medium">Stage</th>
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {imports.map((r) => (
-                  <tr key={r.ref} className="hover:bg-accent/40">
+                  <tr key={r.id} className="hover:bg-accent/40">
                     <td className="px-4 py-3 font-medium">{r.ref}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.customer}</td>
                     <td className="px-4 py-3">{r.vehicle}</td>
@@ -46,6 +49,11 @@ export default async function AdminImportsPage() {
                     <td className="px-4 py-3 text-muted-foreground">{formatDate(r.date)}</td>
                     <td className="px-4 py-3">
                       <Badge variant="brand">{stageLabel(r.stage)}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/admin/imports/${r.id}`}>Manage</Link>
+                      </Button>
                     </td>
                   </tr>
                 ))}

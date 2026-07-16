@@ -184,6 +184,37 @@ export const vehicleEventSchema = z.object({
   occurredAt: z.string().optional(),
 });
 
+// ── Import ops (admin) ────────────────────────────────────────
+const IMPORT_STAGES = [
+  "REQUESTED",
+  "QUOTED",
+  "VEHICLE_SELECTED",
+  "PURCHASED",
+  "SHIPPING_PENDING",
+  "IN_TRANSIT",
+  "ARRIVED_AT_PORT",
+  "CUSTOMS_CLEARANCE",
+  "READY_FOR_DELIVERY",
+  "DELIVERED",
+  "CANCELLED",
+] as const;
+
+export const importTrackingUpdateSchema = z.object({
+  stage: z.enum(IMPORT_STAGES),
+  title: z.string().min(2, "Add a short title").max(140),
+  description: z.string().max(2000).optional(),
+  location: z.string().max(120).optional(),
+  estimatedArrival: z.string().optional(),
+  trackingNumber: z.string().max(80).optional(),
+});
+
+export const importQuoteSchema = z.object({
+  quotedCif: z.coerce.number().nonnegative().optional(),
+  quotedDuty: z.coerce.number().nonnegative().optional(),
+  quotedShipping: z.coerce.number().nonnegative().optional(),
+  quotedTotal: z.coerce.number().nonnegative().optional(),
+});
+
 // ── Bookings ──────────────────────────────────────────────────
 export const serviceBookingSchema = z.object({
   serviceProviderId: z.string().min(1),
