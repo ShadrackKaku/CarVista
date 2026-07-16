@@ -161,6 +161,29 @@ export const messageSchema = z
     path: ["recipientId"],
   });
 
+// ── Vehicle Passport ──────────────────────────────────────────
+export const vehicleEventSchema = z.object({
+  type: z.enum([
+    "IMPORTED",
+    "SHIPPED",
+    "CLEARED",
+    "INSPECTED",
+    "LISTED",
+    "PRICE_CHANGE",
+    "SOLD",
+    "OWNERSHIP_TRANSFER",
+    "SERVICED",
+    "REPAIRED",
+    "INSURED",
+    "REGISTERED",
+    "MILEAGE_UPDATE",
+    "NOTE",
+  ]),
+  title: z.string().min(2, "Add a short title").max(120),
+  notes: z.string().max(2000).optional(),
+  occurredAt: z.string().optional(),
+});
+
 // ── Bookings ──────────────────────────────────────────────────
 export const serviceBookingSchema = z.object({
   serviceProviderId: z.string().min(1),

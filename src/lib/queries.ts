@@ -220,6 +220,52 @@ export const getHomeStats = cache(async (): Promise<HomeStat[]> => {
   }
 });
 
+// ── Vehicle Passport ──────────────────────────────────────────
+export interface PassportEvent {
+  id: string;
+  type: string;
+  title: string;
+  notes: string | null;
+  occurredAt: Date;
+  verified: boolean;
+  recordedBy: string | null;
+}
+
+export interface VehiclePassportView {
+  vin: string;
+  events: PassportEvent[];
+}
+
+/** The public trust timeline for a listed vehicle, newest first. */
+export async function getVehiclePassport(vehicleId: string): Promise<VehiclePassportView | null> {
+  try {
+    const passport = await prisma.vehiclePassport.findUnique({
+      where: { vehicleId },
+      include: {
+        events: {
+          orderBy: { occurredAt: "desc" },
+          include: { recordedBy: { select: { name: true } } },
+        },
+      },
+    });
+    if (!passport) return null;
+    return {
+      vin: passport.vin,
+      events: passport.events.map((e) => ({
+        id: e.id,
+        type: e.type,
+        title: e.title,
+        notes: e.notes,
+        occurredAt: e.occurredAt,
+        verified: e.verified,
+        recordedBy: e.recordedBy?.name ?? null,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ── Dealers ───────────────────────────────────────────────────
 const dealerInclude = {
   _count: { select: { vehicles: true } },
