@@ -22,6 +22,7 @@ import type {
   ImportStatus,
   PartCondition,
   ServiceType,
+  VehicleEventType,
 } from "@prisma/client";
 import { SAMPLE_VEHICLES, SAMPLE_PARTS, SAMPLE_SERVICES } from "../sample-data";
 
@@ -326,12 +327,14 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
         features: VEHICLE_FEATURES.slice((di + i) % 4, ((di + i) % 4) + 5),
         verified: dealerVerified && i % 4 !== 0,
         featured: i < 2 && di < 3,
+        make: t.brand,
+        modelName: t.model,
         images: [pick(VEHICLE_IMAGES, imgStart), pick(VEHICLE_IMAGES, imgStart + 1)],
       };
     });
 
     await inBatches(vehicles, 6, async (v) => {
-      await prisma.vehicle.upsert({
+      const created = await prisma.vehicle.upsert({
         where: { slug: v.slug },
         update: {},
         create: {
@@ -368,8 +371,53 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
             })),
           },
         },
+        select: { id: true, vin: true },
       });
       vehicleCount++;
+
+      // Vehicle Passport + timeline. Idempotent: only seed events when the
+      // passport doesn't yet exist, so re-running never duplicates history.
+      const hasPassport = await prisma.vehiclePassport.findUnique({
+        where: { vehicleId: created.id },
+        select: { id: true },
+      });
+      if (!hasPassport) {
+        const vin = created.vin || `CV-${created.id.slice(0, 12).toUpperCase()}`;
+        const passport = await prisma.vehiclePassport.create({
+          data: { vin, vehicleId: created.id, make: v.make, model: v.modelName, year: v.year },
+          select: { id: true },
+        });
+        const day = 86_400_000;
+        const at = (d: number) => new Date(now.getTime() - d * day);
+        const events: {
+          type: VehicleEventType;
+          title: string;
+          notes?: string;
+          occurredAt: Date;
+          verified: boolean;
+          source: string;
+        }[] =
+          v.importStatus === "CLEARED"
+            ? [
+                { type: "IMPORTED", title: `Purchased at auction (${v.countryOfOrigin ?? "overseas"})`, occurredAt: at(55), verified: true, source: "import" },
+                { type: "SHIPPED", title: "Shipped to Tema Port", occurredAt: at(35), verified: true, source: "import" },
+                { type: "CLEARED", title: "Customs cleared — duty paid", occurredAt: at(20), verified: true, source: "import" },
+                { type: "INSPECTED", title: "Certified inspection passed", occurredAt: at(12), verified: true, source: "inspection" },
+                { type: "LISTED", title: "Listed on CarVista", occurredAt: at(5), verified: false, source: "system" },
+              ]
+            : v.importStatus === "AVAILABLE_FOR_IMPORT"
+              ? [
+                  { type: "NOTE", title: "Available to import to order", notes: "Landed cost estimated at current GRA duty rates.", occurredAt: at(6), verified: false, source: "system" },
+                  { type: "LISTED", title: "Listed on CarVista", occurredAt: at(5), verified: false, source: "system" },
+                ]
+              : [
+                  { type: "INSPECTED", title: "Certified inspection passed", occurredAt: at(8), verified: true, source: "inspection" },
+                  { type: "LISTED", title: "Listed on CarVista", occurredAt: at(5), verified: false, source: "system" },
+                ];
+        await prisma.vehicleEvent.createMany({
+          data: events.map((e) => ({ passportId: passport.id, ...e })),
+        });
+      }
     });
   }
 

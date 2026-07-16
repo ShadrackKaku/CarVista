@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-guard";
+import { addVehicleEvent } from "@/lib/passport";
 
 /**
  * PATCH — approve or reject a vehicle listing.
@@ -9,8 +10,8 @@ import { requireAdmin } from "@/lib/admin-guard";
  *   reject  → status REJECTED
  */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const guard = await requireAdmin();
+  if (guard.error) return guard.error;
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -20,6 +21,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       await prisma.vehicle.update({
         where: { id: params.id },
         data: { status: "ACTIVE", verified: true },
+      });
+      // Record the verification on the vehicle's passport (feeds the trust graph).
+      await addVehicleEvent({
+        vehicleId: params.id,
+        type: "INSPECTED",
+        title: "Verified & approved by CarVista",
+        occurredAt: new Date(),
+        verified: true,
+        source: "admin",
+        recordedById: guard.user.id,
       });
     } else if (action === "reject") {
       await prisma.vehicle.update({

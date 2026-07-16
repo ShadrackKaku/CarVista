@@ -19,6 +19,7 @@ import { SellerContact } from "@/components/vehicles/seller-contact";
 import { ContactSellerDialog } from "@/components/messages/contact-seller-dialog";
 import { InspectionBookingDialog } from "@/components/bookings/inspection-booking-dialog";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
+import { VehiclePassport } from "@/components/vehicles/vehicle-passport";
 import { FinancingWidget } from "@/components/vehicles/financing-widget";
 import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
@@ -289,6 +290,9 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
           </div>
         </aside>
       </div>
+
+      {/* Vehicle Passport — verified history timeline */}
+      <VehiclePassport vehicleId={vehicle.id} />
 
       {/* Reviews */}
       <ReviewsSection targetType="vehicle" targetId={vehicle.id} />

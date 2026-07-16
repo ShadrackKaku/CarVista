@@ -70,6 +70,7 @@ model User {
   verificationTokens   VerificationToken[]
   serviceBookings      ServiceBooking[]
   inspectionBookings   InspectionBooking[]
+  recordedVehicleEvents VehicleEvent[]     @relation("EventRecorder")
 
   @@index([role])
   @@index([email])
@@ -377,6 +378,7 @@ model Vehicle {
   savedBy  SavedVehicle[]
   reviews  Review[]       @relation("VehicleReviews")
   importRequests ImportRequest[]
+  passport VehiclePassport?
 
   @@index([brandId])
   @@index([status])
@@ -442,6 +444,61 @@ model SavedVehicle {
 
   @@unique([userId, vehicleId])
   @@index([userId])
+}
+
+// ── Vehicle Passport (the trust graph spine) ──────────────────
+// A permanent, VIN-anchored record of a vehicle's life. Events are append-only:
+// this timeline is the foundational data asset the whole platform compounds on.
+enum VehicleEventType {
+  IMPORTED
+  SHIPPED
+  CLEARED
+  INSPECTED
+  LISTED
+  PRICE_CHANGE
+  SOLD
+  OWNERSHIP_TRANSFER
+  SERVICED
+  REPAIRED
+  INSURED
+  REGISTERED
+  MILEAGE_UPDATE
+  NOTE
+}
+
+model VehiclePassport {
+  id        String  @id @default(cuid())
+  vin       String  @unique
+  vehicleId String? @unique
+  make      String?
+  model     String?
+  year      Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vehicle Vehicle?       @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  events  VehicleEvent[]
+}
+
+model VehicleEvent {
+  id           String           @id @default(cuid())
+  passportId   String
+  type         VehicleEventType
+  title        String
+  notes        String?          @db.Text
+  occurredAt   DateTime         @default(now())
+  verified     Boolean          @default(false)
+  source       String? // system | dealer | inspection | import | admin
+  recordedById String?
+
+  createdAt DateTime @default(now())
+
+  passport   VehiclePassport @relation(fields: [passportId], references: [id], onDelete: Cascade)
+  recordedBy User?           @relation("EventRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([passportId])
+  @@index([type])
 }
 
 // ══════════════════════════════════════════════════════════════
