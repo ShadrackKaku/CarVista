@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Calculator, Search, Ship, ShieldCheck, Sparkles } from "lucide-react";
+import { Calculator, Search, Ship, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -66,15 +66,6 @@ export function Hero({ stats = HOME_STATS }: { stats?: HomeStat[] }) {
 
       <div className="container-page relative py-20 sm:py-28">
         <div className="mx-auto max-w-3xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-sm font-medium text-white shadow-soft backdrop-blur"
-          >
-            <Sparkles className="h-4 w-4" />
-            Ghana's #1 automotive marketplace & import platform
-          </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -84,15 +75,6 @@ export function Hero({ stats = HOME_STATS }: { stats?: HomeStat[] }) {
             Buy, sell & <span className="text-gradient">import cars</span>
             <br className="hidden sm:block" /> the smart way.
           </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mx-auto mt-5 max-w-2xl text-lg text-white/85"
-          >
-            Thousands of verified vehicles, genuine parts and trusted dealers — plus a live Ghana
-            import duty calculator so you know the real landed cost before you buy.
-          </motion.p>
         </div>
 
         {/* Search bar */}

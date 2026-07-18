@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
+import { useWishlistStore } from "@/store/cart-store";
 import { cn } from "@/lib/utils";
 
 export function SaveVehicleButton({
@@ -20,6 +21,8 @@ export function SaveVehicleButton({
   const router = useRouter();
   const [saved, setSaved] = useState(initialSaved);
   const [loading, setLoading] = useState(false);
+  const addToWishlist = useWishlistStore((s) => s.add);
+  const removeFromWishlist = useWishlistStore((s) => s.remove);
 
   async function toggle(e: React.MouseEvent) {
     e.preventDefault();
@@ -32,6 +35,9 @@ export function SaveVehicleButton({
     setLoading(true);
     const next = !saved;
     setSaved(next);
+    // Optimistically update the wishlist count in the header.
+    if (next) addToWishlist(vehicleId);
+    else removeFromWishlist(vehicleId);
     try {
       const res = await fetch("/api/saved/vehicles", {
         method: next ? "POST" : "DELETE",
@@ -42,6 +48,8 @@ export function SaveVehicleButton({
       toast.success(next ? "Saved to your garage" : "Removed from saved");
     } catch {
       setSaved(!next);
+      if (next) removeFromWishlist(vehicleId);
+      else addToWishlist(vehicleId);
       toast.error("Something went wrong");
     } finally {
       setLoading(false);

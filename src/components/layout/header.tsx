@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -35,12 +35,46 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn, getInitials } from "@/lib/utils";
+import { useCartStore, useWishlistStore } from "@/store/cart-store";
+
+/** A small count bubble on a nav icon. */
+function CountBadge({ count }: { count: number }) {
+  return (
+    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold leading-none text-white">
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
 
 export function Header() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const user = session?.user;
+
+  // Live counts for the wishlist + cart icons.
+  const cartCount = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
+  const savedCount = useWishlistStore((s) => s.ids.length);
+  const setSavedIds = useWishlistStore((s) => s.setIds);
+
+  // Persisted stores hydrate on the client, so only show badges after mount to
+  // avoid a server/client markup mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // Keep the wishlist badge in sync with the database across sessions/devices.
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/saved/vehicles")
+        .then((r) => r.json())
+        .then((d) => {
+          if (Array.isArray(d.ids)) setSavedIds(d.ids);
+        })
+        .catch(() => {});
+    } else if (status === "unauthenticated") {
+      setSavedIds([]);
+    }
+  }, [status, setSavedIds]);
 
   const dashboardHref =
     user?.role === "ADMIN"
@@ -91,16 +125,24 @@ export function Header() {
             asChild
             variant="ghost"
             size="icon"
-            className="hidden sm:inline-flex"
-            aria-label="Wishlist"
+            className="relative hidden sm:inline-flex"
+            aria-label={`Wishlist${mounted && savedCount ? ` (${savedCount})` : ""}`}
           >
             <Link href="/dashboard/saved">
               <Heart className="h-5 w-5" />
+              {mounted && savedCount > 0 && <CountBadge count={savedCount} />}
             </Link>
           </Button>
-          <Button asChild variant="ghost" size="icon" aria-label="Cart">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="relative"
+            aria-label={`Cart${mounted && cartCount ? ` (${cartCount})` : ""}`}
+          >
             <Link href="/cart">
               <ShoppingCart className="h-5 w-5" />
+              {mounted && cartCount > 0 && <CountBadge count={cartCount} />}
             </Link>
           </Button>
           <ThemeToggle />
