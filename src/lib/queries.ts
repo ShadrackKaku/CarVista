@@ -471,12 +471,14 @@ export async function getUserOrders(userId: string): Promise<OrderSummary[]> {
 }
 
 export interface ImportSummary {
+  id: string;
   ref: string;
   title: string;
   origin: string;
   stage: string;
   total: number;
   eta: Date | null;
+  lastUpdate: { title: string; date: Date } | null;
 }
 
 export async function getUserImports(userId: string): Promise<ImportSummary[]> {
@@ -484,14 +486,19 @@ export async function getUserImports(userId: string): Promise<ImportSummary[]> {
     const rows = await prisma.importRequest.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
+      include: { trackingEvents: { orderBy: { timestamp: "desc" }, take: 1 } },
     });
     return rows.map((r) => ({
+      id: r.id,
       ref: r.requestNumber,
       title: `${r.year} ${r.make} ${r.model}`,
       origin: r.countryOfOrigin,
       stage: r.stage,
       total: num(r.quotedTotal),
       eta: r.estimatedArrival,
+      lastUpdate: r.trackingEvents[0]
+        ? { title: r.trackingEvents[0].title, date: r.trackingEvents[0].timestamp }
+        : null,
     }));
   } catch {
     return [];
@@ -660,48 +667,68 @@ export interface ImportRequestDetail {
 }
 
 /** Full import request with its timeline — for the admin management view. */
+const importDetailInclude = {
+  user: { select: { name: true, email: true } },
+  vehicle: { select: { id: true, slug: true } },
+  trackingEvents: { orderBy: { timestamp: "desc" } },
+} satisfies Prisma.ImportRequestInclude;
+
+function mapImportDetail(
+  r: Prisma.ImportRequestGetPayload<{ include: typeof importDetailInclude }>,
+): ImportRequestDetail {
+  return {
+    id: r.id,
+    ref: r.requestNumber,
+    stage: r.stage,
+    customer: r.user?.name ?? "—",
+    customerEmail: r.user?.email ?? null,
+    vehicle: `${r.year} ${r.make} ${r.model}`,
+    vehicleId: r.vehicle?.id ?? null,
+    vehicleSlug: r.vehicle?.slug ?? null,
+    origin: r.countryOfOrigin,
+    auctionSource: r.auctionSource,
+    budget: r.budget ? num(r.budget) : null,
+    notes: r.notes,
+    trackingNumber: r.trackingNumber,
+    estimatedArrival: r.estimatedArrival,
+    quote: {
+      cif: r.quotedCif ? num(r.quotedCif) : null,
+      duty: r.quotedDuty ? num(r.quotedDuty) : null,
+      shipping: r.quotedShipping ? num(r.quotedShipping) : null,
+      total: r.quotedTotal ? num(r.quotedTotal) : null,
+    },
+    createdAt: r.createdAt,
+    events: r.trackingEvents.map((e) => ({
+      id: e.id,
+      stage: e.stage,
+      title: e.title,
+      description: e.description,
+      location: e.location,
+      timestamp: e.timestamp,
+    })),
+  };
+}
+
 export async function getImportRequestDetail(id: string): Promise<ImportRequestDetail | null> {
   try {
-    const r = await prisma.importRequest.findUnique({
-      where: { id },
-      include: {
-        user: { select: { name: true, email: true } },
-        vehicle: { select: { id: true, slug: true } },
-        trackingEvents: { orderBy: { timestamp: "desc" } },
-      },
+    const r = await prisma.importRequest.findUnique({ where: { id }, include: importDetailInclude });
+    return r ? mapImportDetail(r) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Owner-scoped import detail — returns null if it isn't this user's request. */
+export async function getUserImportDetail(
+  id: string,
+  userId: string,
+): Promise<ImportRequestDetail | null> {
+  try {
+    const r = await prisma.importRequest.findFirst({
+      where: { id, userId },
+      include: importDetailInclude,
     });
-    if (!r) return null;
-    return {
-      id: r.id,
-      ref: r.requestNumber,
-      stage: r.stage,
-      customer: r.user?.name ?? "—",
-      customerEmail: r.user?.email ?? null,
-      vehicle: `${r.year} ${r.make} ${r.model}`,
-      vehicleId: r.vehicle?.id ?? null,
-      vehicleSlug: r.vehicle?.slug ?? null,
-      origin: r.countryOfOrigin,
-      auctionSource: r.auctionSource,
-      budget: r.budget ? num(r.budget) : null,
-      notes: r.notes,
-      trackingNumber: r.trackingNumber,
-      estimatedArrival: r.estimatedArrival,
-      quote: {
-        cif: r.quotedCif ? num(r.quotedCif) : null,
-        duty: r.quotedDuty ? num(r.quotedDuty) : null,
-        shipping: r.quotedShipping ? num(r.quotedShipping) : null,
-        total: r.quotedTotal ? num(r.quotedTotal) : null,
-      },
-      createdAt: r.createdAt,
-      events: r.trackingEvents.map((e) => ({
-        id: e.id,
-        stage: e.stage,
-        title: e.title,
-        description: e.description,
-        location: e.location,
-        timestamp: e.timestamp,
-      })),
-    };
+    return r ? mapImportDetail(r) : null;
   } catch {
     return null;
   }
