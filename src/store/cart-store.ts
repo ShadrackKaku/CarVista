@@ -71,6 +71,10 @@ export const useCartStore = create<CartState>()(
 export interface WishlistState {
   ids: string[];
   toggle: (id: string) => void;
+  add: (id: string) => void;
+  remove: (id: string) => void;
+  /** Replace the whole set — used to hydrate from the database on load. */
+  setIds: (ids: string[]) => void;
   has: (id: string) => boolean;
 }
 
@@ -84,6 +88,9 @@ export const useWishlistStore = create<WishlistState>()(
             ? state.ids.filter((x) => x !== id)
             : [...state.ids, id],
         })),
+      add: (id) => set((state) => (state.ids.includes(id) ? state : { ids: [...state.ids, id] })),
+      remove: (id) => set((state) => ({ ids: state.ids.filter((x) => x !== id) })),
+      setIds: (ids) => set({ ids: Array.from(new Set(ids)) }),
       has: (id) => get().ids.includes(id),
     }),
     { name: "carvista-wishlist" },

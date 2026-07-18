@@ -2,6 +2,21 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 
+/** GET — the current user's saved vehicle ids (for the wishlist badge). */
+export async function GET() {
+  const user = await getCurrentUser().catch(() => null);
+  if (!user) return NextResponse.json({ ids: [] });
+  try {
+    const rows = await prisma.savedVehicle.findMany({
+      where: { userId: user.id },
+      select: { vehicleId: true },
+    });
+    return NextResponse.json({ ids: rows.map((r) => r.vehicleId) });
+  } catch {
+    return NextResponse.json({ ids: [] });
+  }
+}
+
 export async function POST(req: Request) {
   const user = await getCurrentUser().catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
