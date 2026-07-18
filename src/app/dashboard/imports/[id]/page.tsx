@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getUserImportDetail } from "@/lib/queries";
 import { ImportTimeline } from "@/components/import/import-timeline";
 import { ImportMilestones } from "@/components/import/import-milestones";
+import { EscrowPlanCard } from "@/components/import/escrow-plan-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -69,6 +70,10 @@ export default async function CustomerImportDetailPage({ params }: { params: { i
               <ImportMilestones events={imp.events} />
             </div>
           </div>
+
+          {imp.escrow && (imp.escrow.status === "ACTIVE" || imp.escrow.status === "COMPLETED") && (
+            <EscrowPlanCard importId={imp.id} plan={imp.escrow} />
+          )}
         </div>
 
         {/* Right: quote + vehicle + contact */}

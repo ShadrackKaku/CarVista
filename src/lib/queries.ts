@@ -12,6 +12,7 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { formatNumber } from "@/lib/utils";
+import { isMilestonePayable } from "@/lib/escrow";
 import {
   getExpandedVehicles,
   SAMPLE_PARTS,
@@ -646,6 +647,28 @@ export interface ImportTrackingEventView {
   timestamp: Date;
 }
 
+export interface EscrowMilestoneView {
+  id: string;
+  sequence: number;
+  label: string;
+  description: string | null;
+  amount: number;
+  unlockStage: string;
+  status: string;
+  /** Computed: can the buyer pay this installment right now? */
+  payable: boolean;
+  paidAt: Date | null;
+}
+
+export interface EscrowPlanView {
+  id: string;
+  status: string;
+  currency: string;
+  totalAmount: number;
+  paidAmount: number;
+  milestones: EscrowMilestoneView[];
+}
+
 export interface ImportRequestDetail {
   id: string;
   ref: string;
@@ -664,6 +687,7 @@ export interface ImportRequestDetail {
   quote: { cif: number | null; duty: number | null; shipping: number | null; total: number | null };
   createdAt: Date;
   events: ImportTrackingEventView[];
+  escrow: EscrowPlanView | null;
 }
 
 /** Full import request with its timeline — for the admin management view. */
@@ -671,6 +695,7 @@ const importDetailInclude = {
   user: { select: { name: true, email: true } },
   vehicle: { select: { id: true, slug: true } },
   trackingEvents: { orderBy: { timestamp: "desc" } },
+  escrowPlan: { include: { milestones: { orderBy: { sequence: "asc" } } } },
 } satisfies Prisma.ImportRequestInclude;
 
 function mapImportDetail(
@@ -706,6 +731,28 @@ function mapImportDetail(
       location: e.location,
       timestamp: e.timestamp,
     })),
+    escrow: r.escrowPlan
+      ? {
+          id: r.escrowPlan.id,
+          status: r.escrowPlan.status,
+          currency: r.escrowPlan.currency,
+          totalAmount: num(r.escrowPlan.totalAmount),
+          paidAmount: r.escrowPlan.milestones
+            .filter((m) => m.status === "PAID")
+            .reduce((s, m) => s + num(m.amount), 0),
+          milestones: r.escrowPlan.milestones.map((m) => ({
+            id: m.id,
+            sequence: m.sequence,
+            label: m.label,
+            description: m.description,
+            amount: num(m.amount),
+            unlockStage: m.unlockStage,
+            status: m.status,
+            payable: isMilestonePayable(m, r.stage, r.escrowPlan!.status),
+            paidAt: m.paidAt,
+          })),
+        }
+      : null,
   };
 }
 

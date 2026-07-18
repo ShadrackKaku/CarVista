@@ -215,6 +215,37 @@ export const importQuoteSchema = z.object({
   quotedTotal: z.coerce.number().nonnegative().optional(),
 });
 
+// ── Milestone escrow ──────────────────────────────────────────
+export const escrowMilestoneInputSchema = z.object({
+  label: z.string().min(2, "Add a label").max(80),
+  description: z.string().max(500).optional(),
+  amount: z.coerce.number().positive("Amount must be positive"),
+  unlockStage: z.enum(IMPORT_STAGES),
+});
+
+/**
+ * Create/replace an escrow plan. Either pass `useTemplate: true` with a
+ * `totalAmount` (auto-splits 20/30/30/20), or supply explicit `milestones`.
+ */
+export const escrowPlanSchema = z
+  .object({
+    totalAmount: z.coerce.number().positive("Enter the total amount"),
+    useTemplate: z.boolean().optional(),
+    milestones: z.array(escrowMilestoneInputSchema).min(1).max(8).optional(),
+  })
+  .refine((d) => d.useTemplate || (d.milestones && d.milestones.length > 0), {
+    message: "Provide milestones or use the template",
+    path: ["milestones"],
+  });
+
+export const escrowPlanActionSchema = z.object({
+  action: z.enum(["activate", "cancel", "reopen"]),
+});
+
+export const escrowPaySchema = z.object({
+  milestoneId: z.string().min(1, "milestoneId is required"),
+});
+
 // ── Bookings ──────────────────────────────────────────────────
 export const serviceBookingSchema = z.object({
   serviceProviderId: z.string().min(1),

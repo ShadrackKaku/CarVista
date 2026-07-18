@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyWebhookSignature } from "@/lib/paystack";
 import { confirmPaidPayment } from "@/lib/fulfill-order";
+import { confirmMilestonePayment } from "@/lib/escrow";
 
 /**
  * POST /api/webhooks/paystack
@@ -28,12 +29,21 @@ export async function POST(req: Request) {
 
   try {
     if (event.event === "charge.success" && event.data?.reference) {
+      const ref = event.data.reference;
+      // Escrow installment references are prefixed "ESC-"; everything else is a
+      // shop order. Reconcile whichever this reference belongs to.
       const payment = await prisma.payment.findUnique({
-        where: { reference: event.data.reference },
+        where: { reference: ref },
         select: { id: true },
       });
       if (payment) {
-        await confirmPaidPayment(payment.id, event.data.reference);
+        await confirmPaidPayment(payment.id, ref);
+      } else {
+        const milestone = await prisma.escrowMilestone.findUnique({
+          where: { reference: ref },
+          select: { id: true },
+        });
+        if (milestone) await confirmMilestonePayment(milestone.id, ref);
       }
     }
   } catch (error) {

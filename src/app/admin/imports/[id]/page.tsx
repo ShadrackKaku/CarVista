@@ -5,6 +5,7 @@ import { getImportRequestDetail } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { AdvanceImportForm } from "@/components/admin/advance-import-form";
 import { ImportQuoteForm } from "@/components/admin/import-quote-form";
+import { EscrowPlanManager } from "@/components/admin/escrow-plan-manager";
 import { IMPORT_STAGES } from "@/lib/constants";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/lib/utils";
 
@@ -79,6 +80,22 @@ export default async function AdminImportDetailPage({ params }: { params: { id: 
           <div className="mt-3">
             <ImportQuoteForm id={req.id} quote={req.quote} />
           </div>
+        </div>
+      </div>
+
+      {/* Escrow payment plan */}
+      <div className="mt-6 rounded-xl border bg-card p-5">
+        <h2 className="text-sm font-semibold">Milestone payment plan</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Protected installments the buyer pays as each import stage is verified. Non-custodial —
+          funds settle straight to the merchant account via Paystack.
+        </p>
+        <div className="mt-4">
+          <EscrowPlanManager
+            importId={req.id}
+            escrow={req.escrow}
+            quoteTotal={req.quote.total}
+          />
         </div>
       </div>
 
