@@ -258,6 +258,12 @@ export const dealerBulkSchema = z.object({
   action: z.enum(["sold", "unpublish", "republish"]),
 });
 
+// ── Vehicle ownership transfer ────────────────────────────────
+export const ownershipTransferSchema = z.object({
+  email: z.string().trim().email("Enter the new owner's email"),
+  note: z.string().max(500).optional(),
+});
+
 // ── Bookings ──────────────────────────────────────────────────
 export const serviceBookingSchema = z.object({
   serviceProviderId: z.string().min(1),

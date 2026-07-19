@@ -292,7 +292,7 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
       </div>
 
       {/* Vehicle Passport — verified history timeline */}
-      <VehiclePassport vehicleId={vehicle.id} />
+      <VehiclePassport vehicleId={vehicle.id} sellerId={vehicle.sellerId} />
 
       {/* Reviews */}
       <ReviewsSection targetType="vehicle" targetId={vehicle.id} />
