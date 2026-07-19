@@ -658,6 +658,8 @@ export interface EscrowMilestoneView {
   /** Computed: can the buyer pay this installment right now? */
   payable: boolean;
   paidAt: Date | null;
+  refundStatus: string;
+  refundedAt: Date | null;
 }
 
 export interface EscrowPlanView {
@@ -665,7 +667,10 @@ export interface EscrowPlanView {
   status: string;
   currency: string;
   totalAmount: number;
+  /** Net paid: sum of PAID installments that have NOT been refunded. */
   paidAmount: number;
+  /** Sum of installments refunded back to the buyer. */
+  refundedAmount: number;
   milestones: EscrowMilestoneView[];
 }
 
@@ -737,8 +742,13 @@ function mapImportDetail(
           status: r.escrowPlan.status,
           currency: r.escrowPlan.currency,
           totalAmount: num(r.escrowPlan.totalAmount),
+          // Net of refunds: an installment counts as paid only if it wasn't
+          // refunded back to the buyer.
           paidAmount: r.escrowPlan.milestones
-            .filter((m) => m.status === "PAID")
+            .filter((m) => m.status === "PAID" && m.refundStatus !== "REFUNDED")
+            .reduce((s, m) => s + num(m.amount), 0),
+          refundedAmount: r.escrowPlan.milestones
+            .filter((m) => m.refundStatus === "REFUNDED")
             .reduce((s, m) => s + num(m.amount), 0),
           milestones: r.escrowPlan.milestones.map((m) => ({
             id: m.id,
@@ -750,6 +760,8 @@ function mapImportDetail(
             status: m.status,
             payable: isMilestonePayable(m, r.stage, r.escrowPlan!.status),
             paidAt: m.paidAt,
+            refundStatus: m.refundStatus,
+            refundedAt: m.refundedAt,
           })),
         }
       : null,

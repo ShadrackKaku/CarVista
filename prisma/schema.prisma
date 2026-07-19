@@ -821,6 +821,13 @@ enum EscrowMilestoneStatus {
   PAID        // confirmed
 }
 
+enum RefundStatus {
+  NONE        // no refund requested
+  PENDING     // refund submitted to Paystack, awaiting settlement
+  REFUNDED    // Paystack confirmed the money went back to the buyer
+  FAILED      // Paystack could not process the refund
+}
+
 model EscrowPlan {
   id              String           @id @default(cuid())
   importRequestId String           @unique
@@ -854,6 +861,10 @@ model EscrowMilestone {
   reference   String?               @unique
   providerRef String?
   paidAt      DateTime?
+
+  // Refund tracking (money-back when a plan is cancelled after payment).
+  refundStatus RefundStatus         @default(NONE)
+  refundedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
