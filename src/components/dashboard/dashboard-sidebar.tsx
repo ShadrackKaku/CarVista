@@ -64,6 +64,7 @@ const customerNav: { label: string; href: string; icon: IconName }[] = [
 const dealerNav: { label: string; href: string; icon: IconName }[] = [
   { label: "Overview", href: "/dashboard/dealer", icon: "LayoutDashboard" },
   { label: "My Listings", href: "/dashboard/dealer/listings", icon: "Car" },
+  { label: "Leads", href: "/dashboard/dealer/leads", icon: "MessageSquare" },
   { label: "Analytics", href: "/dashboard/dealer/analytics", icon: "BarChart3" },
   { label: "Inquiries", href: "/dashboard/messages", icon: "MessageSquare" },
   { label: "Profile", href: "/dashboard/profile", icon: "Settings" },

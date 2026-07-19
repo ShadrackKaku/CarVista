@@ -1,17 +1,16 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Car, Plus } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
-import { getDealerListings } from "@/lib/queries";
+import { getDealerInventory } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { DealerListingsTable } from "@/components/dealer/dealer-listings-table";
+import { formatNumber } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function DealerListingsPage() {
   const user = await getCurrentUser();
-  const listings = user ? await getDealerListings(user.id) : [];
+  const listings = user ? await getDealerInventory(user.id) : [];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -19,7 +18,8 @@ export default async function DealerListingsPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">My Listings</h1>
           <p className="mt-1 text-muted-foreground">
-            {formatNumber(listings.length)} vehicle{listings.length === 1 ? "" : "s"} listed.
+            {formatNumber(listings.length)} vehicle{listings.length === 1 ? "" : "s"} listed. Select
+            rows to update several at once.
           </p>
         </div>
         <Button asChild variant="gradient">
@@ -41,51 +41,7 @@ export default async function DealerListingsPage() {
           </Button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Vehicle</th>
-                  <th className="px-4 py-3 font-medium">Price</th>
-                  <th className="px-4 py-3 font-medium">Year</th>
-                  <th className="px-4 py-3 font-medium">Location</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {listings.map((v) => (
-                  <tr key={v.id} className="hover:bg-accent/40">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-11 w-16 overflow-hidden rounded-lg bg-muted">
-                          <Image src={v.images[0]} alt={v.title} fill sizes="64px" className="object-cover" />
-                        </div>
-                        <Link href={`/vehicles/${v.slug}`} className="font-medium hover:text-brand-600">
-                          {v.title}
-                        </Link>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-medium">{formatCurrency(v.price)}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{v.year}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{v.city || "—"}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant={v.verified ? "success" : "warning"}>
-                        {v.verified ? "Verified" : "Pending"}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/vehicles/${v.slug}`}>View</Link>
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <DealerListingsTable listings={listings} />
       )}
     </div>
   );
