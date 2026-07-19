@@ -163,9 +163,39 @@ model Dealer {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicles Vehicle[]
   reviews  Review[]  @relation("DealerReviews")
+  verification DealerVerification?
 
   @@index([verified])
   @@index([city])
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// A dealer's KYC / business-verification submission. Admin reviews it and,
+// on approval, flips Dealer.verified — turning the trust badge on.
+model DealerVerification {
+  id                String             @id @default(cuid())
+  dealerId          String             @unique
+  businessRegNumber String
+  taxId             String?
+  contactName       String
+  contactPhone      String
+  idType            String             // e.g. Ghana Card, Passport, Driver's License
+  idNumber          String
+  documentUrl       String?
+  notes             String?            @db.Text
+  status            VerificationStatus @default(PENDING)
+  reviewNote        String?            @db.Text
+  submittedAt       DateTime           @default(now())
+  reviewedAt        DateTime?
+
+  dealer Dealer @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+
+  @@index([status])
 }
 
 model PartsStore {
@@ -1177,6 +1207,12 @@ model InspectionBooking {
   scheduledAt    DateTime
   status         BookingStatus @default(PENDING)
   notes          String?       @db.Text
+
+  // Inspection report (filled in once the inspection is done).
+  overallGrade   String?       // e.g. A, B, C or a 1–5 score
+  reportSummary  String?       @db.Text
+  reportUrl      String?       // link to the full PDF, if any
+  inspectedAt    DateTime?
 
   createdAt DateTime @default(now())
 

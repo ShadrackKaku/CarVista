@@ -146,6 +146,170 @@ export async function getSimilarVehicles(slug: string, limit = 4): Promise<Sampl
     .map((x) => x.v);
 }
 
+// ── Trust & verification ──────────────────────────────────────
+export interface DealerVerificationView {
+  isDealer: boolean;
+  verified: boolean;
+  status: string | null; // PENDING | APPROVED | REJECTED | null (never submitted)
+  reviewNote: string | null;
+  submittedAt: Date | null;
+  fields: {
+    businessRegNumber: string;
+    taxId: string | null;
+    contactName: string;
+    contactPhone: string;
+    idType: string;
+    idNumber: string;
+    documentUrl: string | null;
+    notes: string | null;
+  } | null;
+}
+
+/** The signed-in dealer's own verification state, for their KYC page. */
+export async function getDealerVerification(userId: string): Promise<DealerVerificationView> {
+  try {
+    const dealer = await prisma.dealer.findUnique({
+      where: { userId },
+      select: { verified: true, verification: true },
+    });
+    if (!dealer) {
+      return { isDealer: false, verified: false, status: null, reviewNote: null, submittedAt: null, fields: null };
+    }
+    const v = dealer.verification;
+    return {
+      isDealer: true,
+      verified: dealer.verified,
+      status: v?.status ?? null,
+      reviewNote: v?.reviewNote ?? null,
+      submittedAt: v?.submittedAt ?? null,
+      fields: v
+        ? {
+            businessRegNumber: v.businessRegNumber,
+            taxId: v.taxId,
+            contactName: v.contactName,
+            contactPhone: v.contactPhone,
+            idType: v.idType,
+            idNumber: v.idNumber,
+            documentUrl: v.documentUrl,
+            notes: v.notes,
+          }
+        : null,
+    };
+  } catch {
+    return { isDealer: false, verified: false, status: null, reviewNote: null, submittedAt: null, fields: null };
+  }
+}
+
+export interface AdminVerificationRow {
+  id: string;
+  dealerName: string;
+  businessRegNumber: string;
+  contactName: string;
+  contactPhone: string;
+  idType: string;
+  idNumber: string;
+  documentUrl: string | null;
+  notes: string | null;
+  status: string;
+  submittedAt: Date;
+}
+
+/** All dealer verifications for the admin review queue (pending first). */
+export async function getAdminVerifications(): Promise<AdminVerificationRow[]> {
+  try {
+    const rows = await prisma.dealerVerification.findMany({
+      orderBy: [{ status: "asc" }, { submittedAt: "desc" }],
+      take: 200,
+      include: { dealer: { select: { businessName: true } } },
+    });
+    return rows.map((v) => ({
+      id: v.id,
+      dealerName: v.dealer?.businessName ?? "—",
+      businessRegNumber: v.businessRegNumber,
+      contactName: v.contactName,
+      contactPhone: v.contactPhone,
+      idType: v.idType,
+      idNumber: v.idNumber,
+      documentUrl: v.documentUrl,
+      notes: v.notes,
+      status: v.status,
+      submittedAt: v.submittedAt,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export interface InspectionRow {
+  id: string;
+  ref: string;
+  customer: string | null;
+  vehicleInfo: string;
+  location: string;
+  scheduledAt: Date;
+  status: string;
+  overallGrade: string | null;
+  reportSummary: string | null;
+  reportUrl: string | null;
+  inspectedAt: Date | null;
+}
+
+function mapInspection(b: {
+  id: string;
+  bookingNumber: string;
+  vehicleInfo: string;
+  location: string;
+  scheduledAt: Date;
+  status: string;
+  overallGrade: string | null;
+  reportSummary: string | null;
+  reportUrl: string | null;
+  inspectedAt: Date | null;
+  user?: { name: string | null } | null;
+}): InspectionRow {
+  return {
+    id: b.id,
+    ref: b.bookingNumber,
+    customer: b.user?.name ?? null,
+    vehicleInfo: b.vehicleInfo,
+    location: b.location,
+    scheduledAt: b.scheduledAt,
+    status: b.status,
+    overallGrade: b.overallGrade,
+    reportSummary: b.reportSummary,
+    reportUrl: b.reportUrl,
+    inspectedAt: b.inspectedAt,
+  };
+}
+
+/** All inspection bookings for the admin ops view. */
+export async function getAdminInspections(): Promise<InspectionRow[]> {
+  try {
+    const rows = await prisma.inspectionBooking.findMany({
+      orderBy: { scheduledAt: "desc" },
+      take: 200,
+      include: { user: { select: { name: true } } },
+    });
+    return rows.map(mapInspection);
+  } catch {
+    return [];
+  }
+}
+
+/** A customer's own inspections + reports. */
+export async function getUserInspections(userId: string): Promise<InspectionRow[]> {
+  try {
+    const rows = await prisma.inspectionBooking.findMany({
+      where: { userId },
+      orderBy: { scheduledAt: "desc" },
+      take: 100,
+    });
+    return rows.map((b) => mapInspection(b));
+  } catch {
+    return [];
+  }
+}
+
 export interface SavedSearchView {
   id: string;
   name: string;
