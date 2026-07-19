@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyWebhookSignature, settledAsExpected, isPaystackConfigured } from "@/lib/paystack";
 import { confirmPaidPayment } from "@/lib/fulfill-order";
-import { confirmMilestonePayment } from "@/lib/escrow";
+import { confirmMilestonePayment, settleMilestoneRefund } from "@/lib/escrow";
 
 /**
  * POST /api/webhooks/paystack
@@ -28,7 +28,13 @@ export async function POST(req: Request) {
 
   let event: {
     event?: string;
-    data?: { reference?: string; amount?: number; currency?: string };
+    data?: {
+      reference?: string;
+      amount?: number;
+      currency?: string;
+      // refund.* events carry the ORIGINAL transaction reference here
+      transaction_reference?: string;
+    };
   };
   try {
     event = JSON.parse(raw);
@@ -72,6 +78,18 @@ export async function POST(req: Request) {
           }
         }
       }
+    }
+
+    // Refund settlement — Paystack processes refunds asynchronously and reports
+    // the final outcome here, keyed by the original transaction reference.
+    if (
+      (event.event === "refund.processed" || event.event === "refund.failed") &&
+      event.data?.transaction_reference
+    ) {
+      await settleMilestoneRefund(
+        event.data.transaction_reference,
+        event.event === "refund.processed" ? "REFUNDED" : "FAILED",
+      );
     }
   } catch (error) {
     console.error("[paystack:webhook]", error);

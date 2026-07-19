@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildMilestonesFromTemplate,
   isMilestonePayable,
+  isMilestoneRefundable,
   escrowReference,
   STAGE_RANK,
   DEFAULT_MILESTONE_TEMPLATE,
@@ -90,6 +91,23 @@ describe("STAGE_RANK", () => {
     expect(STAGE_RANK.PURCHASED).toBeLessThan(STAGE_RANK.CUSTOMS_CLEARANCE);
     expect(STAGE_RANK.CUSTOMS_CLEARANCE).toBeLessThan(STAGE_RANK.DELIVERED);
     expect(STAGE_RANK.CANCELLED).toBeLessThan(STAGE_RANK.REQUESTED);
+  });
+});
+
+describe("isMilestoneRefundable", () => {
+  it("only a paid installment with no refund yet can be refunded", () => {
+    expect(isMilestoneRefundable({ status: "PAID", refundStatus: "NONE" })).toBe(true);
+  });
+
+  it("rejects installments that aren't paid", () => {
+    expect(isMilestoneRefundable({ status: "LOCKED", refundStatus: "NONE" })).toBe(false);
+    expect(isMilestoneRefundable({ status: "PROCESSING", refundStatus: "NONE" })).toBe(false);
+  });
+
+  it("rejects installments already in or past a refund", () => {
+    expect(isMilestoneRefundable({ status: "PAID", refundStatus: "PENDING" })).toBe(false);
+    expect(isMilestoneRefundable({ status: "PAID", refundStatus: "REFUNDED" })).toBe(false);
+    expect(isMilestoneRefundable({ status: "PAID", refundStatus: "FAILED" })).toBe(false);
   });
 });
 

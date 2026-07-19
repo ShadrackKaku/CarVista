@@ -13,6 +13,7 @@
  */
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { refundTransaction } from "@/lib/paystack";
 import type { ImportStage, PaymentMethod } from "@prisma/client";
 
 /**
@@ -165,6 +166,98 @@ export async function confirmMilestonePayment(
           ? "Every installment is settled. We'll be in touch about handover."
           : `We've received your "${milestone.label}" payment. Thank you!`,
         link: `/dashboard/imports/${plan.importRequestId}`,
+      },
+    })
+    .catch(() => null);
+}
+
+/**
+ * Whether an installment is eligible to be refunded: it must be PAID and not
+ * already in a refund flow. Pure — used by both the admin UI and the refund
+ * endpoint so the rule can't drift.
+ */
+export function isMilestoneRefundable(milestone: {
+  status: string;
+  refundStatus: string;
+}): boolean {
+  return milestone.status === "PAID" && milestone.refundStatus === "NONE";
+}
+
+/**
+ * Kick off a refund for a paid installment. Marks it PENDING and calls Paystack
+ * (which settles refunds asynchronously — the webhook flips it to REFUNDED).
+ * The PENDING flag is set with a conditional `updateMany` so two admins can't
+ * both trigger a refund. Amount is read from the database, never the client.
+ */
+export async function initiateMilestoneRefund(
+  milestoneId: string,
+): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
+  const milestone = await prisma.escrowMilestone.findUnique({
+    where: { id: milestoneId },
+    select: { id: true, status: true, refundStatus: true, reference: true, amount: true },
+  });
+  if (!milestone) return { ok: false, error: "Installment not found", status: 404 };
+  if (!isMilestoneRefundable(milestone)) {
+    return { ok: false, error: "This installment can't be refunded.", status: 409 };
+  }
+  if (!milestone.reference) {
+    return { ok: false, error: "No payment reference to refund.", status: 409 };
+  }
+
+  // Claim the refund atomically — only the first caller proceeds.
+  const claim = await prisma.escrowMilestone.updateMany({
+    where: { id: milestone.id, refundStatus: "NONE", status: "PAID" },
+    data: { refundStatus: "PENDING" },
+  });
+  if (claim.count === 0) {
+    return { ok: false, error: "A refund is already in progress.", status: 409 };
+  }
+
+  try {
+    await refundTransaction(milestone.reference, Number(milestone.amount));
+    return { ok: true };
+  } catch (e) {
+    // Roll the claim back so it can be retried.
+    await prisma.escrowMilestone.updateMany({
+      where: { id: milestone.id, refundStatus: "PENDING" },
+      data: { refundStatus: "NONE" },
+    });
+    console.error("[escrow:refund:initiate]", e);
+    return { ok: false, error: "Could not start the refund. Try again.", status: 502 };
+  }
+}
+
+/**
+ * Idempotently record the outcome of a refund (from the Paystack webhook),
+ * keyed by the ORIGINAL transaction reference, and notify the buyer on success.
+ */
+export async function settleMilestoneRefund(
+  originalReference: string,
+  outcome: "REFUNDED" | "FAILED",
+): Promise<void> {
+  const transition = await prisma.escrowMilestone.updateMany({
+    where: { reference: originalReference, refundStatus: { in: ["PENDING", "NONE"] } },
+    data: {
+      refundStatus: outcome,
+      ...(outcome === "REFUNDED" ? { refundedAt: new Date() } : {}),
+    },
+  });
+  if (transition.count === 0 || outcome !== "REFUNDED") return;
+
+  const milestone = await prisma.escrowMilestone.findUnique({
+    where: { reference: originalReference },
+    include: { plan: { select: { userId: true, importRequestId: true, importRequest: { select: { requestNumber: true } } } } },
+  });
+  if (!milestone) return;
+
+  await prisma.notification
+    .create({
+      data: {
+        userId: milestone.plan.userId,
+        type: "IMPORT",
+        title: `Import ${milestone.plan.importRequest.requestNumber}: refund processed`,
+        body: `Your "${milestone.label}" installment has been refunded.`,
+        link: `/dashboard/imports/${milestone.plan.importRequestId}`,
       },
     })
     .catch(() => null);

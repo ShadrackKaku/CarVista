@@ -94,6 +94,29 @@ export function EscrowPlanManager({
     }
   }
 
+  async function refund(milestoneId: string) {
+    if (!window.confirm("Refund this installment to the buyer? This can't be undone.")) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/imports/${importId}/escrow/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ milestoneId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not start the refund");
+        return;
+      }
+      toast.success("Refund started — it'll settle to the buyer shortly.");
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // ── No plan yet: offer to build one from the quote ──────────────
   if (!escrow) {
     return (
@@ -147,24 +170,54 @@ export function EscrowPlanManager({
             </div>
             <div className="flex items-center gap-3">
               <span className="font-semibold">{formatCurrency(m.amount)}</span>
-              <span
-                className={
-                  "text-xs font-medium " +
-                  (m.status === "PAID"
-                    ? "text-success"
-                    : m.payable
-                      ? "text-brand-600"
-                      : "text-muted-foreground")
-                }
-              >
-                {m.status === "PAID"
-                  ? "Paid"
-                  : m.status === "PROCESSING"
-                    ? "Processing"
-                    : m.payable
-                      ? "Payable"
-                      : "Locked"}
-              </span>
+              {m.refundStatus !== "NONE" ? (
+                <span
+                  className={
+                    "text-xs font-medium " +
+                    (m.refundStatus === "REFUNDED"
+                      ? "text-muted-foreground"
+                      : m.refundStatus === "FAILED"
+                        ? "text-destructive"
+                        : "text-brand-600")
+                  }
+                >
+                  {m.refundStatus === "REFUNDED"
+                    ? "Refunded"
+                    : m.refundStatus === "FAILED"
+                      ? "Refund failed"
+                      : "Refunding…"}
+                </span>
+              ) : (
+                <span
+                  className={
+                    "text-xs font-medium " +
+                    (m.status === "PAID"
+                      ? "text-success"
+                      : m.payable
+                        ? "text-brand-600"
+                        : "text-muted-foreground")
+                  }
+                >
+                  {m.status === "PAID"
+                    ? "Paid"
+                    : m.status === "PROCESSING"
+                      ? "Processing"
+                      : m.payable
+                        ? "Payable"
+                        : "Locked"}
+                </span>
+              )}
+              {m.status === "PAID" && m.refundStatus === "NONE" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                  onClick={() => refund(m.id)}
+                >
+                  Refund
+                </Button>
+              )}
             </div>
           </li>
         ))}

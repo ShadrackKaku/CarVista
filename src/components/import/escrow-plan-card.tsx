@@ -71,6 +71,11 @@ export function EscrowPlanCard({ importId, plan }: { importId: string; plan: Esc
             style={{ width: `${pct}%` }}
           />
         </div>
+        {plan.refundedAmount > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {formatCurrency(plan.refundedAmount)} refunded to you.
+          </p>
+        )}
       </div>
 
       {/* Milestones */}
@@ -104,7 +109,11 @@ export function EscrowPlanCard({ importId, plan }: { importId: string; plan: Esc
                   <p className="mt-0.5 text-xs text-muted-foreground">{m.description}</p>
                 )}
                 <div className="mt-2 flex items-center gap-2">
-                  {paid ? (
+                  {m.refundStatus === "REFUNDED" ? (
+                    <span className="text-xs font-medium text-muted-foreground">Refunded</span>
+                  ) : m.refundStatus === "PENDING" ? (
+                    <span className="text-xs font-medium text-brand-600">Refund on the way…</span>
+                  ) : paid ? (
                     <span className="text-xs font-medium text-success">Paid</span>
                   ) : m.payable ? (
                     <Button

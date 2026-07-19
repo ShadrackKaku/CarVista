@@ -125,6 +125,45 @@ export async function verifyTransaction(reference: string): Promise<VerifyResult
   };
 }
 
+export interface RefundResult {
+  status: string; // Paystack refund status: "pending" | "processing" | "processed" | "failed" ...
+  reference: string | null; // the ORIGINAL transaction reference being refunded
+}
+
+/**
+ * Request a refund for a settled transaction. Paystack processes refunds
+ * asynchronously — this returns the initial status; final settlement arrives
+ * via the `refund.processed` / `refund.failed` webhook. Omit `amountMajor` to
+ * refund the full transaction.
+ *
+ * Docs: https://paystack.com/docs/payments/refunds/
+ */
+export async function refundTransaction(
+  reference: string,
+  amountMajor?: number,
+): Promise<RefundResult> {
+  const res = await fetch(`${PAYSTACK_BASE}/refund`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secretKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      transaction: reference,
+      ...(amountMajor != null ? { amount: toPesewas(amountMajor) } : {}),
+    }),
+    cache: "no-store",
+  });
+  const json = await res.json();
+  if (!res.ok || !json.status) {
+    throw new Error(json.message ?? "Failed to initiate Paystack refund");
+  }
+  return {
+    status: json.data?.status ?? "pending",
+    reference: json.data?.transaction?.reference ?? reference,
+  };
+}
+
 /** Verify the `x-paystack-signature` header on a webhook payload. */
 export function verifyWebhookSignature(rawBody: string, signature: string | null): boolean {
   if (!signature) return false;
