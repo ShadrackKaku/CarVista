@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { safeJsonLd } from "@/lib/utils";
 import {
   Accordion,
   AccordionContent,
@@ -100,7 +101,7 @@ export default function FAQPage() {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
       <PageHeader
         eyebrow="Help Center"
         title="Frequently Asked Questions"

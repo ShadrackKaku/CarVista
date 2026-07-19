@@ -98,6 +98,21 @@ export function absoluteUrl(path: string) {
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+/**
+ * Serialize an object for embedding in an inline <script type="application/ld+json">.
+ *
+ * `JSON.stringify` does NOT escape `<`, `>` or `&`, so a user-controlled field
+ * (a vehicle title, a dealer name…) containing `</script>` could break out of
+ * the script element and inject markup — a stored-XSS vector. Escaping those
+ * characters (plus the JS line separators U+2028/U+2029) makes the payload safe
+ * to inline while remaining valid JSON.
+ */
+export function safeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/[<>&\u2028\u2029]/g, (c) => {
+    return "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0");
+  });
+}
+
 /** Build a WhatsApp click-to-chat URL. */
 export function whatsappUrl(number: string, message: string) {
   const clean = number.replace(/[^0-9]/g, "");

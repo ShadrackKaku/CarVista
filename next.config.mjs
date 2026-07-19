@@ -27,6 +27,35 @@ const nextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=(self)",
           },
+          // Force HTTPS for two years, including subdomains.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          // Content-Security-Policy. Scripts are restricted to our own origin
+          // (no external script hosts) — 'unsafe-inline' is required for the
+          // App Router's inline hydration payload and is compatible with our
+          // static/ISR pages (a per-request nonce is not). The actual XSS vector
+          // (JSON-LD) is closed at the source via safeJsonLd(), and React
+          // escapes all other output. Everything else is locked down.
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' blob: data: https:",
+              "font-src 'self' data:",
+              "media-src 'self' blob: https:",
+              "connect-src 'self'",
+              "frame-src 'self'",
+              "form-action 'self'",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "frame-ancestors 'self'",
+              "upgrade-insecure-requests",
+            ].join("; "),
+          },
         ],
       },
     ];

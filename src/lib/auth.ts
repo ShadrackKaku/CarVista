@@ -59,17 +59,17 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: UserRole }).role ?? UserRole.CUSTOMER;
       }
-      // Keep role fresh when the session is updated client-side.
-      if (trigger === "update" && session?.role) {
-        token.role = session.role;
-      }
-      // Re-hydrate role from DB when missing (e.g. OAuth first sign-in).
-      if (token.email && !token.role) {
+      // SECURITY: never trust a client-supplied role. On an explicit session
+      // update, or when the role is missing (e.g. OAuth first sign-in), re-read
+      // it from the database — the DB is the sole source of truth for role.
+      // (Trusting `session.role` here would let any signed-in user call
+      // `useSession().update({ role: "ADMIN" })` and escalate to admin.)
+      if ((trigger === "update" || !token.role) && token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
           select: { id: true, role: true },
