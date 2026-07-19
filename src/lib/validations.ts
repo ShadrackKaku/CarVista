@@ -246,6 +246,12 @@ export const escrowPaySchema = z.object({
   milestoneId: z.string().min(1, "milestoneId is required"),
 });
 
+// ── Saved searches ────────────────────────────────────────────
+export const savedSearchSchema = z.object({
+  name: z.string().trim().min(1, "Give this search a name").max(80),
+  query: z.string().max(500).default(""),
+});
+
 // ── Bookings ──────────────────────────────────────────────────
 export const serviceBookingSchema = z.object({
   serviceProviderId: z.string().min(1),

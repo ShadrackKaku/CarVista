@@ -72,6 +72,7 @@ model User {
   inspectionBookings   InspectionBooking[]
   recordedVehicleEvents VehicleEvent[]     @relation("EventRecorder")
   escrowPlans          EscrowPlan[]
+  savedSearches        SavedSearch[]
 
   @@index([role])
   @@index([email])
@@ -444,6 +445,20 @@ model SavedVehicle {
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@unique([userId, vehicleId])
+  @@index([userId])
+}
+
+// A named marketplace search a user can return to (and, later, be alerted on).
+// `query` is the vehicles-page query string, e.g. "brand=Toyota&maxPrice=200000".
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  query     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }
 

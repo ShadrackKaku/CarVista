@@ -119,6 +119,53 @@ export async function getFeaturedVehicles(limit = 8): Promise<SampleVehicle[]> {
   return (featured.length ? featured : all).slice(0, limit);
 }
 
+/**
+ * Discovery: vehicles similar to the one at `slug`, ranked by shared
+ * brand/body/condition and price proximity. Works over the same catalogue as
+ * the marketplace, so it degrades gracefully with the sample fallback.
+ */
+export async function getSimilarVehicles(slug: string, limit = 4): Promise<SampleVehicle[]> {
+  const all = await getVehicles();
+  const base = all.find((v) => v.slug === slug) ?? (await getVehicleBySlug(slug));
+  if (!base) return [];
+  return all
+    .filter((v) => v.slug !== slug)
+    .map((v) => {
+      let score = 0;
+      if (v.brand === base.brand) score += 3;
+      if (v.bodyType === base.bodyType) score += 2;
+      if (v.condition === base.condition) score += 1;
+      const priceGap = Math.abs(v.price - base.price) / Math.max(base.price, 1);
+      if (priceGap <= 0.25) score += 2;
+      else if (priceGap <= 0.5) score += 1;
+      return { v, score, priceGap };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.priceGap - b.priceGap)
+    .slice(0, limit)
+    .map((x) => x.v);
+}
+
+export interface SavedSearchView {
+  id: string;
+  name: string;
+  query: string;
+  createdAt: Date;
+}
+
+export async function getUserSavedSearches(userId: string): Promise<SavedSearchView[]> {
+  try {
+    return await prisma.savedSearch.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: { id: true, name: true, query: true, createdAt: true },
+    });
+  } catch {
+    return [];
+  }
+}
+
 export async function getLatestImports(limit = 4): Promise<SampleVehicle[]> {
   const all = await getVehicles();
   return all.filter((v) => v.importStatus !== "NOT_IMPORTED").slice(0, limit);
