@@ -25,7 +25,7 @@ import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getVehicleBySlug, getVehicles } from "@/lib/queries";
+import { getVehicleBySlug, getSimilarVehicles } from "@/lib/queries";
 import { calculateDuty } from "@/lib/duty-calculator";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
@@ -84,9 +84,7 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
     { icon: Palette, label: "Colour", value: vehicle.color },
   ];
 
-  const similar = (await getVehicles())
-    .filter((v) => v.brand === vehicle.brand && v.slug !== vehicle.slug)
-    .slice(0, 3);
+  const similar = await getSimilarVehicles(vehicle.slug, 3);
 
   const jsonLd = {
     "@context": "https://schema.org",

@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
+import { Bookmark, SlidersHorizontal, X } from "lucide-react";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,36 +25,15 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { POPULAR_BRANDS, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, GHANA_REGIONS } from "@/lib/constants";
-import { formatCurrency, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { SampleVehicle } from "@/lib/sample-data";
-
-interface Filters {
-  q: string;
-  brand: string;
-  bodyType: string;
-  fuelType: string;
-  transmission: string;
-  condition: string;
-  region: string;
-  minPrice: string;
-  maxPrice: string;
-  minYear: string;
-  maxYear: string;
-}
-
-const EMPTY: Filters = {
-  q: "",
-  brand: "",
-  bodyType: "",
-  fuelType: "",
-  transmission: "",
-  condition: "",
-  region: "",
-  minPrice: "",
-  maxPrice: "",
-  minYear: "",
-  maxYear: "",
-};
+import {
+  type VehicleFilters,
+  type VehicleSort,
+  EMPTY_FILTERS,
+  filtersToQuery,
+  activeFilterCount,
+} from "@/lib/vehicle-search";
 
 const CONDITIONS = [
   { value: "NEW", label: "Brand New" },
@@ -61,19 +43,55 @@ const CONDITIONS = [
 
 export function VehicleBrowser({
   vehicles,
-  initial,
+  initialFilters,
+  initialSort = "relevance",
 }: {
   vehicles: SampleVehicle[];
-  initial?: Partial<Filters>;
+  initialFilters?: Partial<VehicleFilters>;
+  initialSort?: VehicleSort;
 }) {
-  const [filters, setFilters] = useState<Filters>({ ...EMPTY, ...initial });
-  const [sort, setSort] = useState("relevance");
+  const router = useRouter();
+  const pathname = usePathname();
+  const { status } = useSession();
+  const [filters, setFilters] = useState<VehicleFilters>({ ...EMPTY_FILTERS, ...initialFilters });
+  const [sort, setSort] = useState<VehicleSort>(initialSort);
 
-  function set<K extends keyof Filters>(key: K, value: Filters[K]) {
+  // Keep the URL in sync with the active search, so it's shareable by link and
+  // can be captured as a Saved Search.
+  const query = filtersToQuery(filters, sort);
+  useEffect(() => {
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [query, pathname, router]);
+
+  function set<K extends keyof VehicleFilters>(key: K, value: VehicleFilters[K]) {
     setFilters((f) => ({ ...f, [key]: value }));
   }
   function reset() {
-    setFilters(EMPTY);
+    setFilters(EMPTY_FILTERS);
+  }
+
+  async function saveSearch() {
+    if (status !== "authenticated") {
+      toast.info("Sign in to save this search");
+      return;
+    }
+    const name = window.prompt("Name this search", "My search")?.trim();
+    if (!name) return;
+    try {
+      const res = await fetch("/api/saved-searches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, query }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not save the search");
+        return;
+      }
+      toast.success("Search saved — find it under Saved Searches.");
+    } catch {
+      toast.error("Something went wrong");
+    }
   }
 
   const filtered = useMemo(() => {
@@ -109,7 +127,7 @@ export function VehicleBrowser({
     return result;
   }, [vehicles, filters, sort]);
 
-  const activeCount = Object.entries(filters).filter(([, v]) => v !== "").length;
+  const activeCount = activeFilterCount(filters);
 
   const FilterPanel = (
     <div className="space-y-5">
@@ -306,7 +324,10 @@ export function VehicleBrowser({
                 <div className="mt-6">{FilterPanel}</div>
               </SheetContent>
             </Sheet>
-            <Select value={sort} onValueChange={setSort}>
+            <Button variant="outline" size="sm" onClick={saveSearch}>
+              <Bookmark className="h-4 w-4" /> Save search
+            </Button>
+            <Select value={sort} onValueChange={(v) => setSort(v as VehicleSort)}>
               <SelectTrigger className="h-9 w-[170px]">
                 <SelectValue />
               </SelectTrigger>

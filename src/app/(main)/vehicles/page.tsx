@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { VehicleBrowser } from "@/components/vehicles/vehicle-browser";
 import { getVehicles } from "@/lib/queries";
+import { queryToFilters } from "@/lib/vehicle-search";
 
 export const metadata: Metadata = {
   title: "Vehicle Marketplace — Buy Cars in Ghana",
@@ -14,9 +15,10 @@ export const dynamic = "force-dynamic";
 export default async function VehiclesPage({
   searchParams,
 }: {
-  searchParams: { brand?: string; bodyType?: string; q?: string; importStatus?: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
   const vehicles = await getVehicles();
+  const { filters, sort } = queryToFilters(searchParams);
 
   return (
     <div className="container-page py-10">
@@ -27,14 +29,7 @@ export default async function VehiclesPage({
           private sellers across Ghana.
         </p>
       </div>
-      <VehicleBrowser
-        vehicles={vehicles}
-        initial={{
-          brand: searchParams.brand ?? "",
-          bodyType: searchParams.bodyType ?? "",
-          q: searchParams.q ?? "",
-        }}
-      />
+      <VehicleBrowser vehicles={vehicles} initialFilters={filters} initialSort={sort} />
     </div>
   );
 }

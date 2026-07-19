@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   BarChart3,
+  Bookmark,
   Boxes,
   Car,
   Heart,
@@ -30,6 +31,7 @@ import type { UserRole } from "@prisma/client";
 const iconMap = {
   LayoutDashboard,
   Heart,
+  Bookmark,
   Ship,
   ShoppingBag,
   MessageSquare,
@@ -52,6 +54,7 @@ type IconName = keyof typeof iconMap;
 const customerNav: { label: string; href: string; icon: IconName }[] = [
   { label: "Overview", href: "/dashboard", icon: "LayoutDashboard" },
   { label: "Saved Vehicles", href: "/dashboard/saved", icon: "Heart" },
+  { label: "Saved Searches", href: "/dashboard/searches", icon: "Bookmark" },
   { label: "My Imports", href: "/dashboard/imports", icon: "Ship" },
   { label: "My Orders", href: "/dashboard/orders", icon: "ShoppingBag" },
   { label: "Messages", href: "/dashboard/messages", icon: "MessageSquare" },
