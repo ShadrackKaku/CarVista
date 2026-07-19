@@ -23,6 +23,7 @@ import { VehiclePassport } from "@/components/vehicles/vehicle-passport";
 import { FinancingWidget } from "@/components/vehicles/financing-widget";
 import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
+import { ViewBeacon } from "@/components/vehicles/view-beacon";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getVehicleBySlug, getSimilarVehicles } from "@/lib/queries";
@@ -108,6 +109,7 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
 
   return (
     <div className="container-page py-8">
+      <ViewBeacon vehicleId={vehicle.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

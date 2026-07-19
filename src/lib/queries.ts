@@ -566,6 +566,157 @@ export async function getDealerListings(userId: string): Promise<SampleVehicle[]
   }
 }
 
+/** Best-effort view counter — fire-and-forget from the vehicle detail beacon. */
+export async function incrementVehicleViews(vehicleId: string): Promise<void> {
+  try {
+    await prisma.vehicle.updateMany({ where: { id: vehicleId }, data: { views: { increment: 1 } } });
+  } catch {
+    // sample-data vehicles have no DB row — nothing to count.
+  }
+}
+
+export interface DealerListingRow {
+  id: string;
+  slug: string;
+  title: string;
+  price: number;
+  year: number;
+  city: string | null;
+  bodyType: string;
+  status: string;
+  views: number;
+  featured: boolean;
+  verified: boolean;
+  image: string;
+}
+
+/** A dealer's inventory with the operational fields their tools need. */
+export async function getDealerInventory(userId: string): Promise<DealerListingRow[]> {
+  try {
+    const rows = await prisma.vehicle.findMany({
+      where: { sellerId: userId },
+      orderBy: { createdAt: "desc" },
+      include: { images: { orderBy: { order: "asc" }, take: 1 } },
+    });
+    return rows.map((v) => ({
+      id: v.id,
+      slug: v.slug,
+      title: v.title,
+      price: num(v.price),
+      year: v.year,
+      city: v.city,
+      bodyType: v.bodyType,
+      status: v.status,
+      views: v.views,
+      featured: v.featured,
+      verified: v.verified,
+      image: v.images[0]?.url ?? "/placeholder-car.jpg",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export interface DealerStats {
+  listings: number;
+  active: number;
+  sold: number;
+  totalViews: number;
+  avgViews: number;
+  inventoryValue: number;
+  featured: number;
+  verified: number;
+  leads: number;
+}
+
+export async function getDealerStats(userId: string): Promise<DealerStats> {
+  try {
+    const [rows, leads] = await Promise.all([
+      prisma.vehicle.findMany({
+        where: { sellerId: userId },
+        select: { price: true, status: true, views: true, featured: true, verified: true },
+      }),
+      prisma.conversation.count({ where: { sellerId: userId } }),
+    ]);
+    const listings = rows.length;
+    const totalViews = rows.reduce((s, r) => s + r.views, 0);
+    return {
+      listings,
+      active: rows.filter((r) => r.status === "ACTIVE").length,
+      sold: rows.filter((r) => r.status === "SOLD").length,
+      totalViews,
+      avgViews: listings ? Math.round(totalViews / listings) : 0,
+      inventoryValue: rows.reduce((s, r) => s + num(r.price), 0),
+      featured: rows.filter((r) => r.featured).length,
+      verified: rows.filter((r) => r.verified).length,
+      leads,
+    };
+  } catch {
+    return {
+      listings: 0,
+      active: 0,
+      sold: 0,
+      totalViews: 0,
+      avgViews: 0,
+      inventoryValue: 0,
+      featured: 0,
+      verified: 0,
+      leads: 0,
+    };
+  }
+}
+
+export interface DealerLeadRow {
+  id: string;
+  buyer: string;
+  subject: string | null;
+  vehicleTitle: string | null;
+  vehicleSlug: string | null;
+  lastMessage: string | null;
+  lastMessageAt: Date;
+}
+
+/** Buyer conversations on a dealer's listings — their lead pipeline. */
+export async function getDealerLeads(userId: string): Promise<DealerLeadRow[]> {
+  try {
+    const rows = await prisma.conversation.findMany({
+      where: { sellerId: userId },
+      orderBy: { lastMessageAt: "desc" },
+      take: 100,
+      include: {
+        buyer: { select: { name: true } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1, select: { body: true } },
+      },
+    });
+
+    // Conversation stores vehicleId as a scalar (no relation), so resolve the
+    // referenced vehicles in one extra query.
+    const vehicleIds = [...new Set(rows.map((r) => r.vehicleId).filter((x): x is string => !!x))];
+    const vehicles = vehicleIds.length
+      ? await prisma.vehicle.findMany({
+          where: { id: { in: vehicleIds } },
+          select: { id: true, title: true, slug: true },
+        })
+      : [];
+    const byId = new Map(vehicles.map((v) => [v.id, v]));
+
+    return rows.map((c) => {
+      const v = c.vehicleId ? byId.get(c.vehicleId) : undefined;
+      return {
+        id: c.id,
+        buyer: c.buyer?.name ?? "Buyer",
+        subject: c.subject,
+        vehicleTitle: v?.title ?? null,
+        vehicleSlug: v?.slug ?? null,
+        lastMessage: c.messages[0]?.body ?? null,
+        lastMessageAt: c.lastMessageAt,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 export async function getSellerProducts(userId: string): Promise<SamplePart[]> {
   try {
     const rows = await prisma.part.findMany({

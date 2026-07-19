@@ -252,6 +252,12 @@ export const savedSearchSchema = z.object({
   query: z.string().max(500).default(""),
 });
 
+// ── Dealer bulk listing actions ───────────────────────────────
+export const dealerBulkSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1, "Select at least one listing").max(200),
+  action: z.enum(["sold", "unpublish", "republish"]),
+});
+
 // ── Bookings ──────────────────────────────────────────────────
 export const serviceBookingSchema = z.object({
   serviceProviderId: z.string().min(1),
