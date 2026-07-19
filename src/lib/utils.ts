@@ -82,7 +82,14 @@ export function truncate(text: string, length: number) {
 /** Generate a unique reference/order number. */
 export function generateReference(prefix = "CV") {
   const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  // Use the Web Crypto RNG (available in both Node 18+ and the browser) so
+  // order/payment references are unguessable and collision-resistant — never
+  // predictable like Math.random(). 4 bytes = 32 bits of entropy.
+  const bytes = new Uint8Array(4);
+  globalThis.crypto.getRandomValues(bytes);
+  const random = Array.from(bytes, (b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
   return `${prefix}-${timestamp}-${random}`;
 }
 
