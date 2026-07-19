@@ -146,6 +146,170 @@ export async function getSimilarVehicles(slug: string, limit = 4): Promise<Sampl
     .map((x) => x.v);
 }
 
+// ── Trust & verification ──────────────────────────────────────
+export interface DealerVerificationView {
+  isDealer: boolean;
+  verified: boolean;
+  status: string | null; // PENDING | APPROVED | REJECTED | null (never submitted)
+  reviewNote: string | null;
+  submittedAt: Date | null;
+  fields: {
+    businessRegNumber: string;
+    taxId: string | null;
+    contactName: string;
+    contactPhone: string;
+    idType: string;
+    idNumber: string;
+    documentUrl: string | null;
+    notes: string | null;
+  } | null;
+}
+
+/** The signed-in dealer's own verification state, for their KYC page. */
+export async function getDealerVerification(userId: string): Promise<DealerVerificationView> {
+  try {
+    const dealer = await prisma.dealer.findUnique({
+      where: { userId },
+      select: { verified: true, verification: true },
+    });
+    if (!dealer) {
+      return { isDealer: false, verified: false, status: null, reviewNote: null, submittedAt: null, fields: null };
+    }
+    const v = dealer.verification;
+    return {
+      isDealer: true,
+      verified: dealer.verified,
+      status: v?.status ?? null,
+      reviewNote: v?.reviewNote ?? null,
+      submittedAt: v?.submittedAt ?? null,
+      fields: v
+        ? {
+            businessRegNumber: v.businessRegNumber,
+            taxId: v.taxId,
+            contactName: v.contactName,
+            contactPhone: v.contactPhone,
+            idType: v.idType,
+            idNumber: v.idNumber,
+            documentUrl: v.documentUrl,
+            notes: v.notes,
+          }
+        : null,
+    };
+  } catch {
+    return { isDealer: false, verified: false, status: null, reviewNote: null, submittedAt: null, fields: null };
+  }
+}
+
+export interface AdminVerificationRow {
+  id: string;
+  dealerName: string;
+  businessRegNumber: string;
+  contactName: string;
+  contactPhone: string;
+  idType: string;
+  idNumber: string;
+  documentUrl: string | null;
+  notes: string | null;
+  status: string;
+  submittedAt: Date;
+}
+
+/** All dealer verifications for the admin review queue (pending first). */
+export async function getAdminVerifications(): Promise<AdminVerificationRow[]> {
+  try {
+    const rows = await prisma.dealerVerification.findMany({
+      orderBy: [{ status: "asc" }, { submittedAt: "desc" }],
+      take: 200,
+      include: { dealer: { select: { businessName: true } } },
+    });
+    return rows.map((v) => ({
+      id: v.id,
+      dealerName: v.dealer?.businessName ?? "—",
+      businessRegNumber: v.businessRegNumber,
+      contactName: v.contactName,
+      contactPhone: v.contactPhone,
+      idType: v.idType,
+      idNumber: v.idNumber,
+      documentUrl: v.documentUrl,
+      notes: v.notes,
+      status: v.status,
+      submittedAt: v.submittedAt,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export interface InspectionRow {
+  id: string;
+  ref: string;
+  customer: string | null;
+  vehicleInfo: string;
+  location: string;
+  scheduledAt: Date;
+  status: string;
+  overallGrade: string | null;
+  reportSummary: string | null;
+  reportUrl: string | null;
+  inspectedAt: Date | null;
+}
+
+function mapInspection(b: {
+  id: string;
+  bookingNumber: string;
+  vehicleInfo: string;
+  location: string;
+  scheduledAt: Date;
+  status: string;
+  overallGrade: string | null;
+  reportSummary: string | null;
+  reportUrl: string | null;
+  inspectedAt: Date | null;
+  user?: { name: string | null } | null;
+}): InspectionRow {
+  return {
+    id: b.id,
+    ref: b.bookingNumber,
+    customer: b.user?.name ?? null,
+    vehicleInfo: b.vehicleInfo,
+    location: b.location,
+    scheduledAt: b.scheduledAt,
+    status: b.status,
+    overallGrade: b.overallGrade,
+    reportSummary: b.reportSummary,
+    reportUrl: b.reportUrl,
+    inspectedAt: b.inspectedAt,
+  };
+}
+
+/** All inspection bookings for the admin ops view. */
+export async function getAdminInspections(): Promise<InspectionRow[]> {
+  try {
+    const rows = await prisma.inspectionBooking.findMany({
+      orderBy: { scheduledAt: "desc" },
+      take: 200,
+      include: { user: { select: { name: true } } },
+    });
+    return rows.map(mapInspection);
+  } catch {
+    return [];
+  }
+}
+
+/** A customer's own inspections + reports. */
+export async function getUserInspections(userId: string): Promise<InspectionRow[]> {
+  try {
+    const rows = await prisma.inspectionBooking.findMany({
+      where: { userId },
+      orderBy: { scheduledAt: "desc" },
+      take: 100,
+    });
+    return rows.map((b) => mapInspection(b));
+  } catch {
+    return [];
+  }
+}
+
 export interface SavedSearchView {
   id: string;
   name: string;
@@ -561,6 +725,157 @@ export async function getDealerListings(userId: string): Promise<SampleVehicle[]
       orderBy: { createdAt: "desc" },
     });
     return rows.map(mapVehicle);
+  } catch {
+    return [];
+  }
+}
+
+/** Best-effort view counter — fire-and-forget from the vehicle detail beacon. */
+export async function incrementVehicleViews(vehicleId: string): Promise<void> {
+  try {
+    await prisma.vehicle.updateMany({ where: { id: vehicleId }, data: { views: { increment: 1 } } });
+  } catch {
+    // sample-data vehicles have no DB row — nothing to count.
+  }
+}
+
+export interface DealerListingRow {
+  id: string;
+  slug: string;
+  title: string;
+  price: number;
+  year: number;
+  city: string | null;
+  bodyType: string;
+  status: string;
+  views: number;
+  featured: boolean;
+  verified: boolean;
+  image: string;
+}
+
+/** A dealer's inventory with the operational fields their tools need. */
+export async function getDealerInventory(userId: string): Promise<DealerListingRow[]> {
+  try {
+    const rows = await prisma.vehicle.findMany({
+      where: { sellerId: userId },
+      orderBy: { createdAt: "desc" },
+      include: { images: { orderBy: { order: "asc" }, take: 1 } },
+    });
+    return rows.map((v) => ({
+      id: v.id,
+      slug: v.slug,
+      title: v.title,
+      price: num(v.price),
+      year: v.year,
+      city: v.city,
+      bodyType: v.bodyType,
+      status: v.status,
+      views: v.views,
+      featured: v.featured,
+      verified: v.verified,
+      image: v.images[0]?.url ?? "/placeholder-car.jpg",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export interface DealerStats {
+  listings: number;
+  active: number;
+  sold: number;
+  totalViews: number;
+  avgViews: number;
+  inventoryValue: number;
+  featured: number;
+  verified: number;
+  leads: number;
+}
+
+export async function getDealerStats(userId: string): Promise<DealerStats> {
+  try {
+    const [rows, leads] = await Promise.all([
+      prisma.vehicle.findMany({
+        where: { sellerId: userId },
+        select: { price: true, status: true, views: true, featured: true, verified: true },
+      }),
+      prisma.conversation.count({ where: { sellerId: userId } }),
+    ]);
+    const listings = rows.length;
+    const totalViews = rows.reduce((s, r) => s + r.views, 0);
+    return {
+      listings,
+      active: rows.filter((r) => r.status === "ACTIVE").length,
+      sold: rows.filter((r) => r.status === "SOLD").length,
+      totalViews,
+      avgViews: listings ? Math.round(totalViews / listings) : 0,
+      inventoryValue: rows.reduce((s, r) => s + num(r.price), 0),
+      featured: rows.filter((r) => r.featured).length,
+      verified: rows.filter((r) => r.verified).length,
+      leads,
+    };
+  } catch {
+    return {
+      listings: 0,
+      active: 0,
+      sold: 0,
+      totalViews: 0,
+      avgViews: 0,
+      inventoryValue: 0,
+      featured: 0,
+      verified: 0,
+      leads: 0,
+    };
+  }
+}
+
+export interface DealerLeadRow {
+  id: string;
+  buyer: string;
+  subject: string | null;
+  vehicleTitle: string | null;
+  vehicleSlug: string | null;
+  lastMessage: string | null;
+  lastMessageAt: Date;
+}
+
+/** Buyer conversations on a dealer's listings — their lead pipeline. */
+export async function getDealerLeads(userId: string): Promise<DealerLeadRow[]> {
+  try {
+    const rows = await prisma.conversation.findMany({
+      where: { sellerId: userId },
+      orderBy: { lastMessageAt: "desc" },
+      take: 100,
+      include: {
+        buyer: { select: { name: true } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1, select: { body: true } },
+      },
+    });
+
+    // Conversation stores vehicleId as a scalar (no relation), so resolve the
+    // referenced vehicles in one extra query.
+    const vehicleIds = [...new Set(rows.map((r) => r.vehicleId).filter((x): x is string => !!x))];
+    const vehicles = vehicleIds.length
+      ? await prisma.vehicle.findMany({
+          where: { id: { in: vehicleIds } },
+          select: { id: true, title: true, slug: true },
+        })
+      : [];
+    const byId = new Map(vehicles.map((v) => [v.id, v]));
+
+    return rows.map((c) => {
+      const v = c.vehicleId ? byId.get(c.vehicleId) : undefined;
+      return {
+        id: c.id,
+        buyer: c.buyer?.name ?? "Buyer",
+        subject: c.subject,
+        vehicleTitle: v?.title ?? null,
+        vehicleSlug: v?.slug ?? null,
+        lastMessage: c.messages[0]?.body ?? null,
+        lastMessageAt: c.lastMessageAt,
+      };
+    });
   } catch {
     return [];
   }

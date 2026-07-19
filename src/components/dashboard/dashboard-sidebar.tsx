@@ -23,6 +23,8 @@ import {
   Receipt,
   ShieldCheck,
   Wallet,
+  ClipboardCheck,
+  BadgeCheck,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
@@ -47,6 +49,8 @@ const iconMap = {
   Receipt,
   ShieldCheck,
   Wallet,
+  ClipboardCheck,
+  BadgeCheck,
 };
 
 type IconName = keyof typeof iconMap;
@@ -57,6 +61,7 @@ const customerNav: { label: string; href: string; icon: IconName }[] = [
   { label: "Saved Searches", href: "/dashboard/searches", icon: "Bookmark" },
   { label: "My Imports", href: "/dashboard/imports", icon: "Ship" },
   { label: "My Orders", href: "/dashboard/orders", icon: "ShoppingBag" },
+  { label: "Inspections", href: "/dashboard/inspections", icon: "ClipboardCheck" },
   { label: "Messages", href: "/dashboard/messages", icon: "MessageSquare" },
   { label: "Profile", href: "/dashboard/profile", icon: "Settings" },
 ];
@@ -64,7 +69,9 @@ const customerNav: { label: string; href: string; icon: IconName }[] = [
 const dealerNav: { label: string; href: string; icon: IconName }[] = [
   { label: "Overview", href: "/dashboard/dealer", icon: "LayoutDashboard" },
   { label: "My Listings", href: "/dashboard/dealer/listings", icon: "Car" },
+  { label: "Leads", href: "/dashboard/dealer/leads", icon: "MessageSquare" },
   { label: "Analytics", href: "/dashboard/dealer/analytics", icon: "BarChart3" },
+  { label: "Get Verified", href: "/dashboard/dealer/verification", icon: "BadgeCheck" },
   { label: "Inquiries", href: "/dashboard/messages", icon: "MessageSquare" },
   { label: "Profile", href: "/dashboard/profile", icon: "Settings" },
 ];
@@ -83,6 +90,8 @@ const adminNav: { label: string; href: string; icon: IconName }[] = [
   { label: "Vehicles", href: "/admin/vehicles", icon: "Car" },
   { label: "Parts", href: "/admin/parts", icon: "Package" },
   { label: "Dealers", href: "/admin/dealers", icon: "Store" },
+  { label: "Verifications", href: "/admin/verifications", icon: "BadgeCheck" },
+  { label: "Inspections", href: "/admin/inspections", icon: "ClipboardCheck" },
   { label: "Orders", href: "/admin/orders", icon: "Receipt" },
   { label: "Imports", href: "/admin/imports", icon: "Ship" },
   { label: "Escrow", href: "/admin/escrow", icon: "Wallet" },

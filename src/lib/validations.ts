@@ -252,6 +252,42 @@ export const savedSearchSchema = z.object({
   query: z.string().max(500).default(""),
 });
 
+// ── Dealer bulk listing actions ───────────────────────────────
+export const dealerBulkSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1, "Select at least one listing").max(200),
+  action: z.enum(["sold", "unpublish", "republish"]),
+});
+
+// ── Vehicle ownership transfer ────────────────────────────────
+export const ownershipTransferSchema = z.object({
+  email: z.string().trim().email("Enter the new owner's email"),
+  note: z.string().max(500).optional(),
+});
+
+// ── Trust & verification ──────────────────────────────────────
+export const dealerVerificationSchema = z.object({
+  businessRegNumber: z.string().trim().min(2, "Business registration number is required").max(60),
+  taxId: z.string().trim().max(60).optional(),
+  contactName: z.string().trim().min(2, "Contact name is required").max(120),
+  contactPhone: z.string().trim().min(7, "A valid phone is required").max(30),
+  idType: z.string().trim().min(2, "Select an ID type").max(40),
+  idNumber: z.string().trim().min(3, "ID number is required").max(60),
+  documentUrl: z.string().trim().url("Enter a valid document link").max(500).optional().or(z.literal("")),
+  notes: z.string().max(1000).optional(),
+});
+
+export const verificationReviewSchema = z.object({
+  action: z.enum(["approve", "reject"]),
+  reviewNote: z.string().max(1000).optional(),
+});
+
+export const inspectionReportSchema = z.object({
+  overallGrade: z.string().trim().min(1, "Add a grade").max(10),
+  reportSummary: z.string().trim().min(2, "Add a short summary").max(4000),
+  reportUrl: z.string().trim().url("Enter a valid link").max(500).optional().or(z.literal("")),
+  status: z.enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"]).optional(),
+});
+
 // ── Bookings ──────────────────────────────────────────────────
 export const serviceBookingSchema = z.object({
   serviceProviderId: z.string().min(1),

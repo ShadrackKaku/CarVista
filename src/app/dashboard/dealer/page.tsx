@@ -1,22 +1,20 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Car, CircleDollarSign, Plus, ShieldCheck, Star } from "lucide-react";
+import { Car, CircleDollarSign, Eye, MessageSquare, Plus } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
-import { getDealerListings } from "@/lib/queries";
+import { getDealerListings, getDealerStats } from "@/lib/queries";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatCompactCurrency } from "@/lib/utils";
+import { formatCurrency, formatCompactCurrency, formatNumber } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function DealerDashboardPage() {
   const user = await getCurrentUser();
-  const listings = user ? await getDealerListings(user.id) : [];
-
-  const totalValue = listings.reduce((sum, v) => sum + v.price, 0);
-  const featured = listings.filter((v) => v.featured).length;
-  const verified = listings.filter((v) => v.verified).length;
+  const [listings, stats] = user
+    ? await Promise.all([getDealerListings(user.id), getDealerStats(user.id)])
+    : [[], null];
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -33,10 +31,14 @@ export default async function DealerDashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active listings" value={listings.length} icon={Car} />
-        <StatCard label="Inventory value" value={formatCompactCurrency(totalValue)} icon={CircleDollarSign} />
-        <StatCard label="Verified" value={verified} icon={ShieldCheck} />
-        <StatCard label="Featured" value={featured} icon={Star} />
+        <StatCard label="Active listings" value={stats?.active ?? listings.length} icon={Car} />
+        <StatCard label="Total views" value={formatNumber(stats?.totalViews ?? 0)} icon={Eye} />
+        <StatCard label="Leads" value={formatNumber(stats?.leads ?? 0)} icon={MessageSquare} />
+        <StatCard
+          label="Inventory value"
+          value={formatCompactCurrency(stats?.inventoryValue ?? 0)}
+          icon={CircleDollarSign}
+        />
       </div>
 
       <section>
