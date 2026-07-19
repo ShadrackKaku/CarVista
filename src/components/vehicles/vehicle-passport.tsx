@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getVehiclePassport } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
+import { PassportManager } from "@/components/vehicles/passport-manager";
 import { formatDate } from "@/lib/utils";
 
 const EVENT_ICON: Record<string, LucideIcon> = {
@@ -51,7 +52,13 @@ const EVENT_LABEL: Record<string, string> = {
   NOTE: "Note",
 };
 
-export async function VehiclePassport({ vehicleId }: { vehicleId: string }) {
+export async function VehiclePassport({
+  vehicleId,
+  sellerId,
+}: {
+  vehicleId: string;
+  sellerId?: string | null;
+}) {
   const passport = await getVehiclePassport(vehicleId);
   const events = passport?.events ?? [];
 
@@ -108,6 +115,8 @@ export async function VehiclePassport({ vehicleId }: { vehicleId: string }) {
             })}
           </ol>
         )}
+
+        <PassportManager vehicleId={vehicleId} sellerId={sellerId} />
       </div>
     </section>
   );
