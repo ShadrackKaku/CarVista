@@ -7,7 +7,7 @@ import { sendMail, passwordResetEmail } from "@/lib/email";
 import { absoluteUrl } from "@/lib/utils";
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`forgot:${getClientId(req)}`, 5, 60_000);
+  const limit = await rateLimit(`forgot:${getClientId(req)}`, 5, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }

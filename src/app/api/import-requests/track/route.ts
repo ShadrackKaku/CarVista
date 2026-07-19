@@ -7,7 +7,7 @@ import { rateLimit, getClientId } from "@/lib/rate-limit";
  * Public lookup of an import's status by its reference number.
  */
 export async function GET(req: Request) {
-  const limit = rateLimit(`track:${getClientId(req)}`, 30, 60_000);
+  const limit = await rateLimit(`track:${getClientId(req)}`, 30, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

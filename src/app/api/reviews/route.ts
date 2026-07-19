@@ -45,7 +45,7 @@ async function getReviewTargetOwner(
 }
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`review:${getClientId(req)}`, 10, 60_000);
+  const limit = await rateLimit(`review:${getClientId(req)}`, 10, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

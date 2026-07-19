@@ -20,7 +20,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const user = await getCurrentUser().catch(() => null);
   if (!user) return NextResponse.json({ error: "Please sign in" }, { status: 401 });
 
-  const limit = rateLimit(`escrow-pay:${getClientId(req)}`, 10, 60_000);
+  const limit = await rateLimit(`escrow-pay:${getClientId(req)}`, 10, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many attempts. Try again shortly." }, { status: 429 });
   }

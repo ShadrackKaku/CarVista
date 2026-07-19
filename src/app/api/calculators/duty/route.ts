@@ -6,7 +6,7 @@ import { rateLimit, getClientId } from "@/lib/rate-limit";
 import { getCurrentUser } from "@/lib/session";
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`duty:${getClientId(req)}`, 30, 60_000);
+  const limit = await rateLimit(`duty:${getClientId(req)}`, 30, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

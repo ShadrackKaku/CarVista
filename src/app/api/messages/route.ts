@@ -5,7 +5,7 @@ import { messageSchema } from "@/lib/validations";
 import { rateLimit, getClientId } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`message:${getClientId(req)}`, 20, 60_000);
+  const limit = await rateLimit(`message:${getClientId(req)}`, 20, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many messages. Please slow down." }, { status: 429 });
   }
