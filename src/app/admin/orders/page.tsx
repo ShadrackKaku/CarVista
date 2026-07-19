@@ -1,6 +1,7 @@
 import { Receipt } from "lucide-react";
 import { getAllOrders } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
+import { OrderRefundButton } from "@/components/admin/order-refund-button";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -40,11 +41,12 @@ export default async function AdminOrdersPage() {
                   <th className="px-4 py-3 font-medium">Total</th>
                   <th className="px-4 py-3 font-medium">Payment</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Refund</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {orders.map((o) => (
-                  <tr key={o.number} className="hover:bg-accent/40">
+                  <tr key={o.id} className="hover:bg-accent/40">
                     <td className="px-4 py-3 font-medium">{o.number}</td>
                     <td className="px-4 py-3 text-muted-foreground">{o.customer}</td>
                     <td className="px-4 py-3 text-muted-foreground">{formatDate(o.date)}</td>
@@ -55,6 +57,13 @@ export default async function AdminOrdersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={statusVariant[o.status] ?? "muted"}>{o.status}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <OrderRefundButton
+                        orderId={o.id}
+                        refundable={o.refundable}
+                        refundStatus={o.refundStatus}
+                      />
                     </td>
                   </tr>
                 ))}

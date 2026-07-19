@@ -14,6 +14,56 @@ interface OrderItemInput {
 // Paystack's hosted checkout covers cards AND Mobile Money in Ghana.
 const PAYSTACK_METHODS: PaymentMethod[] = ["PAYSTACK", "MOBILE_MONEY"];
 
+/**
+ * Build the checkout response for an order that ALREADY exists (an idempotent
+ * replay of a double-submitted checkout). If it's still awaiting an online
+ * payment, re-initialize Paystack with the SAME reference — Paystack returns
+ * the same transaction, so the customer lands on the identical hosted checkout
+ * rather than a duplicate charge.
+ */
+async function existingOrderResponse(
+  order: {
+    orderNumber: string;
+    userId: string;
+    email: string | null;
+    status: string;
+    total: Prisma.Decimal;
+    payment: { method: PaymentMethod; reference: string; status: string } | null;
+  },
+  req: Request,
+): Promise<NextResponse> {
+  const p = order.payment;
+  if (
+    p &&
+    PAYSTACK_METHODS.includes(p.method) &&
+    isPaystackConfigured() &&
+    order.email &&
+    order.status === "PENDING" &&
+    p.status === "PENDING"
+  ) {
+    try {
+      const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+      const init = await initializeTransaction({
+        email: order.email,
+        amountGhs: Number(order.total),
+        reference: p.reference,
+        callbackUrl: `${origin}/checkout/verify`,
+        metadata: { orderNumber: order.orderNumber, userId: order.userId },
+      });
+      return NextResponse.json(
+        { success: true, orderNumber: order.orderNumber, authorizationUrl: init.authorizationUrl, idempotent: true },
+        { status: 200 },
+      );
+    } catch {
+      // fall through to the pending response
+    }
+  }
+  return NextResponse.json(
+    { success: true, orderNumber: order.orderNumber, paymentPending: true, idempotent: true },
+    { status: 200 },
+  );
+}
+
 export async function POST(req: Request) {
   const limit = rateLimit(`orders:${getClientId(req)}`, 10, 60_000);
   if (!limit.success) {
@@ -33,6 +83,22 @@ export async function POST(req: Request) {
     }
     if (!body.fullName || !body.phone || !body.address || !body.city) {
       return NextResponse.json({ error: "Delivery details are incomplete" }, { status: 400 });
+    }
+
+    // Idempotency: if this checkout was already submitted (same key, same user),
+    // return the existing order instead of creating a duplicate.
+    const idempotencyKey =
+      typeof body.idempotencyKey === "string" && body.idempotencyKey.length <= 100
+        ? body.idempotencyKey
+        : null;
+    if (idempotencyKey) {
+      const existing = await prisma.order.findUnique({
+        where: { idempotencyKey },
+        include: { payment: { select: { method: true, reference: true, status: true } } },
+      });
+      if (existing && existing.userId === user.id) {
+        return existingOrderResponse(existing, req);
+      }
     }
 
     // ── Server-side validation: NEVER trust client-supplied prices/names. ──
@@ -76,39 +142,58 @@ export async function POST(req: Request) {
     const method = (body.method as PaymentMethod) ?? "MOBILE_MONEY";
     const email = body.email || user.email;
 
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        userId: user.id,
-        status: "PENDING",
-        subtotal: new Prisma.Decimal(subtotal),
-        shippingFee: new Prisma.Decimal(shippingFee),
-        total: new Prisma.Decimal(total),
-        fullName: body.fullName,
-        phone: body.phone,
-        email: email || null,
-        address: body.address,
-        city: body.city,
-        region: body.region ?? "Greater Accra",
-        notes: body.notes || null,
-        items: {
-          create: items.map((i) => ({
-            partId: i.partId,
-            name: i.name,
-            price: new Prisma.Decimal(i.price),
-            quantity: i.quantity,
-          })),
-        },
-        payment: {
-          create: {
-            method,
-            status: "PENDING",
-            amount: new Prisma.Decimal(total),
-            reference: paymentReference,
+    let order;
+    try {
+      order = await prisma.order.create({
+        data: {
+          orderNumber,
+          userId: user.id,
+          status: "PENDING",
+          idempotencyKey,
+          subtotal: new Prisma.Decimal(subtotal),
+          shippingFee: new Prisma.Decimal(shippingFee),
+          total: new Prisma.Decimal(total),
+          fullName: body.fullName,
+          phone: body.phone,
+          email: email || null,
+          address: body.address,
+          city: body.city,
+          region: body.region ?? "Greater Accra",
+          notes: body.notes || null,
+          items: {
+            create: items.map((i) => ({
+              partId: i.partId,
+              name: i.name,
+              price: new Prisma.Decimal(i.price),
+              quantity: i.quantity,
+            })),
+          },
+          payment: {
+            create: {
+              method,
+              status: "PENDING",
+              amount: new Prisma.Decimal(total),
+              reference: paymentReference,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (e) {
+      // Concurrent double-submit: the other request won the unique idempotency
+      // key. Return that order instead of erroring or duplicating.
+      if (
+        idempotencyKey &&
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2002"
+      ) {
+        const existing = await prisma.order.findUnique({
+          where: { idempotencyKey },
+          include: { payment: { select: { method: true, reference: true, status: true } } },
+        });
+        if (existing) return existingOrderResponse(existing, req);
+      }
+      throw e;
+    }
 
     // Online payment via Paystack (card + Mobile Money).
     if (PAYSTACK_METHODS.includes(method) && isPaystackConfigured() && email) {

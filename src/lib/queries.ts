@@ -577,6 +577,7 @@ export interface AdminStats {
 }
 
 export interface AdminOrderRow {
+  id: string;
   number: string;
   date: Date;
   customer: string;
@@ -584,6 +585,10 @@ export interface AdminOrderRow {
   total: number;
   status: string;
   method: string;
+  /** Payment/refund state for the refund control. */
+  paymentStatus: string | null;
+  refundStatus: string;
+  refundable: boolean;
 }
 
 export async function getAllOrders(): Promise<AdminOrderRow[]> {
@@ -591,9 +596,13 @@ export async function getAllOrders(): Promise<AdminOrderRow[]> {
     const rows = await prisma.order.findMany({
       orderBy: { createdAt: "desc" },
       take: 100,
-      include: { _count: { select: { items: true } }, payment: { select: { method: true } } },
+      include: {
+        _count: { select: { items: true } },
+        payment: { select: { method: true, status: true, refundStatus: true } },
+      },
     });
     return rows.map((o) => ({
+      id: o.id,
       number: o.orderNumber,
       date: o.createdAt,
       customer: o.fullName,
@@ -601,6 +610,9 @@ export async function getAllOrders(): Promise<AdminOrderRow[]> {
       total: num(o.total),
       status: o.status,
       method: o.payment?.method ?? "—",
+      paymentStatus: o.payment?.status ?? null,
+      refundStatus: o.payment?.refundStatus ?? "NONE",
+      refundable: o.payment?.status === "SUCCESS" && o.payment?.refundStatus === "NONE",
     }));
   } catch {
     return [];
@@ -635,6 +647,77 @@ export async function getAllImportRequests(): Promise<AdminImportRow[]> {
     }));
   } catch {
     return [];
+  }
+}
+
+export interface AdminEscrowRow {
+  importId: string;
+  ref: string;
+  customer: string;
+  status: string;
+  total: number;
+  paid: number;
+  refunded: number;
+  outstanding: number;
+  milestonesPaid: number;
+  milestonesTotal: number;
+  createdAt: Date;
+}
+
+export interface AdminEscrowOverview {
+  plans: AdminEscrowRow[];
+  totals: { collected: number; outstanding: number; refunded: number; activePlans: number };
+}
+
+/** All escrow plans with money rolled up — the admin overview dashboard. */
+export async function getAdminEscrowPlans(): Promise<AdminEscrowOverview> {
+  try {
+    const plans = await prisma.escrowPlan.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      include: {
+        importRequest: {
+          select: { id: true, requestNumber: true, user: { select: { name: true } } },
+        },
+        milestones: { select: { amount: true, status: true, refundStatus: true } },
+      },
+    });
+
+    const rows: AdminEscrowRow[] = plans.map((p) => {
+      const total = num(p.totalAmount);
+      const paid = p.milestones
+        .filter((m) => m.status === "PAID" && m.refundStatus !== "REFUNDED")
+        .reduce((s, m) => s + num(m.amount), 0);
+      const refunded = p.milestones
+        .filter((m) => m.refundStatus === "REFUNDED")
+        .reduce((s, m) => s + num(m.amount), 0);
+      return {
+        importId: p.importRequest.id,
+        ref: p.importRequest.requestNumber,
+        customer: p.importRequest.user?.name ?? "—",
+        status: p.status,
+        total,
+        paid,
+        refunded,
+        outstanding: Math.max(0, total - paid - refunded),
+        milestonesPaid: p.milestones.filter((m) => m.status === "PAID").length,
+        milestonesTotal: p.milestones.length,
+        createdAt: p.createdAt,
+      };
+    });
+
+    const totals = {
+      collected: rows.reduce((s, r) => s + r.paid, 0),
+      outstanding: rows
+        .filter((r) => r.status === "ACTIVE")
+        .reduce((s, r) => s + r.outstanding, 0),
+      refunded: rows.reduce((s, r) => s + r.refunded, 0),
+      activePlans: rows.filter((r) => r.status === "ACTIVE").length,
+    };
+
+    return { plans: rows, totals };
+  } catch {
+    return { plans: [], totals: { collected: 0, outstanding: 0, refunded: 0, activePlans: 0 } };
   }
 }
 

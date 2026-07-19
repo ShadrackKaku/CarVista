@@ -643,6 +643,10 @@ model Order {
   userId        String
   status        OrderStatus @default(PENDING)
 
+  // Idempotency: a client-supplied key that makes a double-submitted checkout
+  // return the SAME order instead of creating a duplicate.
+  idempotencyKey String?    @unique
+
   subtotal      Decimal     @db.Decimal(10, 2)
   shippingFee   Decimal     @db.Decimal(10, 2) @default(0)
   discount      Decimal     @db.Decimal(10, 2) @default(0)
@@ -702,6 +706,10 @@ model Payment {
   reference     String        @unique
   providerRef   String?
   paidAt        DateTime?
+
+  // Refund tracking (money-back on a paid parts order).
+  refundStatus  RefundStatus  @default(NONE)
+  refundedAt    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
