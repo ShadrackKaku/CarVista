@@ -79,6 +79,33 @@ export interface VerifyResult {
   channel: string | null;
 }
 
+/**
+ * Convert a major-unit amount (GHS) to pesewas the SAME way
+ * `initializeTransaction` does, so an expected amount can be compared exactly
+ * against what Paystack reports it settled.
+ */
+export function toPesewas(amountMajor: number): number {
+  return Math.round(amountMajor * 100);
+}
+
+/**
+ * The core payment-integrity check: confirm that a settled transaction is for
+ * the exact amount and currency we expected before we fulfil anything. Even
+ * though we initialize transactions server-side, re-checking the settled amount
+ * defends against reference confusion, partial payments, and currency mix-ups —
+ * we never mark an order/installment paid on `status: "success"` alone.
+ */
+export function settledAsExpected(
+  result: { amount: number; currency: string },
+  expectedAmountMajor: number,
+  expectedCurrency = "GHS",
+): boolean {
+  return (
+    result.amount === toPesewas(expectedAmountMajor) &&
+    result.currency.toUpperCase() === expectedCurrency.toUpperCase()
+  );
+}
+
 export async function verifyTransaction(reference: string): Promise<VerifyResult> {
   const res = await fetch(`${PAYSTACK_BASE}/transaction/verify/${encodeURIComponent(reference)}`, {
     headers: { Authorization: `Bearer ${secretKey()}` },

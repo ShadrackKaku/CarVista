@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyTransaction } from "@/lib/paystack";
+import { verifyTransaction, settledAsExpected } from "@/lib/paystack";
 import { confirmMilestonePayment } from "@/lib/escrow";
 
 /**
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   try {
     const milestone = await prisma.escrowMilestone.findUnique({
       where: { reference },
-      include: { plan: { select: { importRequestId: true } } },
+      include: { plan: { select: { importRequestId: true, currency: true } } },
     });
     if (!milestone) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
@@ -35,6 +35,25 @@ export async function GET(req: Request) {
     const result = await verifyTransaction(reference);
 
     if (result.status === "success") {
+      // Payment-integrity guard: only fulfil if Paystack settled the exact
+      // amount and currency we asked for. Never trust `status: "success"` alone.
+      if (!settledAsExpected(result, Number(milestone.amount), milestone.plan.currency)) {
+        console.error("[escrow:verify] amount/currency mismatch", {
+          reference,
+          expected: Number(milestone.amount),
+          currency: milestone.plan.currency,
+          gotPesewas: result.amount,
+          gotCurrency: result.currency,
+        });
+        await prisma.escrowMilestone.updateMany({
+          where: { id: milestone.id, status: "PROCESSING" },
+          data: { status: "LOCKED" },
+        });
+        return NextResponse.json(
+          { status: "mismatch", label: milestone.label, importRequestId },
+          { status: 409 },
+        );
+      }
       await confirmMilestonePayment(milestone.id, result.reference);
       return NextResponse.json({ status: "success", label: milestone.label, importRequestId });
     }

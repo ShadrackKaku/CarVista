@@ -12,6 +12,10 @@ concurrency:
 
 jobs:
   verify:
+    # NOTE: keep this job name EXACTLY as-is — branch protection requires a
+    # status check named "Typecheck · Lint · Build". Renaming it leaves the
+    # required check "Expected / waiting" forever and blocks merges. The Test
+    # step below still runs; only the display name is intentionally stable.
     name: Typecheck · Lint · Build
     runs-on: ubuntu-latest
 
@@ -43,6 +47,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Test
+        run: npm test
 
       - name: Build
         run: npm run build
