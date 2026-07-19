@@ -11,7 +11,7 @@ import { BuyNowButton } from "@/components/parts/buy-now-button";
 import { PartCard } from "@/components/parts/part-card";
 import { getPartBySlug, getParts } from "@/lib/queries";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, safeJsonLd } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +60,7 @@ export default async function PartDetailPage({ params }: { params: { slug: strin
 
   return (
     <div className="container-page py-8">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
 
       <nav className="mb-5 flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">Home</Link>

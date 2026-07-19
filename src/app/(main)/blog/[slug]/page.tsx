@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ArrowLeft, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getBlogPosts, getBlogPostBySlug } from "@/lib/queries";
-import { formatDate } from "@/lib/utils";
+import { formatDate, safeJsonLd } from "@/lib/utils";
 
 export const revalidate = 60;
 
@@ -50,7 +50,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <div className="container-page py-10">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
       <article className="mx-auto max-w-3xl">
         <Link href="/blog" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to blog

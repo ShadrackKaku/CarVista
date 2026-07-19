@@ -1,6 +1,11 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
+/**
+ * Role gating for the protected areas. The role comes from the JWT, which is
+ * populated strictly from the database (see auth.ts) — a client can't set it —
+ * so these checks can't be bypassed by a forged/updated token.
+ */
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;

@@ -12,6 +12,38 @@ const TARGET_FIELD = {
   service: "serviceProviderId",
 } as const;
 
+/**
+ * Resolve the owner (user id) of a review target, verifying it exists.
+ * Returns `undefined` if the target doesn't exist, otherwise the owner's user
+ * id (used to block self-reviews).
+ */
+async function getReviewTargetOwner(
+  targetType: keyof typeof TARGET_FIELD,
+  targetId: string,
+): Promise<string | undefined> {
+  switch (targetType) {
+    case "vehicle": {
+      const v = await prisma.vehicle.findUnique({ where: { id: targetId }, select: { sellerId: true } });
+      return v?.sellerId;
+    }
+    case "part": {
+      const p = await prisma.part.findUnique({ where: { id: targetId }, select: { sellerId: true } });
+      return p?.sellerId;
+    }
+    case "dealer": {
+      const d = await prisma.dealer.findUnique({ where: { id: targetId }, select: { userId: true } });
+      return d?.userId;
+    }
+    case "service": {
+      const s = await prisma.serviceProvider.findUnique({
+        where: { id: targetId },
+        select: { userId: true },
+      });
+      return s?.userId;
+    }
+  }
+}
+
 export async function POST(req: Request) {
   const limit = rateLimit(`review:${getClientId(req)}`, 10, 60_000);
   if (!limit.success) {
@@ -33,6 +65,16 @@ export async function POST(req: Request) {
     }
     const { targetType, targetId, rating, title, comment } = parsed.data;
     const field = TARGET_FIELD[targetType];
+
+    // The target must actually exist — don't let reviews attach to arbitrary
+    // (or made-up) ids. For a dealer/service, also block self-reviews.
+    const owner = await getReviewTargetOwner(targetType, targetId);
+    if (owner === undefined) {
+      return NextResponse.json({ error: "That item no longer exists." }, { status: 404 });
+    }
+    if (owner && owner === user.id) {
+      return NextResponse.json({ error: "You can't review your own listing." }, { status: 403 });
+    }
 
     // One review per user per target.
     const existing = await prisma.review.findFirst({

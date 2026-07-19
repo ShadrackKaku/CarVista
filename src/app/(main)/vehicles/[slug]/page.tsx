@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getVehicleBySlug, getSimilarVehicles } from "@/lib/queries";
 import { calculateDuty } from "@/lib/duty-calculator";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatNumber, safeJsonLd } from "@/lib/utils";
 
 export const revalidate = 60;
 
@@ -112,7 +112,7 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
       <ViewBeacon vehicleId={vehicle.id} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       {/* Breadcrumb */}
