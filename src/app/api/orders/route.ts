@@ -53,7 +53,7 @@ export async function POST(req: Request) {
           { status: 400 },
         );
       }
-      const quantity = Math.max(1, Math.floor(Number(raw.quantity) || 1));
+      const quantity = Math.min(999, Math.max(1, Math.floor(Number(raw.quantity) || 1)));
       if (part.stock < quantity) {
         return NextResponse.json(
           { error: `Only ${part.stock} left of "${part.name}". Please adjust the quantity.` },

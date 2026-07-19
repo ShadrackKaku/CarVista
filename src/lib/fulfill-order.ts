@@ -25,6 +25,27 @@ export async function confirmPaidPayment(paymentId: string, providerRef?: string
 
   await prisma.order.update({ where: { id: payment.orderId }, data: { status: "PAID" } });
 
+  // Decrement inventory now that the order is paid. This runs exactly once
+  // because the payment→SUCCESS transition above is the single gate. Each
+  // decrement is atomic and guarded (`stock >= quantity`) so stock can never go
+  // negative even if two orders race for the last unit; if the guard fails the
+  // item was oversold — clamp to zero and flag it for manual fulfilment rather
+  // than silently shipping stock we don't have.
+  for (const item of payment.order.items) {
+    const applied = await prisma.part.updateMany({
+      where: { id: item.partId, stock: { gte: item.quantity } },
+      data: { stock: { decrement: item.quantity } },
+    });
+    if (applied.count === 0) {
+      await prisma.part.updateMany({ where: { id: item.partId }, data: { stock: 0 } });
+      console.warn("[fulfill] oversold item", {
+        orderId: payment.orderId,
+        partId: item.partId,
+        wanted: item.quantity,
+      });
+    }
+  }
+
   const order = payment.order;
   if (order.email) {
     await sendMail({
