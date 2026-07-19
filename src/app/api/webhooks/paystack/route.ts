@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyWebhookSignature } from "@/lib/paystack";
+import { verifyWebhookSignature, settledAsExpected, isPaystackConfigured } from "@/lib/paystack";
 import { confirmPaidPayment } from "@/lib/fulfill-order";
 import { confirmMilestonePayment } from "@/lib/escrow";
 
@@ -13,6 +13,12 @@ import { confirmMilestonePayment } from "@/lib/escrow";
  *   https://YOUR_DOMAIN/api/webhooks/paystack
  */
 export async function POST(req: Request) {
+  // Without the secret we can't authenticate the payload — reject rather than
+  // let the signature check throw a 500.
+  if (!isPaystackConfigured()) {
+    return NextResponse.json({ error: "Not configured" }, { status: 401 });
+  }
+
   const raw = await req.text();
   const signature = req.headers.get("x-paystack-signature");
 
@@ -20,7 +26,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
-  let event: { event?: string; data?: { reference?: string } };
+  let event: {
+    event?: string;
+    data?: { reference?: string; amount?: number; currency?: string };
+  };
   try {
     event = JSON.parse(raw);
   } catch {
@@ -30,20 +39,38 @@ export async function POST(req: Request) {
   try {
     if (event.event === "charge.success" && event.data?.reference) {
       const ref = event.data.reference;
+      // The payload is signature-verified, so its amount/currency are
+      // authoritative. Still confirm they match what we expect before
+      // fulfilling — a mismatch means don't touch the record.
+      const settled = {
+        amount: Number(event.data.amount ?? 0),
+        currency: String(event.data.currency ?? "GHS"),
+      };
+
       // Escrow installment references are prefixed "ESC-"; everything else is a
       // shop order. Reconcile whichever this reference belongs to.
       const payment = await prisma.payment.findUnique({
         where: { reference: ref },
-        select: { id: true },
+        select: { id: true, amount: true, currency: true },
       });
       if (payment) {
-        await confirmPaidPayment(payment.id, ref);
+        if (settledAsExpected(settled, Number(payment.amount), payment.currency)) {
+          await confirmPaidPayment(payment.id, ref);
+        } else {
+          console.error("[paystack:webhook] order amount mismatch", { ref });
+        }
       } else {
         const milestone = await prisma.escrowMilestone.findUnique({
           where: { reference: ref },
-          select: { id: true },
+          select: { id: true, amount: true, plan: { select: { currency: true } } },
         });
-        if (milestone) await confirmMilestonePayment(milestone.id, ref);
+        if (milestone) {
+          if (settledAsExpected(settled, Number(milestone.amount), milestone.plan.currency)) {
+            await confirmMilestonePayment(milestone.id, ref);
+          } else {
+            console.error("[paystack:webhook] escrow amount mismatch", { ref });
+          }
+        }
       }
     }
   } catch (error) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyTransaction } from "@/lib/paystack";
+import { verifyTransaction, settledAsExpected } from "@/lib/paystack";
 import { confirmPaidPayment } from "@/lib/fulfill-order";
 
 /**
@@ -32,6 +32,21 @@ export async function GET(req: Request) {
     const result = await verifyTransaction(reference);
 
     if (result.status === "success") {
+      // Payment-integrity guard: only fulfil if Paystack settled the exact
+      // amount and currency the order expects.
+      if (!settledAsExpected(result, Number(payment.amount), payment.currency)) {
+        console.error("[paystack:verify] amount/currency mismatch", {
+          reference,
+          expected: Number(payment.amount),
+          currency: payment.currency,
+          gotPesewas: result.amount,
+          gotCurrency: result.currency,
+        });
+        return NextResponse.json(
+          { status: "mismatch", orderNumber: payment.order.orderNumber },
+          { status: 409 },
+        );
+      }
       await confirmPaidPayment(payment.id, result.reference);
       return NextResponse.json({ status: "success", orderNumber: payment.order.orderNumber });
     }
