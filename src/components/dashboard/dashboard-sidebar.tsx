@@ -21,6 +21,7 @@ import {
   FileText,
   Receipt,
   ShieldCheck,
+  Wallet,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ const iconMap = {
   FileText,
   Receipt,
   ShieldCheck,
+  Wallet,
 };
 
 type IconName = keyof typeof iconMap;
@@ -80,6 +82,7 @@ const adminNav: { label: string; href: string; icon: IconName }[] = [
   { label: "Dealers", href: "/admin/dealers", icon: "Store" },
   { label: "Orders", href: "/admin/orders", icon: "Receipt" },
   { label: "Imports", href: "/admin/imports", icon: "Ship" },
+  { label: "Escrow", href: "/admin/escrow", icon: "Wallet" },
   { label: "Duty Rates", href: "/admin/duty-rates", icon: "FileText" },
   { label: "Reviews", href: "/admin/reviews", icon: "ShieldCheck" },
   { label: "Blog", href: "/admin/blog", icon: "FileText" },

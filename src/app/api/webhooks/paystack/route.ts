@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyWebhookSignature, settledAsExpected, isPaystackConfigured } from "@/lib/paystack";
-import { confirmPaidPayment } from "@/lib/fulfill-order";
+import { confirmPaidPayment, settleOrderRefund } from "@/lib/fulfill-order";
 import { confirmMilestonePayment, settleMilestoneRefund } from "@/lib/escrow";
 
 /**
@@ -81,15 +81,24 @@ export async function POST(req: Request) {
     }
 
     // Refund settlement — Paystack processes refunds asynchronously and reports
-    // the final outcome here, keyed by the original transaction reference.
+    // the final outcome here, keyed by the original transaction reference. The
+    // reference belongs to either a shop order (Payment) or an escrow
+    // installment; settle whichever it is.
     if (
       (event.event === "refund.processed" || event.event === "refund.failed") &&
       event.data?.transaction_reference
     ) {
-      await settleMilestoneRefund(
-        event.data.transaction_reference,
-        event.event === "refund.processed" ? "REFUNDED" : "FAILED",
-      );
+      const outcome = event.event === "refund.processed" ? "REFUNDED" : "FAILED";
+      const ref = event.data.transaction_reference;
+      const payment = await prisma.payment.findUnique({
+        where: { reference: ref },
+        select: { id: true },
+      });
+      if (payment) {
+        await settleOrderRefund(ref, outcome);
+      } else {
+        await settleMilestoneRefund(ref, outcome);
+      }
     }
   } catch (error) {
     console.error("[paystack:webhook]", error);

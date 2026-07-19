@@ -33,6 +33,13 @@ export default function CheckoutPage() {
   const [method, setMethod] = useState("MOBILE_MONEY");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  // A stable key for this checkout attempt, so a double-submit (double-click,
+  // slow network, back-and-retry) reuses the same order instead of duplicating.
+  const [idempotencyKey] = useState(() =>
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `ck-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -61,6 +68,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           ...form,
           method,
+          idempotencyKey,
           items: items.map((i) => ({
             partId: i.partId,
             name: i.name,
