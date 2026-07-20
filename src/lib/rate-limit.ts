@@ -23,17 +23,34 @@ export interface RateLimitResult {
 const upstashConfigured =
   !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const redis = upstashConfigured ? Redis.fromEnv() : null;
+// The Upstash client is created LAZILY on first use — never at module load.
+// Constructing it at import time means it runs during `next build`'s page-data
+// collection (every route that imports this file is evaluated then); a malformed
+// env value would throw there and fail the whole build. Deferring construction
+// to the first request keeps import side-effect-free, and any init error falls
+// back to the in-memory limiter instead of crashing.
+let redisInstance: Redis | null | undefined; // undefined = not yet initialised
+function getRedis(): Redis | null {
+  if (redisInstance === undefined) {
+    try {
+      redisInstance = upstashConfigured ? Redis.fromEnv() : null;
+    } catch (e) {
+      console.error("[rate-limit] Upstash init failed, using in-memory limiter", e);
+      redisInstance = null;
+    }
+  }
+  return redisInstance;
+}
 
 // One Ratelimit instance per (limit, window) pair — reused across requests.
 const limiterCache = new Map<string, Ratelimit>();
 
-function getLimiter(limit: number, windowMs: number): Ratelimit {
+function getLimiter(redis: Redis, limit: number, windowMs: number): Ratelimit {
   const key = `${limit}:${windowMs}`;
   let limiter = limiterCache.get(key);
   if (!limiter) {
     limiter = new Ratelimit({
-      redis: redis!,
+      redis,
       limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
       prefix: `cv:rl:${key}`,
       analytics: false,
@@ -78,9 +95,10 @@ export async function rateLimit(
   limit = 60,
   windowMs = 60_000,
 ): Promise<RateLimitResult> {
+  const redis = getRedis();
   if (redis) {
     try {
-      const res = await getLimiter(limit, windowMs).limit(identifier);
+      const res = await getLimiter(redis, limit, windowMs).limit(identifier);
       return {
         success: res.success,
         limit: res.limit,

@@ -132,9 +132,14 @@ export function DealerListingsTable({ listings }: { listings: DealerListingRow[]
                     <Badge variant={STATUS_VARIANT[v.status] ?? "secondary"}>{v.status}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/vehicles/${v.slug}`}>View</Link>
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/vehicles/${v.slug}`}>View</Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/vehicles/${v.slug}/edit`}>Edit</Link>
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
