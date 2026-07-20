@@ -4,7 +4,7 @@ import { newsletterSchema } from "@/lib/validations";
 import { rateLimit, getClientId } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`newsletter:${getClientId(req)}`, 10, 60_000);
+  const limit = await rateLimit(`newsletter:${getClientId(req)}`, 10, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

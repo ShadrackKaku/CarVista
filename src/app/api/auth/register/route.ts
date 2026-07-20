@@ -9,7 +9,7 @@ import { absoluteUrl } from "@/lib/utils";
 import { UserRole } from "@prisma/client";
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`register:${getClientId(req)}`, 5, 60_000);
+  const limit = await rateLimit(`register:${getClientId(req)}`, 5, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }

@@ -65,7 +65,7 @@ async function existingOrderResponse(
 }
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`orders:${getClientId(req)}`, 10, 60_000);
+  const limit = await rateLimit(`orders:${getClientId(req)}`, 10, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

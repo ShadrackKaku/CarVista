@@ -13,7 +13,7 @@ import { addVehicleEvent } from "@/lib/passport";
  * vehicle's passport, so the chain of custody is permanent and portable.
  */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const limit = rateLimit(`transfer:${getClientId(req)}`, 10, 60_000);
+  const limit = await rateLimit(`transfer:${getClientId(req)}`, 10, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

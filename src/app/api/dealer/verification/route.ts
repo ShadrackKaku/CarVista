@@ -9,7 +9,7 @@ import { dealerVerificationSchema } from "@/lib/validations";
  * Re-submitting resets the request to PENDING.
  */
 export async function POST(req: Request) {
-  const limit = rateLimit(`dealer-kyc:${getClientId(req)}`, 5, 60_000);
+  const limit = await rateLimit(`dealer-kyc:${getClientId(req)}`, 5, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many attempts. Try again shortly." }, { status: 429 });
   }

@@ -14,7 +14,7 @@ import type { VehicleEventType } from "@prisma/client";
  * reviewed. This is the write path into the trust timeline.
  */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const limit = rateLimit(`passport:${getClientId(req)}`, 30, 60_000);
+  const limit = await rateLimit(`passport:${getClientId(req)}`, 30, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

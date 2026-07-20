@@ -6,7 +6,7 @@ import { generateReference } from "@/lib/utils";
 import { rateLimit, getClientId } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`booking:${getClientId(req)}`, 10, 60_000);
+  const limit = await rateLimit(`booking:${getClientId(req)}`, 10, 60_000);
   if (!limit.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
