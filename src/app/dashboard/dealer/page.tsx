@@ -88,7 +88,9 @@ export default async function DealerDashboardPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="sm">Edit</Button>
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/vehicles/${v.slug}/edit`}>Edit</Link>
+                        </Button>
                       </td>
                     </tr>
                   ))}

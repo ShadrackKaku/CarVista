@@ -58,10 +58,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     const previousOwnerId = vehicle.sellerId;
 
+    // Re-point the dealership link to the NEW owner's dealer profile (or clear
+    // it) so the listing never keeps showing under the previous dealership.
+    const targetDealer = await prisma.dealer.findUnique({
+      where: { userId: target.id },
+      select: { id: true },
+    });
+
     // Reassign the listing.
     await prisma.vehicle.update({
       where: { id: vehicle.id },
-      data: { sellerId: target.id },
+      data: { sellerId: target.id, dealerId: targetDealer?.id ?? null },
     });
 
     // Record the transfer on the passport — verified, because the platform

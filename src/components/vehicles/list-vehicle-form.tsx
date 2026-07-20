@@ -26,29 +26,55 @@ import {
   GHANA_REGIONS,
 } from "@/lib/constants";
 
-export function ListVehicleForm() {
+export interface VehicleFormInitial {
+  title?: string;
+  brandId?: string;
+  year?: number;
+  price?: string;
+  mileage?: string;
+  fuelType?: string;
+  transmission?: string;
+  engineSize?: string;
+  bodyType?: string;
+  condition?: string;
+  color?: string;
+  city?: string;
+  region?: string;
+  description?: string;
+  images?: string[];
+  videoUrl?: string;
+}
+
+export function ListVehicleForm({
+  initial,
+  vehicleId,
+}: {
+  initial?: VehicleFormInitial;
+  vehicleId?: string;
+} = {}) {
+  const isEdit = !!vehicleId;
   const { status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [form, setForm] = useState({
-    title: "",
-    brandId: "",
-    year: new Date().getFullYear() - 3,
-    price: "",
-    mileage: "",
-    fuelType: "PETROL",
-    transmission: "AUTOMATIC",
-    engineSize: "",
-    bodyType: "SEDAN",
-    condition: "FOREIGN_USED",
-    color: "",
-    city: "",
-    region: "Greater Accra",
-    description: "",
+    title: initial?.title ?? "",
+    brandId: initial?.brandId ?? "",
+    year: initial?.year ?? new Date().getFullYear() - 3,
+    price: initial?.price ?? "",
+    mileage: initial?.mileage ?? "",
+    fuelType: initial?.fuelType ?? "PETROL",
+    transmission: initial?.transmission ?? "AUTOMATIC",
+    engineSize: initial?.engineSize ?? "",
+    bodyType: initial?.bodyType ?? "SEDAN",
+    condition: initial?.condition ?? "FOREIGN_USED",
+    color: initial?.color ?? "",
+    city: initial?.city ?? "",
+    region: initial?.region ?? "Greater Accra",
+    description: initial?.description ?? "",
   });
-  const [images, setImages] = useState<string[]>([]);
-  const [videoUrl, setVideoUrl] = useState("");
+  const [images, setImages] = useState<string[]>(initial?.images ?? []);
+  const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
 
   function update(key: string, value: string | number) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -63,8 +89,8 @@ export function ListVehicleForm() {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/vehicles", {
-        method: "POST",
+      const res = await fetch(isEdit ? `/api/vehicles/${vehicleId}` : "/api/vehicles", {
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
@@ -79,7 +105,13 @@ export function ListVehicleForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? "Could not create listing");
+        toast.error(data.error ?? (isEdit ? "Could not update listing" : "Could not create listing"));
+        return;
+      }
+      if (isEdit) {
+        toast.success("Listing updated");
+        router.push("/dashboard/dealer/listings");
+        router.refresh();
         return;
       }
       setDone(true);
@@ -229,10 +261,14 @@ export function ListVehicleForm() {
       </section>
 
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="outline">Save draft</Button>
+        {isEdit ? (
+          <Button type="button" variant="outline" onClick={() => router.back()}>
+            Cancel
+          </Button>
+        ) : null}
         <Button type="submit" variant="gradient" size="lg" disabled={loading}>
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-          Publish listing
+          {isEdit ? "Save changes" : "Publish listing"}
         </Button>
       </div>
     </form>
