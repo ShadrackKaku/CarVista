@@ -2,13 +2,25 @@ import type { Metadata } from "next";
 import { VehicleBrowser } from "@/components/vehicles/vehicle-browser";
 import { getVehicles } from "@/lib/queries";
 import { queryToFilters } from "@/lib/vehicle-search";
+import { hasActiveFilters } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Vehicle Marketplace — Buy Cars in Ghana",
-  description:
-    "Browse thousands of new, foreign-used and Ghana-used cars for sale in Ghana. Filter by brand, price, year, body type and more.",
-  alternates: { canonical: "/vehicles" },
-};
+export function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}): Metadata {
+  // Every filtered/sorted/paginated variant canonicalises to the clean listing
+  // page and is marked noindex — it's a near-duplicate of /vehicles, so we keep
+  // crawl budget on the base page and the individual listings.
+  const filtered = hasActiveFilters(searchParams);
+  return {
+    title: "Vehicle Marketplace — Buy Cars in Ghana",
+    description:
+      "Browse thousands of new, foreign-used and Ghana-used cars for sale in Ghana. Filter by brand, price, year, body type and more.",
+    alternates: { canonical: "/vehicles" },
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+  };
+}
 
 export const dynamic = "force-dynamic";
 

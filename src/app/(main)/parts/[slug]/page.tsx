@@ -12,6 +12,7 @@ import { PartCard } from "@/components/parts/part-card";
 import { getPartBySlug, getParts } from "@/lib/queries";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { formatCurrency, safeJsonLd } from "@/lib/utils";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +23,26 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const part = await getPartBySlug(params.slug);
   if (!part) return { title: "Part not found" };
+  const description = `Buy ${part.name} by ${part.brand} in Ghana. Compatible with ${part.compatibleMakes.join(
+    ", ",
+  )}.`;
   return {
     title: `${part.name} — ${part.brand}`,
-    description: `Buy ${part.name} by ${part.brand} in Ghana. Compatible with ${part.compatibleMakes.join(", ")}.`,
+    description,
     alternates: { canonical: `/parts/${part.slug}` },
+    openGraph: {
+      type: "website",
+      title: `${part.name} — ${part.brand}`,
+      description,
+      url: `/parts/${part.slug}`,
+      images: [{ url: part.image, alt: part.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${part.name} — ${part.brand}`,
+      description,
+      images: [part.image],
+    },
   };
 }
 
@@ -61,6 +78,19 @@ export default async function PartDetailPage({ params }: { params: { slug: strin
   return (
     <div className="container-page py-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: "Parts", path: "/parts" },
+              { name: part.category, path: `/parts?category=${part.categorySlug}` },
+              { name: part.name },
+            ]),
+          ),
+        }}
+      />
 
       <nav className="mb-5 flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">Home</Link>

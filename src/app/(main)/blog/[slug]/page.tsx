@@ -6,6 +6,8 @@ import { ArrowLeft, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getBlogPosts, getBlogPostBySlug } from "@/lib/queries";
 import { formatDate, safeJsonLd } from "@/lib/utils";
+import { breadcrumbJsonLd } from "@/lib/seo";
+import { SITE } from "@/lib/constants";
 
 export const revalidate = 60;
 
@@ -20,7 +22,21 @@ export async function generateMetadata({
     title: post.title,
     description: post.excerpt,
     alternates: { canonical: `/blog/${post.slug}` },
-    openGraph: { title: post.title, description: post.excerpt, images: [post.cover], type: "article" },
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.excerpt,
+      url: `/blog/${post.slug}`,
+      images: [{ url: post.cover, alt: post.title }],
+      publishedTime: post.date,
+      authors: [post.author],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: [post.cover],
+    },
   };
 }
 
@@ -44,13 +60,27 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     headline: post.title,
     image: post.cover,
     datePublished: post.date,
+    dateModified: post.date,
     author: { "@type": "Organization", name: post.author },
     publisher: { "@type": "Organization", name: "CarVista" },
+    mainEntityOfPage: `${SITE.url}/blog/${post.slug}`,
   };
 
   return (
     <div className="container-page py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: "Blog", path: "/blog" },
+              { name: post.title },
+            ]),
+          ),
+        }}
+      />
       <article className="mx-auto max-w-3xl">
         <Link href="/blog" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to blog

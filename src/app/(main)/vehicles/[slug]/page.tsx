@@ -29,6 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { getVehicleBySlug, getSimilarVehicles } from "@/lib/queries";
 import { calculateDuty } from "@/lib/duty-calculator";
 import { formatCurrency, formatNumber, safeJsonLd } from "@/lib/utils";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -39,14 +40,28 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const vehicle = await getVehicleBySlug(params.slug);
   if (!vehicle) return { title: "Vehicle not found" };
+  const description =
+    vehicle.description?.trim() ||
+    `${vehicle.year} ${vehicle.title} for sale in ${vehicle.city}, Ghana — ${formatNumber(
+      vehicle.mileage,
+    )} km, ${vehicle.transmission.toLowerCase()}, ${vehicle.fuelType.toLowerCase()}. View photos, full specs and price on CarVista.`;
+  const image = vehicle.images[0];
   return {
     title: `${vehicle.title} for sale in ${vehicle.city}`,
-    description: vehicle.description,
+    description,
     alternates: { canonical: `/vehicles/${vehicle.slug}` },
     openGraph: {
+      type: "website",
       title: vehicle.title,
-      description: vehicle.description,
-      images: [vehicle.images[0]],
+      description,
+      url: `/vehicles/${vehicle.slug}`,
+      images: [{ url: image, alt: vehicle.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: vehicle.title,
+      description,
+      images: [image],
     },
   };
 }
@@ -113,6 +128,18 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: "Vehicles", path: "/vehicles" },
+              { name: vehicle.title },
+            ]),
+          ),
+        }}
       />
 
       {/* Breadcrumb */}

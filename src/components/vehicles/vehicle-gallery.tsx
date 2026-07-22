@@ -31,7 +31,13 @@ export function VehicleGallery({ images, title }: { images: string[]; title: str
               )}
               aria-label={`View photo ${i + 1}`}
             >
-              <Image src={src} alt="" fill sizes="120px" className="object-cover" />
+              <Image
+                src={src}
+                alt={`${title} — thumbnail ${i + 1}`}
+                fill
+                sizes="120px"
+                className="object-cover"
+              />
             </button>
           ))}
         </div>
