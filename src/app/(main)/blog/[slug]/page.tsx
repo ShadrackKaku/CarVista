@@ -102,7 +102,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         </p>
 
         <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-2xl border bg-muted">
-          <Image src={post.cover} alt={post.title} fill priority className="object-cover" />
+          <Image src={post.cover} alt={post.title} fill priority sizes="(max-width: 768px) 100vw, 768px" className="object-cover" />
         </div>
 
         {post.content ? (
@@ -132,7 +132,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               className="group overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card"
             >
               <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-                <Image src={p.cover} alt={p.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                <Image src={p.cover} alt={p.title} fill sizes="(max-width: 640px) 100vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
               </div>
               <div className="p-4">
                 <h3 className="line-clamp-2 font-semibold leading-snug transition-colors group-hover:text-brand-600">

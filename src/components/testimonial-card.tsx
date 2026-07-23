@@ -13,7 +13,7 @@ export function TestimonialCard({ testimonial }: { testimonial: SampleTestimonia
       <StarRating rating={testimonial.rating} size={14} className="mt-4" />
       <figcaption className="mt-4 flex items-center gap-3 border-t pt-4">
         <div className="relative h-11 w-11 overflow-hidden rounded-full bg-muted">
-          <Image src={testimonial.avatar} alt={testimonial.name} fill className="object-cover" />
+          <Image src={testimonial.avatar} alt={testimonial.name} fill sizes="44px" className="object-cover" />
         </div>
         <div>
           <p className="text-sm font-semibold">{testimonial.name}</p>

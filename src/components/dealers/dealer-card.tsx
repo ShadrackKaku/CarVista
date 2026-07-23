@@ -24,7 +24,7 @@ export function DealerCard({ dealer }: { dealer: SampleDealer }) {
       <div className="px-4 pb-4">
         <div className="-mt-8 flex items-end justify-between">
           <div className="relative h-16 w-16 overflow-hidden rounded-xl border-4 border-card bg-background">
-            <Image src={dealer.logo} alt={dealer.name} fill className="object-cover" />
+            <Image src={dealer.logo} alt={dealer.name} fill sizes="64px" className="object-cover" />
           </div>
           {dealer.verified && (
             <Badge variant="brand" className="mb-1">

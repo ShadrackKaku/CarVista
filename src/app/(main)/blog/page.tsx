@@ -31,7 +31,7 @@ export default async function BlogPage() {
           className="group grid overflow-hidden rounded-2xl border bg-card shadow-soft transition-all hover:shadow-card lg:grid-cols-2"
         >
           <div className="relative aspect-[16/10] overflow-hidden bg-muted lg:aspect-auto">
-            <Image src={featured.cover} alt={featured.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+            <Image src={featured.cover} alt={featured.title} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
           </div>
           <div className="flex flex-col justify-center p-8">
             <Badge variant="brand" className="w-fit">{featured.category}</Badge>
@@ -54,7 +54,7 @@ export default async function BlogPage() {
               className="group overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card"
             >
               <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-                <Image src={post.cover} alt={post.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                <Image src={post.cover} alt={post.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
               </div>
               <div className="p-5">
                 <Badge variant="brand">{post.category}</Badge>

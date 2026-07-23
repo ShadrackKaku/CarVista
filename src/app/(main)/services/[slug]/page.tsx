@@ -36,7 +36,7 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
         <div>
           <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border bg-muted">
-            <Image src={service.image} alt={service.name} fill priority className="object-cover" />
+            <Image src={service.image} alt={service.name} fill priority sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover" />
           </div>
           <div className="mt-6 flex items-center gap-2">
             <Badge variant="secondary">{service.typeLabel}</Badge>
