@@ -469,6 +469,9 @@ model SavedVehicle {
   id        String   @id @default(cuid())
   userId    String
   vehicleId String
+  // Baseline price for price-drop alerts — the last price we saw/notified for
+  // this saved vehicle. A drop below this triggers a notification.
+  lastPrice Decimal? @db.Decimal(12, 2)
   createdAt DateTime @default(now())
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -481,11 +484,14 @@ model SavedVehicle {
 // A named marketplace search a user can return to (and, later, be alerted on).
 // `query` is the vehicles-page query string, e.g. "brand=Toyota&maxPrice=200000".
 model SavedSearch {
-  id        String   @id @default(cuid())
-  userId    String
-  name      String
-  query     String
-  createdAt DateTime @default(now())
+  id             String    @id @default(cuid())
+  userId         String
+  name           String
+  query          String
+  // Last time we notified this user about new matches — only vehicles created
+  // after this are considered on the next run.
+  lastNotifiedAt DateTime?
+  createdAt      DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

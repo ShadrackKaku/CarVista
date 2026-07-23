@@ -127,3 +127,39 @@ export function orderConfirmationEmail(data: OrderConfirmationData) {
      <p style="font-size:13px;color:#6b7280">We'll notify you when your order ships.</p>`,
   );
 }
+
+export function priceDropEmail(
+  name: string,
+  title: string,
+  oldPrice: number,
+  newPrice: number,
+  url: string,
+) {
+  return layout(
+    "Price drop on a saved vehicle 🎉",
+    `<p>Hi ${name},</p>
+     <p>Good news — <strong>${title}</strong>, one of your saved vehicles, just dropped in price.</p>
+     <p style="font-size:18px;margin:16px 0">
+       <span style="text-decoration:line-through;color:#9ca3af">${formatCurrency(oldPrice)}</span>
+       &nbsp;→&nbsp;
+       <strong style="color:#5a5fe0">${formatCurrency(newPrice)}</strong>
+     </p>
+     ${button(url, "View the listing")}
+     <p style="font-size:13px;color:#6b7280">Prices can move fast — contact the seller soon if you're interested.</p>`,
+  );
+}
+
+export function savedSearchAlertEmail(
+  name: string,
+  searchName: string,
+  count: number,
+  url: string,
+) {
+  return layout(
+    "New matches for your saved search",
+    `<p>Hi ${name},</p>
+     <p><strong>${count}</strong> new vehicle${count === 1 ? "" : "s"} just matched your saved search <strong>“${searchName}”</strong>.</p>
+     ${button(url, "See the new matches")}
+     <p style="font-size:13px;color:#6b7280">You're receiving this because you saved this search on CarVista.</p>`,
+  );
+}
