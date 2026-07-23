@@ -4,6 +4,12 @@ import { Logo } from "@/components/logo";
 import { NewsletterForm } from "@/components/newsletter-form";
 import { SITE } from "@/lib/constants";
 
+const socials = [
+  { Icon: Facebook, url: SITE.socials.facebook, label: "Facebook" },
+  { Icon: Instagram, url: SITE.socials.instagram, label: "Instagram" },
+  { Icon: Twitter, url: SITE.socials.twitter, label: "Twitter" },
+].filter((s) => s.url);
+
 const footerNav = [
   {
     title: "Marketplace",
@@ -65,18 +71,22 @@ export function Footer() {
                 <Mail className="h-4 w-4 text-brand-500" /> {SITE.supportEmail}
               </p>
             </div>
-            <div className="mt-6 flex items-center gap-3">
-              {[Facebook, Instagram, Twitter].map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border bg-background text-muted-foreground transition-colors hover:border-brand-400 hover:text-brand-600"
-                  aria-label="Social link"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
+            {socials.length > 0 && (
+              <div className="mt-6 flex items-center gap-3">
+                {socials.map(({ Icon, url, label }) => (
+                  <a
+                    key={label}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border bg-background text-muted-foreground transition-colors hover:border-brand-400 hover:text-brand-600"
+                    aria-label={`${SITE.name} on ${label}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:col-span-5">

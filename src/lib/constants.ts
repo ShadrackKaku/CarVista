@@ -8,6 +8,13 @@ export const SITE = {
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "233200000000",
   phone: "+233 20 000 0000",
   address: "Airport City, Accra, Ghana",
+  // Social profiles — set via env once the handles exist. Empty values are not
+  // rendered (no dead links).
+  socials: {
+    facebook: process.env.NEXT_PUBLIC_FACEBOOK_URL ?? "",
+    instagram: process.env.NEXT_PUBLIC_INSTAGRAM_URL ?? "",
+    twitter: process.env.NEXT_PUBLIC_TWITTER_URL ?? "",
+  },
 };
 
 export const GHANA_REGIONS = [
