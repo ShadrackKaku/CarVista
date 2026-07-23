@@ -395,6 +395,69 @@ export const getPartBySlug = cache(async (slug: string): Promise<SamplePart | nu
   return SAMPLE_PARTS.find((p) => p.slug === slug) ?? null;
 });
 
+export interface PartEditData {
+  id: string;
+  sellerId: string;
+  name: string;
+  categorySlug: string;
+  brand: string;
+  oemNumber: string;
+  partNumber: string;
+  condition: string;
+  price: string;
+  discountPrice: string;
+  stock: number;
+  sku: string;
+  compatibleMakes: string[];
+  compatibleModels: string[];
+  yearFrom: string;
+  yearTo: string;
+  fitmentPosition: string;
+  description: string;
+  images: string[];
+}
+
+/**
+ * Full editable shape of a part for the seller edit form (all fields, not just
+ * the trimmed SamplePart). Ownership is checked by the caller against sellerId.
+ * Returns null when the part doesn't exist or the DB is unavailable.
+ */
+export async function getPartForEdit(id: string): Promise<PartEditData | null> {
+  try {
+    const p = await prisma.part.findUnique({
+      where: { id },
+      include: {
+        category: { select: { slug: true } },
+        images: { orderBy: { order: "asc" } },
+      },
+    });
+    if (!p) return null;
+    return {
+      id: p.id,
+      sellerId: p.sellerId,
+      name: p.name,
+      categorySlug: p.category.slug,
+      brand: p.brand ?? "",
+      oemNumber: p.oemNumber ?? "",
+      partNumber: p.partNumber ?? "",
+      condition: p.condition,
+      price: String(num(p.price)),
+      discountPrice: p.discountPrice ? String(num(p.discountPrice)) : "",
+      stock: p.stock,
+      sku: p.sku ?? "",
+      compatibleMakes: p.compatibleMakes ?? [],
+      compatibleModels: p.compatibleModels ?? [],
+      yearFrom: p.yearFrom ? String(p.yearFrom) : "",
+      yearTo: p.yearTo ? String(p.yearTo) : "",
+      fitmentPosition: p.fitmentPosition ?? "",
+      description: p.description ?? "",
+      images: p.images.map((i) => i.url),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getFeaturedParts(limit = 5): Promise<SamplePart[]> {
   const all = await getParts();
   const featured = all.filter((p) => p.featured);

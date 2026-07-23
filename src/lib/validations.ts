@@ -134,6 +134,35 @@ export const vehicleListingSchema = z.object({
   videoUrl: z.string().url().optional().or(z.literal("")),
 });
 
+export const partListingSchema = z
+  .object({
+    name: z.string().min(3, "Name must be at least 3 characters").max(140),
+    categorySlug: z.string().min(1, "Select a category"),
+    brand: z.string().max(80).optional(),
+    oemNumber: z.string().max(80).optional(),
+    partNumber: z.string().max(80).optional(),
+    condition: z.enum(["NEW", "USED", "REFURBISHED"]),
+    price: z.coerce.number().positive("Enter a valid price"),
+    discountPrice: z.coerce.number().positive().optional(),
+    stock: z.coerce.number().int().min(0).max(1_000_000),
+    sku: z.string().max(60).optional(),
+    compatibleMakes: z.array(z.string()).max(50).optional(),
+    compatibleModels: z.array(z.string()).max(100).optional(),
+    yearFrom: z.coerce.number().int().min(1950).max(2100).optional(),
+    yearTo: z.coerce.number().int().min(1950).max(2100).optional(),
+    fitmentPosition: z.string().max(40).optional(),
+    description: z.string().max(5000).optional(),
+    images: z.array(z.string().url()).max(12).optional(),
+  })
+  .refine((d) => d.discountPrice == null || d.discountPrice < d.price, {
+    message: "Discount price must be lower than the price",
+    path: ["discountPrice"],
+  })
+  .refine((d) => d.yearFrom == null || d.yearTo == null || d.yearTo >= d.yearFrom, {
+    message: "“Year to” must be the same as or after “Year from”",
+    path: ["yearTo"],
+  });
+
 // ── Reviews ───────────────────────────────────────────────────
 export const reviewSchema = z.object({
   targetType: z.enum(["vehicle", "part", "dealer", "service"]),
