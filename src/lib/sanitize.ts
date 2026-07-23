@@ -32,7 +32,7 @@ const BLOG_ALLOWED_TAGS = [
 ];
 
 /** Sanitize admin-authored blog HTML to a safe, known-good tag/attribute set. */
-export function sanitizeBlogHtml(html: string): string {
+export function sanitizeRichHtml(html: string): string {
   return sanitizeHtml(html, {
     allowedTags: BLOG_ALLOWED_TAGS,
     allowedAttributes: {
@@ -47,4 +47,13 @@ export function sanitizeBlogHtml(html: string): string {
       }),
     },
   });
+}
+
+/** Plain text from an HTML string — for meta descriptions, OG tags and previews
+ *  where markup would otherwise leak into the text. */
+export function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

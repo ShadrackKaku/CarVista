@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { vehicleListingSchema } from "@/lib/validations";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 import { slugify } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 
@@ -74,7 +75,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           city: d.city || null,
           region: d.region || null,
           location: d.city || null,
-          description: d.description || null,
+          description: d.description ? sanitizeRichHtml(d.description) : null,
           images:
             d.images && d.images.length
               ? { create: d.images.map((url, i) => ({ url, isPrimary: i === 0, order: i })) }
