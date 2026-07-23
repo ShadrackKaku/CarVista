@@ -34,10 +34,15 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Match the deploy target (Vercel) and drop the deprecated Node 20.
+          node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        # `npm ci` installs exactly what package-lock.json pins — deterministic
+        # and reproducible, unlike `npm install` which may resolve differently
+        # run-to-run. Rules out dependency drift as a source of flaky builds.
+        run: npm ci
 
       - name: Generate Prisma client
         run: npm run prisma:generate

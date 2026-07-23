@@ -9,7 +9,8 @@ import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { getDealerBySlug, getVehicles } from "@/lib/queries";
 import { SITE } from "@/lib/constants";
-import { whatsappUrl } from "@/lib/utils";
+import { whatsappUrl, safeJsonLd } from "@/lib/utils";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -20,10 +21,24 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const dealer = await getDealerBySlug(params.slug);
   if (!dealer) return { title: "Dealer not found" };
+  const title = `${dealer.name} — Car Dealer in ${dealer.city}`;
   return {
-    title: `${dealer.name} — Car Dealer in ${dealer.city}`,
+    title,
     description: dealer.description,
     alternates: { canonical: `/dealers/${dealer.slug}` },
+    openGraph: {
+      type: "website",
+      title,
+      description: dealer.description,
+      url: `/dealers/${dealer.slug}`,
+      images: [{ url: dealer.cover, alt: dealer.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: dealer.description,
+      images: [dealer.cover],
+    },
   };
 }
 
@@ -35,8 +50,47 @@ export default async function DealerDetailPage({ params }: { params: { slug: str
     .filter((v) => v.dealer.slug === dealer.slug)
     .slice(0, 8);
 
+  const dealerLd = {
+    "@context": "https://schema.org",
+    "@type": "AutoDealer",
+    name: dealer.name,
+    description: dealer.description,
+    image: dealer.logo,
+    url: `${SITE.url}/dealers/${dealer.slug}`,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: dealer.city,
+      addressRegion: dealer.region,
+      addressCountry: "GH",
+    },
+    // Only advertise a rating when there are reviews — Google flags a rating
+    // with a zero review count as invalid structured data.
+    ...(dealer.reviewCount > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: dealer.rating,
+            reviewCount: dealer.reviewCount,
+          },
+        }
+      : {}),
+  };
+
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(dealerLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: "Dealers", path: "/dealers" },
+              { name: dealer.name },
+            ]),
+          ),
+        }}
+      />
       {/* Cover */}
       <div className="relative h-48 sm:h-60">
         <Image src={dealer.cover} alt={dealer.name} fill priority className="object-cover" />

@@ -1591,3 +1591,52 @@ export async function getUnreadMessageCount(userId: string): Promise<number> {
     return 0;
   }
 }
+
+// ── Sitemap ───────────────────────────────────────────────────
+export interface SitemapEntry {
+  slug: string;
+  updatedAt: Date;
+}
+export interface SitemapEntries {
+  vehicles: SitemapEntry[];
+  parts: SitemapEntry[];
+  dealers: SitemapEntry[];
+  services: SitemapEntry[];
+  posts: SitemapEntry[];
+}
+
+/**
+ * Lightweight slug + updatedAt lists for the sitemap, so each URL's <lastmod>
+ * reflects when the record actually changed (better crawl signals than stamping
+ * everything with "now"). Returns null when the DB is empty or unavailable, in
+ * which case the sitemap falls back to the sample catalogue.
+ */
+export async function getSitemapEntries(): Promise<SitemapEntries | null> {
+  try {
+    const [vehicles, parts, dealers, services, posts] = await Promise.all([
+      prisma.vehicle.findMany({
+        where: { status: "ACTIVE" },
+        select: { slug: true, updatedAt: true },
+        take: 5000,
+      }),
+      prisma.part.findMany({
+        where: { status: "ACTIVE" },
+        select: { slug: true, updatedAt: true },
+        take: 5000,
+      }),
+      prisma.dealer.findMany({ select: { slug: true, updatedAt: true }, take: 5000 }),
+      prisma.serviceProvider.findMany({ select: { slug: true, updatedAt: true }, take: 5000 }),
+      prisma.blogPost.findMany({
+        where: { published: true },
+        select: { slug: true, updatedAt: true },
+        take: 5000,
+      }),
+    ]);
+    const total =
+      vehicles.length + parts.length + dealers.length + services.length + posts.length;
+    if (total === 0) return null;
+    return { vehicles, parts, dealers, services, posts };
+  } catch {
+    return null;
+  }
+}
