@@ -22,8 +22,10 @@ export default async function SellerProductsPage() {
             {formatNumber(products.length)} product{products.length === 1 ? "" : "s"} in your store.
           </p>
         </div>
-        <Button variant="gradient">
-          <Plus className="h-4 w-4" /> Add product
+        <Button asChild variant="gradient">
+          <Link href="/dashboard/seller/products/new">
+            <Plus className="h-4 w-4" /> Add product
+          </Link>
         </Button>
       </div>
 
@@ -32,6 +34,11 @@ export default async function SellerProductsPage() {
           <Boxes className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No products yet</p>
           <p className="mt-1 text-sm text-muted-foreground">Add your first product to start selling.</p>
+          <Button asChild variant="gradient" className="mt-5">
+            <Link href="/dashboard/seller/products/new">
+              <Plus className="h-4 w-4" /> Add product
+            </Link>
+          </Button>
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
@@ -69,9 +76,14 @@ export default async function SellerProductsPage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/parts/${p.slug}`}>View</Link>
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/parts/${p.slug}`}>View</Link>
+                        </Button>
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/dashboard/seller/products/${p.id}/edit`}>Edit</Link>
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
