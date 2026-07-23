@@ -650,6 +650,9 @@ export interface SampleBlogPost {
   author: string;
   date: string;
   readTime: number;
+  /** Sanitized HTML body. Absent on the sample catalogue (rendered with a
+   *  generated placeholder); always present for real, DB-backed posts. */
+  content?: string;
 }
 
 export const SAMPLE_BLOG_POSTS: SampleBlogPost[] = [
