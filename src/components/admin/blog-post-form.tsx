@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUploader } from "@/components/image-uploader";
-import { RichTextEditor } from "@/components/admin/rich-text-editor";
+import { RichTextEditor } from "@/components/rich-text-editor";
 
 export interface BlogPostInitial {
   title?: string;

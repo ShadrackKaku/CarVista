@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { getBlogPosts, getBlogPostBySlug } from "@/lib/queries";
 import { formatDate, safeJsonLd } from "@/lib/utils";
 import { breadcrumbJsonLd } from "@/lib/seo";
-import { sanitizeBlogHtml } from "@/lib/sanitize";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 import { SITE } from "@/lib/constants";
 
 export const revalidate = 60;
@@ -110,7 +110,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           // boundary, even though it's stored sanitized.
           <div
             className="blog-prose mt-8"
-            dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.content) }}
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(post.content) }}
           />
         ) : (
           <div className="mt-8 space-y-5 text-lg leading-relaxed text-muted-foreground">

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { partListingSchema } from "@/lib/validations";
 import { resolvePartCategoryId } from "@/lib/parts";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 import { slugify, generateReference } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
       data: {
         slug,
         name: d.name,
-        description: d.description || null,
+        description: d.description ? sanitizeRichHtml(d.description) : null,
         categoryId,
         brand: d.brand || null,
         oemNumber: d.oemNumber || null,

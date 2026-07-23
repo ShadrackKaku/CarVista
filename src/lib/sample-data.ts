@@ -273,6 +273,8 @@ export interface SamplePart {
   image: string;
   store: { name: string; slug: string; verified: boolean };
   featured: boolean;
+  /** Sanitized HTML description. Optional — absent on the sample catalogue. */
+  description?: string;
 }
 
 export const SAMPLE_PARTS: SamplePart[] = [

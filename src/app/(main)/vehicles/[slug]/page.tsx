@@ -30,6 +30,7 @@ import { getVehicleBySlug, getSimilarVehicles } from "@/lib/queries";
 import { calculateDuty } from "@/lib/duty-calculator";
 import { formatCurrency, formatNumber, safeJsonLd } from "@/lib/utils";
 import { breadcrumbJsonLd } from "@/lib/seo";
+import { sanitizeRichHtml, stripHtml } from "@/lib/sanitize";
 
 export const revalidate = 60;
 
@@ -40,8 +41,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const vehicle = await getVehicleBySlug(params.slug);
   if (!vehicle) return { title: "Vehicle not found" };
+  // The description may now be rich HTML — strip tags for the meta/OG text.
   const description =
-    vehicle.description?.trim() ||
+    stripHtml(vehicle.description ?? "") ||
     `${vehicle.year} ${vehicle.title} for sale in ${vehicle.city}, Ghana — ${formatNumber(
       vehicle.mileage,
     )} km, ${vehicle.transmission.toLowerCase()}, ${vehicle.fuelType.toLowerCase()}. View photos, full specs and price on CarVista.`;
@@ -204,7 +206,14 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
           {/* Description */}
           <section className="mt-8">
             <h2 className="text-xl font-bold">Description</h2>
-            <p className="mt-3 leading-relaxed text-muted-foreground">{vehicle.description}</p>
+            {vehicle.description ? (
+              <div
+                className="blog-prose mt-3"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(vehicle.description) }}
+              />
+            ) : (
+              <p className="mt-3 leading-relaxed text-muted-foreground">No description provided.</p>
+            )}
           </section>
 
           {/* Features */}

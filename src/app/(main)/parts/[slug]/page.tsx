@@ -13,6 +13,7 @@ import { getPartBySlug, getParts } from "@/lib/queries";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { formatCurrency, safeJsonLd } from "@/lib/utils";
 import { breadcrumbJsonLd } from "@/lib/seo";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -195,6 +196,16 @@ export default async function PartDetailPage({ params }: { params: { slug: strin
           </div>
         </div>
       </div>
+
+      {part.description && (
+        <section className="mt-10 max-w-3xl">
+          <h2 className="text-xl font-bold">Description</h2>
+          <div
+            className="blog-prose mt-3"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(part.description) }}
+          />
+        </section>
+      )}
 
       <ReviewsSection targetType="part" targetId={part.id} />
 

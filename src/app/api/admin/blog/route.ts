@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-guard";
 import { blogPostSchema } from "@/lib/validations";
 import { resolveBlogCategoryId, estimateReadTime } from "@/lib/blog";
-import { sanitizeBlogHtml } from "@/lib/sanitize";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 import { slugify, generateReference } from "@/lib/utils";
 
 /** POST /api/admin/blog — create a blog post (admins only). */
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const categoryId = await resolveBlogCategoryId(d.category);
     const slug = `${slugify(d.title)}-${generateReference("").slice(1, 6).toLowerCase()}`;
     const published = d.published ?? false;
-    const content = sanitizeBlogHtml(d.content);
+    const content = sanitizeRichHtml(d.content);
 
     const post = await prisma.blogPost.create({
       data: {

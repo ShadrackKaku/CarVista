@@ -368,6 +368,7 @@ function mapPart(p: PartRow): SamplePart {
       verified: p.store?.verified ?? false,
     },
     featured: p.featured,
+    description: p.description ?? undefined,
   };
 }
 

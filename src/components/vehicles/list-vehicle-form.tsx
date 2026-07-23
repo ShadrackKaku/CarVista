@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { ImageUploader } from "@/components/image-uploader";
 import {
   Select,
@@ -229,7 +229,7 @@ export function ListVehicleForm({
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label>Description</Label>
-            <Textarea rows={4} placeholder="Describe the vehicle, its condition, service history and features..." value={form.description} onChange={(e) => update("description", e.target.value)} />
+            <RichTextEditor value={form.description} onChange={(html) => update("description", html)} />
           </div>
         </div>
       </section>
