@@ -97,6 +97,7 @@ export function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
                     active && "bg-accent text-foreground",
@@ -150,7 +151,10 @@ export function Header() {
           {status === "authenticated" && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="ml-1 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">
+                <button
+                  aria-label="Account menu"
+                  className="ml-1 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   <Avatar className="h-9 w-9 border border-border">
                     <AvatarImage src={user.image ?? undefined} alt={user.name ?? "User"} />
                     <AvatarFallback>{getInitials(user.name)}</AvatarFallback>

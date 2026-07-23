@@ -93,14 +93,14 @@ export default async function DealerDetailPage({ params }: { params: { slug: str
       />
       {/* Cover */}
       <div className="relative h-48 sm:h-60">
-        <Image src={dealer.cover} alt={dealer.name} fill priority className="object-cover" />
+        <Image src={dealer.cover} alt={dealer.name} fill priority sizes="100vw" className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/20" />
       </div>
 
       <div className="container-page">
         <div className="-mt-16 flex flex-col gap-5 rounded-2xl border bg-card p-6 shadow-card sm:flex-row sm:items-end">
           <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-4 border-card bg-background">
-            <Image src={dealer.logo} alt={dealer.name} fill className="object-cover" />
+            <Image src={dealer.logo} alt={dealer.name} fill sizes="96px" className="object-cover" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">

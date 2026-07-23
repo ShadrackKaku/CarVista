@@ -132,6 +132,15 @@
   animation: kenburns 20s ease-in-out infinite alternate;
 }
 
+/* Respect users who prefer reduced motion — stop the looping hero zoom and any
+   continuous shimmer that could trigger vestibular discomfort. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-kenburns,
+  .skeleton::after {
+    animation: none;
+  }
+}
+
 /* Skeleton shimmer */
 .skeleton {
   @apply relative overflow-hidden bg-muted;
