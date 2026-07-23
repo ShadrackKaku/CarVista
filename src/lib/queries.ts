@@ -680,6 +680,83 @@ export const getBlogPostBySlug = cache(async (slug: string): Promise<SampleBlogP
   return SAMPLE_BLOG_POSTS.find((b) => b.slug === slug) ?? null;
 });
 
+export interface AdminBlogRow {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  cover: string;
+  date: string;
+  published: boolean;
+  featured: boolean;
+}
+
+/**
+ * All blog posts (drafts included) for the admin manager — unlike getBlogPosts,
+ * which returns only published posts for the public site. Returns [] when the DB
+ * is empty/unavailable (the admin list shows real, editable rows only, never the
+ * read-only sample catalogue).
+ */
+export async function getAdminBlogPosts(): Promise<AdminBlogRow[]> {
+  try {
+    const rows = await prisma.blogPost.findMany({
+      include: blogInclude,
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
+    return rows.map((b) => ({
+      id: b.id,
+      slug: b.slug,
+      title: b.title,
+      category: b.category?.name ?? "Article",
+      cover: b.coverImage ?? PLACEHOLDER_COVER,
+      date: (b.publishedAt ?? b.createdAt).toISOString().slice(0, 10),
+      published: b.published,
+      featured: b.featured,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export interface BlogPostEditData {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  category: string;
+  coverImage: string;
+  tags: string[];
+  readTime: number;
+  published: boolean;
+  featured: boolean;
+}
+
+/** Full editable shape of a blog post for the admin edit form. */
+export async function getBlogPostForEdit(id: string): Promise<BlogPostEditData | null> {
+  try {
+    const b = await prisma.blogPost.findUnique({
+      where: { id },
+      include: { category: { select: { name: true } } },
+    });
+    if (!b) return null;
+    return {
+      id: b.id,
+      title: b.title,
+      excerpt: b.excerpt ?? "",
+      content: b.content,
+      category: b.category?.name ?? "",
+      coverImage: b.coverImage ?? "",
+      tags: b.tags ?? [],
+      readTime: b.readTime,
+      published: b.published,
+      featured: b.featured,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ══════════════════════════════════════════════════════════════
 //  USER-SCOPED (dashboard) queries — real data per logged-in user
 // ══════════════════════════════════════════════════════════════

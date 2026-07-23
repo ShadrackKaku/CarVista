@@ -163,6 +163,18 @@ export const partListingSchema = z
     path: ["yearTo"],
   });
 
+export const blogPostSchema = z.object({
+  title: z.string().min(4, "Title is too short").max(160),
+  excerpt: z.string().max(400).optional(),
+  content: z.string().min(20, "Content is too short"),
+  category: z.string().max(60).optional(),
+  coverImage: z.string().url().optional().or(z.literal("")),
+  tags: z.array(z.string()).max(20).optional(),
+  readTime: z.coerce.number().int().min(1).max(120).optional(),
+  published: z.boolean().optional(),
+  featured: z.boolean().optional(),
+});
+
 // ── Reviews ───────────────────────────────────────────────────
 export const reviewSchema = z.object({
   targetType: z.enum(["vehicle", "part", "dealer", "service"]),
