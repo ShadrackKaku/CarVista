@@ -140,3 +140,62 @@
   @apply absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent;
   content: "";
 }
+
+/* Rich blog content — shared by the published article and the TipTap editor so
+   the authoring preview matches the final render. */
+.blog-prose {
+  @apply text-base leading-relaxed text-muted-foreground;
+}
+.blog-prose > :first-child {
+  @apply mt-0;
+}
+.blog-prose h1 {
+  @apply mb-3 mt-8 font-display text-3xl font-bold text-foreground;
+}
+.blog-prose h2 {
+  @apply mb-3 mt-8 font-display text-2xl font-bold text-foreground;
+}
+.blog-prose h3 {
+  @apply mb-2 mt-6 text-xl font-semibold text-foreground;
+}
+.blog-prose h4 {
+  @apply mb-2 mt-5 text-lg font-semibold text-foreground;
+}
+.blog-prose p {
+  @apply my-4;
+}
+.blog-prose a {
+  @apply font-medium text-brand-600 underline underline-offset-2 hover:text-brand-700;
+}
+.blog-prose strong {
+  @apply font-semibold text-foreground;
+}
+.blog-prose ul {
+  @apply my-4 list-disc space-y-1.5 pl-6;
+}
+.blog-prose ol {
+  @apply my-4 list-decimal space-y-1.5 pl-6;
+}
+.blog-prose li {
+  @apply pl-1;
+}
+.blog-prose blockquote {
+  @apply my-5 border-l-4 border-brand-300 pl-4 italic text-foreground/80;
+}
+.blog-prose code {
+  @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.9em] text-foreground;
+}
+.blog-prose pre {
+  @apply my-5 overflow-x-auto rounded-xl bg-muted p-4;
+}
+.blog-prose pre code {
+  @apply bg-transparent p-0;
+}
+.blog-prose hr {
+  @apply my-8 border-border;
+}
+
+/* TipTap editable surface */
+.ProseMirror {
+  @apply min-h-[16rem] outline-none;
+}

@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
 
-/** Estimate reading time in minutes from post content (~200 words per minute). */
+/** Estimate reading time in minutes from post content (~200 words per minute).
+ *  HTML tags are stripped first so rich-text markup doesn't inflate the count. */
 export function estimateReadTime(content: string): number {
-  const words = content.trim().split(/\s+/).filter(Boolean).length;
+  const text = content.replace(/<[^>]*>/g, " ");
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
 

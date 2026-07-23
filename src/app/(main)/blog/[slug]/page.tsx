@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { getBlogPosts, getBlogPostBySlug } from "@/lib/queries";
 import { formatDate, safeJsonLd } from "@/lib/utils";
 import { breadcrumbJsonLd } from "@/lib/seo";
+import { sanitizeBlogHtml } from "@/lib/sanitize";
 import { SITE } from "@/lib/constants";
 
 export const revalidate = 60;
@@ -104,12 +105,21 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           <Image src={post.cover} alt={post.title} fill priority className="object-cover" />
         </div>
 
-        <div className="mt-8 space-y-5 text-lg leading-relaxed text-muted-foreground">
-          <p className="text-xl font-medium text-foreground">{post.excerpt}</p>
-          {bodyParagraphs(post.title).map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-        </div>
+        {post.content ? (
+          // Real, DB-backed article body — sanitized again here as the output
+          // boundary, even though it's stored sanitized.
+          <div
+            className="blog-prose mt-8"
+            dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.content) }}
+          />
+        ) : (
+          <div className="mt-8 space-y-5 text-lg leading-relaxed text-muted-foreground">
+            <p className="text-xl font-medium text-foreground">{post.excerpt}</p>
+            {bodyParagraphs(post.title).map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+        )}
       </article>
 
       <section className="mx-auto mt-16 max-w-5xl">

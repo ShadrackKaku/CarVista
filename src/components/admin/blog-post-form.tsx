@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUploader } from "@/components/image-uploader";
+import { RichTextEditor } from "@/components/admin/rich-text-editor";
 
 export interface BlogPostInitial {
   title?: string;
@@ -51,6 +52,12 @@ export function BlogPostForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // TipTap emits "<p></p>" for an empty document — check the plain text.
+    const plain = form.content.replace(/<[^>]*>/g, "").trim();
+    if (plain.length < 20) {
+      toast.error("Please write a bit more content before saving.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(isEdit ? `/api/admin/blog/${postId}` : "/api/admin/blog", {
@@ -139,14 +146,9 @@ export function BlogPostForm({
 
       <section className="rounded-2xl border bg-card p-6 shadow-soft">
         <Label>Content</Label>
-        <Textarea
-          required
-          rows={16}
-          className="mt-2 font-mono text-sm"
-          placeholder="Write the full article here…"
-          value={form.content}
-          onChange={(e) => update("content", e.target.value)}
-        />
+        <div className="mt-2">
+          <RichTextEditor value={form.content} onChange={(html) => update("content", html)} />
+        </div>
       </section>
 
       <section className="rounded-2xl border bg-card p-6 shadow-soft">

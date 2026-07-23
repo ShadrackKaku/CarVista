@@ -653,6 +653,7 @@ function mapBlog(b: BlogRow): SampleBlogPost {
     author: b.author?.name ?? "CarVista Editorial",
     date: (b.publishedAt ?? b.createdAt).toISOString().slice(0, 10),
     readTime: b.readTime,
+    content: b.content,
   };
 }
 

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-guard";
 import { blogPostSchema } from "@/lib/validations";
 import { resolveBlogCategoryId, estimateReadTime } from "@/lib/blog";
+import { sanitizeBlogHtml } from "@/lib/sanitize";
 
 /** PATCH /api/admin/blog/[id] — edit a blog post (admins only). */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -26,6 +27,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const d = parsed.data;
     const categoryId = await resolveBlogCategoryId(d.category);
     const published = d.published ?? false;
+    const content = sanitizeBlogHtml(d.content);
     // Stamp publishedAt the first time a post goes live; keep the original date
     // on later edits; clear it if the post is unpublished back to a draft.
     const publishedAt = published ? (existing.publishedAt ?? new Date()) : null;
@@ -36,11 +38,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       data: {
         title: d.title,
         excerpt: d.excerpt || null,
-        content: d.content,
+        content,
         coverImage: d.coverImage || null,
         categoryId,
         tags: d.tags ?? [],
-        readTime: d.readTime ?? estimateReadTime(d.content),
+        readTime: d.readTime ?? estimateReadTime(content),
         published,
         featured: d.featured ?? false,
         publishedAt,
