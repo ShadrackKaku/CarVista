@@ -56,7 +56,7 @@ export function VehicleCard({ vehicle }: { vehicle: SampleVehicle }) {
           <SaveVehicleButton vehicleId={vehicle.id} className="-mr-1 -mt-1" />
         </div>
 
-        <p className="mt-2 font-display text-base font-bold text-brand-700 transition-colors group-hover:text-foreground dark:text-brand-400">
+        <p className="mt-2 font-display text-base font-bold text-brand-700 transition-colors group-hover:text-foreground dark:text-brand-400 dark:group-hover:text-foreground">
           {formatCurrency(vehicle.price)}
         </p>
 
