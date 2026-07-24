@@ -45,6 +45,7 @@ const vehicleInclude = {
   brand: true,
   model: true,
   images: { orderBy: { order: "asc" } },
+  videos: { orderBy: { order: "asc" }, take: 1 },
   dealer: { select: { businessName: true, slug: true, verified: true } },
   seller: { select: { name: true } },
 } satisfies Prisma.VehicleInclude;
@@ -86,6 +87,7 @@ function mapVehicle(v: VehicleRow): SampleVehicle {
     },
     features: v.features ?? [],
     description: v.description ?? "",
+    videoUrl: v.videos[0]?.url,
   };
 }
 
