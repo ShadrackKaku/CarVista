@@ -6,13 +6,6 @@ import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import type { SampleVehicle } from "@/lib/sample-data";
 
-const IMPORT_STATUS_LABELS: Record<string, string> = {
-  CLEARED: "Duty Paid",
-  AVAILABLE_FOR_IMPORT: "Import to Order",
-  IMPORT_IN_PROGRESS: "In Transit",
-  NOT_IMPORTED: "Local",
-};
-
 const CONDITION_LABELS: Record<string, string> = {
   NEW: "Brand New",
   FOREIGN_USED: "Foreign Used",
@@ -34,9 +27,6 @@ export function VehicleCard({ vehicle }: { vehicle: SampleVehicle }) {
           />
           <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
             <Badge variant="brand">{CONDITION_LABELS[vehicle.condition]}</Badge>
-            {vehicle.importStatus === "CLEARED" && (
-              <Badge variant="success">{IMPORT_STATUS_LABELS[vehicle.importStatus]}</Badge>
-            )}
           </div>
           {vehicle.verified && (
             <Badge className="absolute right-3 top-3 bg-white/95 text-brand-700" variant="secondary">
