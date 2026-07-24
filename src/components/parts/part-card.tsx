@@ -45,7 +45,7 @@ export function PartCard({ part }: { part: SamplePart }) {
 
         <div className="mt-auto pt-3">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-sm font-bold text-brand-700 dark:text-brand-400">
+            <span className="font-display text-sm font-bold text-brand-700 transition-colors group-hover:text-foreground dark:text-brand-400">
               {formatCurrency(hasDiscount ? part.discountPrice! : part.price)}
             </span>
             {hasDiscount && (
