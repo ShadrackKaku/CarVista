@@ -47,8 +47,10 @@ const nextConfig = {
               "img-src 'self' blob: data: https:",
               "font-src 'self' data:",
               "media-src 'self' blob: https:",
-              "connect-src 'self'",
-              "frame-src 'self'",
+              // api.cloudinary.com: browser-side image uploads (XHR).
+              "connect-src 'self' https://api.cloudinary.com",
+              // Allow embedding YouTube / Vimeo players for listing videos.
+              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
               "form-action 'self'",
               "object-src 'none'",
               "base-uri 'self'",

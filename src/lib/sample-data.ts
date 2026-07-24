@@ -35,6 +35,8 @@ export interface SampleVehicle {
   vin?: string;
   features: string[];
   description: string;
+  /** First video for the listing (YouTube/Vimeo/uploaded URL), if any. */
+  videoUrl?: string;
 }
 
 const img = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=80`;

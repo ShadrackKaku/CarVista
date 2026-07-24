@@ -15,6 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import { VehicleGallery } from "@/components/vehicles/vehicle-gallery";
+import { VehicleVideo } from "@/components/vehicles/vehicle-video";
 import { SellerContact } from "@/components/vehicles/seller-contact";
 import { ContactSellerDialog } from "@/components/messages/contact-seller-dialog";
 import { InspectionBookingDialog } from "@/components/bookings/inspection-booking-dialog";
@@ -215,6 +216,16 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
               <p className="mt-3 leading-relaxed text-muted-foreground">No description provided.</p>
             )}
           </section>
+
+          {/* Video */}
+          {vehicle.videoUrl && (
+            <section className="mt-8">
+              <h2 className="text-xl font-bold">Video walk-around</h2>
+              <div className="mt-3">
+                <VehicleVideo url={vehicle.videoUrl} title={vehicle.title} />
+              </div>
+            </section>
+          )}
 
           {/* Features */}
           <section className="mt-8">
