@@ -56,14 +56,14 @@ export function Header() {
   const [mobileQuery, setMobileQuery] = useState("");
   const user = session?.user;
 
-  // Mobile menu search: navigate to the same server-side search the desktop
-  // nav search uses, then close the menu sheet.
+  // Mobile menu search: hand off to the site-wide search page (same as the
+  // desktop nav search), then close the menu sheet.
   function submitMobileSearch(e: FormEvent) {
     e.preventDefault();
     const value = mobileQuery.trim();
     setOpen(false);
     setMobileQuery("");
-    router.push(value ? `/vehicles?q=${encodeURIComponent(value)}` : "/vehicles");
+    router.push(value ? `/search?q=${encodeURIComponent(value)}` : "/search");
   }
 
   // Live counts for the wishlist + cart icons.
@@ -224,8 +224,8 @@ export function Header() {
                   type="search"
                   value={mobileQuery}
                   onChange={(e) => setMobileQuery(e.target.value)}
-                  placeholder="Search cars — make or model"
-                  aria-label="Search cars by make or model"
+                  placeholder="Search cars, parts, services…"
+                  aria-label="Search cars, parts, services and dealers"
                   className="pl-9"
                 />
               </form>

@@ -13,15 +13,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-/** Quick make shortcuts shown beneath the search box. */
-const POPULAR_MAKES = ["Toyota", "Honda", "Hyundai", "Kia", "Nissan", "Mercedes-Benz"];
+/** Quick search shortcuts shown beneath the search box. */
+const POPULAR_SEARCHES = ["Toyota", "Honda", "Hyundai", "Brake pads", "Tyres", "Car service"];
 
 /**
- * Nav-bar search: opens a command-palette-style dialog so buyers can type a
- * make/model and jump straight to matching cars — no need to land on the
- * listings page first and reach for the filter panel. The query is handed to
- * `/vehicles?q=…`, which runs the same server-side search the filters use, so
- * the result is a normal, shareable, refine-able listings URL.
+ * Nav-bar master search: opens a command-palette-style dialog so users can type
+ * anything and jump straight to the site-wide results page — no need to land on
+ * a listings page first and reach for a filter panel. The query is handed to
+ * `/search?q=…`, which ranks matches across cars, parts, services, dealers and
+ * articles, each linking through to its own detail page.
  */
 export function NavSearch() {
   const router = useRouter();
@@ -32,7 +32,7 @@ export function NavSearch() {
     const value = (term ?? q).trim();
     setOpen(false);
     setQ("");
-    router.push(value ? `/vehicles?q=${encodeURIComponent(value)}` : "/vehicles");
+    router.push(value ? `/search?q=${encodeURIComponent(value)}` : "/search");
   }
 
   return (
@@ -42,15 +42,16 @@ export function NavSearch() {
           variant="ghost"
           size="icon"
           className="hidden sm:inline-flex"
-          aria-label="Search cars"
+          aria-label="Search"
         >
           <Search className="h-5 w-5" />
         </Button>
       </DialogTrigger>
       <DialogContent className="top-[12%] max-w-xl translate-y-0 gap-0 p-0 sm:rounded-2xl">
-        <DialogTitle className="sr-only">Search cars</DialogTitle>
+        <DialogTitle className="sr-only">Search CarVista</DialogTitle>
         <DialogDescription className="sr-only">
-          Type a make or model and press Enter to see matching cars.
+          Search across cars, parts, services and dealers. Type a query and press Enter to see
+          results.
         </DialogDescription>
         <form
           role="search"
@@ -65,8 +66,8 @@ export function NavSearch() {
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search cars by make or model — e.g. “Toyota Camry”"
-            aria-label="Search cars by make or model"
+            placeholder="Search cars, parts, services… — e.g. “Toyota Camry”"
+            aria-label="Search cars, parts, services and dealers"
             className="h-14 border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           />
           <Button type="submit" size="sm" variant="gradient" className="shrink-0">
@@ -75,14 +76,14 @@ export function NavSearch() {
         </form>
         <div className="flex flex-wrap items-center gap-2 px-4 py-3">
           <span className="text-xs font-medium text-muted-foreground">Popular:</span>
-          {POPULAR_MAKES.map((make) => (
+          {POPULAR_SEARCHES.map((term) => (
             <button
-              key={make}
+              key={term}
               type="button"
-              onClick={() => go(make)}
+              onClick={() => go(term)}
               className="rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              {make}
+              {term}
             </button>
           ))}
         </div>
