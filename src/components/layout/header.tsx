@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
   Heart,
@@ -15,7 +15,9 @@ import {
   User,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { NavSearch } from "@/components/search/nav-search";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -48,9 +50,21 @@ function CountBadge({ count }: { count: number }) {
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
+  const [mobileQuery, setMobileQuery] = useState("");
   const user = session?.user;
+
+  // Mobile menu search: hand off to the site-wide search page (same as the
+  // desktop nav search), then close the menu sheet.
+  function submitMobileSearch(e: FormEvent) {
+    e.preventDefault();
+    const value = mobileQuery.trim();
+    setOpen(false);
+    setMobileQuery("");
+    router.push(value ? `/search?q=${encodeURIComponent(value)}` : "/search");
+  }
 
   // Live counts for the wishlist + cart icons.
   const cartCount = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
@@ -111,17 +125,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="hidden sm:inline-flex"
-            aria-label="Search"
-          >
-            <Link href="/vehicles">
-              <Search className="h-5 w-5" />
-            </Link>
-          </Button>
+          <NavSearch />
           <Button
             asChild
             variant="ghost"
@@ -214,6 +218,17 @@ export function Header() {
                   <Logo href={null} />
                 </SheetTitle>
               </SheetHeader>
+              <form role="search" onSubmit={submitMobileSearch} className="relative mt-6">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  value={mobileQuery}
+                  onChange={(e) => setMobileQuery(e.target.value)}
+                  placeholder="Search cars, parts, services…"
+                  aria-label="Search cars, parts, services and dealers"
+                  className="pl-9"
+                />
+              </form>
               <nav className="mt-6 flex flex-col gap-1">
                 {NAV_LINKS.map((link) => (
                   <Link
