@@ -344,6 +344,57 @@ export const inspectionBookingSchema = z.object({
   notes: z.string().max(1000).optional(),
 });
 
+// ── Duty assessments (real ICUMS outcomes) ────────────────────
+// Public "submit your duty bill" form. Chassis + vehicle basics + the total
+// tax are required; everything else on the ICUMS Tax Result screen is
+// welcome-but-optional, since not every importer keeps the full bill.
+export const dutyAssessmentSchema = z
+  .object({
+    // VINs are 17 chars but older/JDM chassis codes are shorter — accept both.
+    chassisNumber: z
+      .string()
+      .trim()
+      .min(6, "Enter the chassis / VIN number")
+      .max(30)
+      .transform((s) => s.toUpperCase()),
+    make: z.string().trim().min(2, "Enter the make").max(60),
+    modelType: z.string().trim().min(1, "Enter the model").max(80),
+    yearOfManufacture: z.coerce
+      .number()
+      .int()
+      .min(1980, "Enter a valid year")
+      .max(new Date().getFullYear() + 1, "Enter a valid year"),
+    totalTax: z.coerce.number().positive("Enter the total tax paid (GHS)").max(10_000_000),
+    trimLevel: z.string().trim().max(80).optional(),
+    vehicleType: z.string().trim().max(60).optional(),
+    engineSizeCc: z.coerce.number().int().min(50).max(20_000).optional(),
+    originCode: z.string().trim().max(10).optional(),
+    color: z.string().trim().max(40).optional(),
+    fuelType: z.string().trim().max(30).optional(),
+    hsCode: z.string().trim().max(20).optional(),
+    hdv: z.coerce.number().positive().max(10_000_000).optional(),
+    fobNcy: z.coerce.number().positive().max(100_000_000).optional(),
+    cifNcy: z.coerce.number().positive().max(100_000_000).optional(),
+    assessedAt: z.coerce.date().optional(),
+    port: z.string().trim().max(40).optional(),
+    documentUrls: z.array(z.string().url()).max(6).optional(),
+    notes: z.string().max(2000).optional(),
+  })
+  .refine((d) => !d.assessedAt || d.assessedAt.getTime() <= Date.now() + 86_400_000, {
+    message: "Assessment date can't be in the future",
+    path: ["assessedAt"],
+  })
+  // ICUMS launched June 2020 — an "ICUMS tax bill" older than that isn't one.
+  .refine((d) => !d.assessedAt || d.assessedAt.getFullYear() >= 2020, {
+    message: "Enter the date on the ICUMS tax bill (2020 or later)",
+    path: ["assessedAt"],
+  });
+
+export const assessmentReviewSchema = z.object({
+  action: z.enum(["VERIFY", "REJECT"]),
+  rejectionReason: z.string().trim().max(500).optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type DutyCalcInput = z.infer<typeof dutyCalcSchema>;

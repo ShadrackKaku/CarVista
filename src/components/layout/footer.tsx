@@ -29,6 +29,7 @@ const footerNav = [
       { label: "Shipping Calculator", href: "/calculators/shipping" },
       { label: "Financing Calculator", href: "/calculators/financing" },
       { label: "Track My Import", href: "/import/track" },
+      { label: "Share Your Duty Bill", href: "/import/duty-check" },
     ],
   },
   {

@@ -25,6 +25,7 @@ import {
   Wallet,
   ClipboardCheck,
   BadgeCheck,
+  Database,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ const iconMap = {
   Wallet,
   ClipboardCheck,
   BadgeCheck,
+  Database,
 };
 
 type IconName = keyof typeof iconMap;
@@ -96,6 +98,7 @@ const adminNav: { label: string; href: string; icon: IconName }[] = [
   { label: "Imports", href: "/admin/imports", icon: "Ship" },
   { label: "Escrow", href: "/admin/escrow", icon: "Wallet" },
   { label: "Duty Rates", href: "/admin/duty-rates", icon: "FileText" },
+  { label: "Duty Data", href: "/admin/assessments", icon: "Database" },
   { label: "Reviews", href: "/admin/reviews", icon: "ShieldCheck" },
   { label: "Blog", href: "/admin/blog", icon: "FileText" },
 ];
