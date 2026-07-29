@@ -7,6 +7,7 @@ import {
   dutyCalcSchema,
   dutyAssessmentSchema,
   assessmentReviewSchema,
+  icumsCatalogSchema,
 } from "./validations";
 
 describe("registerSchema", () => {
@@ -168,5 +169,22 @@ describe("assessmentReviewSchema", () => {
         .success,
     ).toBe(true);
     expect(assessmentReviewSchema.safeParse({ action: "DELETE" }).success).toBe(false);
+  });
+});
+
+describe("icumsCatalogSchema", () => {
+  it("accepts makes and models with 5-digit codes", () => {
+    const parsed = icumsCatalogSchema.safeParse({
+      makes: [{ code: "00042", name: "Toyota" }],
+      models: [{ code: "00856", name: "Camry", makeCode: "00042" }],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects non-5-digit codes and empty payloads", () => {
+    expect(
+      icumsCatalogSchema.safeParse({ makes: [{ code: "42", name: "Toyota" }] }).success,
+    ).toBe(false);
+    expect(icumsCatalogSchema.safeParse({}).success).toBe(false);
   });
 });

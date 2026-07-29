@@ -1,16 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImageUploader } from "@/components/image-uploader";
 
+interface CatalogEntry {
+  code: string;
+  name: string;
+}
+
+/** Sentinel for "my make/model isn't in the list" — switches to free text. */
+const OTHER = "__other__";
+
 /** Public "submit your ICUMS duty bill" form. Field names mirror the ICUMS
- *  Tax Result screen so anyone holding a tax bill can transcribe it 1:1. */
+ *  Tax Result screen so anyone holding a tax bill can transcribe it 1:1.
+ *  Make/Model use ICUMS's own coded catalogue (cascading: picking a make
+ *  loads that make's models), so submissions join cleanly to the taxonomy
+ *  GRA assesses against. */
 export function DutyAssessmentForm() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -25,17 +43,61 @@ export function DutyAssessmentForm() {
     fuelType: "",
     hdv: "",
     cifNcy: "",
+    exchangeRate: "",
     assessedAt: "",
     port: "Tema",
     notes: "",
   });
 
+  // ICUMS coded catalogue for the cascading pickers.
+  const [makes, setMakes] = useState<CatalogEntry[]>([]);
+  const [models, setModels] = useState<CatalogEntry[]>([]);
+  const [makeCode, setMakeCode] = useState("");
+  const [modelCode, setModelCode] = useState("");
+
+  useEffect(() => {
+    fetch("/api/icums/makes")
+      .then((r) => r.json())
+      .then((d) => setMakes(Array.isArray(d.makes) ? d.makes : []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!makeCode || makeCode === OTHER) {
+      setModels([]);
+      return;
+    }
+    fetch(`/api/icums/models?make=${makeCode}`)
+      .then((r) => r.json())
+      .then((d) => setModels(Array.isArray(d.models) ? d.models : []))
+      .catch(() => setModels([]));
+  }, [makeCode]);
+
   function update(key: string, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function pickMake(code: string) {
+    setMakeCode(code);
+    setModelCode("");
+    update("modelType", "");
+    update("make", code === OTHER ? "" : (makes.find((m) => m.code === code)?.name ?? ""));
+  }
+
+  function pickModel(code: string) {
+    setModelCode(code);
+    update("modelType", code === OTHER ? "" : (models.find((m) => m.code === code)?.name ?? ""));
+  }
+
+  const makeIsFreeText = makes.length === 0 || makeCode === OTHER;
+  const modelIsFreeText = makeIsFreeText || (models.length === 0 && makeCode !== "") || modelCode === OTHER;
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.make.trim() || !form.modelType.trim()) {
+      toast.error("Select or enter the vehicle's make and model");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/duty-assessments", {
@@ -47,10 +109,14 @@ export function DutyAssessmentForm() {
           engineSizeCc: form.engineSizeCc || undefined,
           hdv: form.hdv || undefined,
           cifNcy: form.cifNcy || undefined,
+          exchangeRate: form.exchangeRate || undefined,
           assessedAt: form.assessedAt || undefined,
           fuelType: form.fuelType || undefined,
           notes: form.notes || undefined,
           documentUrls: documentUrls.length ? documentUrls : undefined,
+          // ICUMS taxonomy codes when picked from the catalogue.
+          icumsMakeCode: makeCode && makeCode !== OTHER ? makeCode : undefined,
+          icumsModelCode: modelCode && modelCode !== OTHER ? modelCode : undefined,
         }),
       });
       const data = await res.json();
@@ -95,25 +161,73 @@ export function DutyAssessmentForm() {
         </div>
         <div>
           <Label htmlFor="da-make">Make *</Label>
-          <Input
-            id="da-make"
-            required
-            value={form.make}
-            onChange={(e) => update("make", e.target.value)}
-            placeholder="e.g. Toyota"
-            className="mt-1.5"
-          />
+          {makes.length > 0 ? (
+            <Select value={makeCode} onValueChange={pickMake}>
+              <SelectTrigger id="da-make" className="mt-1.5">
+                <SelectValue placeholder="Select the make" />
+              </SelectTrigger>
+              <SelectContent>
+                {makes.map((m) => (
+                  <SelectItem key={m.code} value={m.code}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+                <SelectItem value={OTHER}>Other / not listed…</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : null}
+          {makeIsFreeText && (
+            <Input
+              id={makes.length > 0 ? "da-make-other" : "da-make"}
+              required
+              value={form.make}
+              onChange={(e) => update("make", e.target.value)}
+              placeholder="e.g. Toyota"
+              aria-label={makes.length > 0 ? "Make (free text)" : undefined}
+              className="mt-1.5"
+            />
+          )}
         </div>
         <div>
           <Label htmlFor="da-model">Model *</Label>
-          <Input
-            id="da-model"
-            required
-            value={form.modelType}
-            onChange={(e) => update("modelType", e.target.value)}
-            placeholder="e.g. Corolla"
-            className="mt-1.5"
-          />
+          {!makeIsFreeText && (
+            <Select
+              value={modelCode}
+              onValueChange={pickModel}
+              disabled={!makeCode || models.length === 0}
+            >
+              <SelectTrigger id="da-model" className="mt-1.5">
+                <SelectValue
+                  placeholder={
+                    !makeCode
+                      ? "Select the make first"
+                      : models.length === 0
+                        ? "No models listed — type below"
+                        : "Select the model"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((m) => (
+                  <SelectItem key={m.code} value={m.code}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+                <SelectItem value={OTHER}>Other / not listed…</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          {modelIsFreeText && (
+            <Input
+              id={!makeIsFreeText ? "da-model-other" : "da-model"}
+              required
+              value={form.modelType}
+              onChange={(e) => update("modelType", e.target.value)}
+              placeholder="e.g. Corolla"
+              aria-label={!makeIsFreeText ? "Model (free text)" : undefined}
+              className="mt-1.5"
+            />
+          )}
         </div>
         <div>
           <Label htmlFor="da-year">Year of manufacture *</Label>
@@ -189,6 +303,19 @@ export function DutyAssessmentForm() {
             value={form.cifNcy}
             onChange={(e) => update("cifNcy", e.target.value)}
             placeholder="CIF NCY on the bill"
+            className="mt-1.5"
+          />
+        </div>
+        <div>
+          <Label htmlFor="da-fx">Exchange rate (GHS/USD, if shown)</Label>
+          <Input
+            id="da-fx"
+            type="number"
+            inputMode="decimal"
+            step="0.0001"
+            value={form.exchangeRate}
+            onChange={(e) => update("exchangeRate", e.target.value)}
+            placeholder="e.g. 11.2981"
             className="mt-1.5"
           />
         </div>

@@ -377,6 +377,17 @@ export const dutyAssessmentSchema = z
     cifNcy: z.coerce.number().positive().max(100_000_000).optional(),
     assessedAt: z.coerce.date().optional(),
     port: z.string().trim().max(40).optional(),
+    // GHS per USD shown on the assessment row in the ICUMS checker.
+    exchangeRate: z.coerce.number().positive().max(1000).optional(),
+    // ICUMS taxonomy codes when picked from our coded selectors.
+    icumsMakeCode: z
+      .string()
+      .regex(/^\d{5}$/)
+      .optional(),
+    icumsModelCode: z
+      .string()
+      .regex(/^\d{5}$/)
+      .optional(),
     documentUrls: z.array(z.string().url()).max(6).optional(),
     notes: z.string().max(2000).optional(),
   })
@@ -394,6 +405,32 @@ export const assessmentReviewSchema = z.object({
   action: z.enum(["VERIFY", "REJECT"]),
   rejectionReason: z.string().trim().max(500).optional(),
 });
+
+// ── ICUMS vehicle taxonomy (coded make/model catalogue) ───────
+const icumsCode = z.string().regex(/^\d{5}$/, "ICUMS codes are 5 digits, e.g. 00042");
+
+/** Admin bulk import of catalogue rows (paged uploads — the full catalogue
+ *  is ~691 makes and thousands of models). */
+export const icumsCatalogSchema = z
+  .object({
+    makes: z
+      .array(z.object({ code: icumsCode, name: z.string().trim().min(1).max(80) }))
+      .max(1000)
+      .optional(),
+    models: z
+      .array(
+        z.object({
+          code: icumsCode,
+          name: z.string().trim().min(1).max(120),
+          makeCode: icumsCode,
+        }),
+      )
+      .max(2000)
+      .optional(),
+  })
+  .refine((d) => (d.makes?.length ?? 0) + (d.models?.length ?? 0) > 0, {
+    message: "Provide makes and/or models to import",
+  });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

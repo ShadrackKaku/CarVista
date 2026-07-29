@@ -1041,6 +1041,35 @@ model DutyCalculation {
   @@index([userId])
 }
 
+// ICUMS's own coded vehicle taxonomy (from the used-vehicle duty checker's
+// Make / Model popups — e.g. 00042 = Toyota, 00856 = Camry). Our forms speak
+// this vocabulary so every collected observation joins cleanly to the
+// catalogue GRA actually assesses against. Seeded with verified codes;
+// extended via the admin bulk import.
+model IcumsMake {
+  code String @id // 5-digit ICUMS make code, e.g. "00042"
+  name String // "Toyota"
+
+  models IcumsModel[]
+
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([name])
+}
+
+model IcumsModel {
+  code     String @id // 5-digit ICUMS model code, e.g. "00856"
+  name     String // "Camry"
+  makeCode String
+
+  make IcumsMake @relation(fields: [makeCode], references: [code], onDelete: Cascade)
+
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([makeCode])
+  @@index([name])
+}
+
 // Where a duty-assessment observation came from.
 enum AssessmentSource {
   PLATFORM_DEAL // a CarVista-managed import that cleared
@@ -1087,8 +1116,17 @@ model DutyAssessment {
   taxLines      Json?
 
   // ---- Assessment context ----
-  assessedAt DateTime? // date on the tax bill
-  port       String    @default("Tema")
+  assessedAt   DateTime? // date on the tax bill
+  port         String    @default("Tema")
+  // GHS per USD applied on this assessment (visible per row in the ICUMS
+  // checker) — lets us track the weekly customs FX rate from observations.
+  exchangeRate Decimal?  @db.Decimal(10, 4)
+
+  // ICUMS taxonomy codes when the submission came from our coded pickers —
+  // deliberately loose (no FK) so a submission never fails on a code the
+  // catalogue hasn't imported yet.
+  icumsMakeCode  String?
+  icumsModelCode String?
 
   // ---- Provenance + verification (one bad bill must not poison a cohort) ----
   source          AssessmentSource

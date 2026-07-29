@@ -252,6 +252,7 @@ export interface AdminAssessmentRow {
   hdv: number | null;
   cifNcy: number | null;
   totalTax: number;
+  exchangeRate: number | null;
   assessedAt: Date | null;
   port: string;
   source: string;
@@ -283,6 +284,7 @@ export async function getAdminAssessments(): Promise<AdminAssessmentRow[]> {
       hdv: a.hdv ? Number(a.hdv) : null,
       cifNcy: a.cifNcy ? Number(a.cifNcy) : null,
       totalTax: Number(a.totalTax),
+      exchangeRate: a.exchangeRate ? Number(a.exchangeRate) : null,
       assessedAt: a.assessedAt,
       port: a.port,
       source: a.source,

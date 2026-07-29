@@ -69,6 +69,9 @@ export default async function AdminAssessmentsPage() {
                 {a.engineSizeCc != null && <Row label="Engine" value={`${a.engineSizeCc} cc`} />}
                 {a.fuelType && <Row label="Fuel" value={a.fuelType} />}
                 {a.hsCode && <Row label="HS code" value={a.hsCode} />}
+                {a.exchangeRate != null && (
+                  <Row label="FX (GHS/USD)" value={a.exchangeRate.toFixed(4)} />
+                )}
                 <Row label="Port" value={a.port} />
                 {a.assessedAt && <Row label="Assessed" value={formatDate(a.assessedAt)} />}
               </dl>
