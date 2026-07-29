@@ -300,6 +300,75 @@ export async function getAdminAssessments(): Promise<AdminAssessmentRow[]> {
   }
 }
 
+/** Verified customs observations for a model cohort (year ±1) + the latest
+ *  observed customs FX rate — the inputs to buildCohortQuote(). */
+export async function getLandedCostCohort(params: {
+  make: string;
+  model: string;
+  year: number;
+  icumsMakeCode?: string;
+  icumsModelCode?: string;
+}): Promise<{
+  observations: import("@/lib/landed-cost").CohortObservation[];
+  fxRate: number | null;
+  fxAsOf: Date | null;
+} | null> {
+  try {
+    const byCode =
+      params.icumsMakeCode && params.icumsModelCode
+        ? { icumsMakeCode: params.icumsMakeCode, icumsModelCode: params.icumsModelCode }
+        : null;
+
+    const rows = await prisma.dutyAssessment.findMany({
+      where: {
+        status: "VERIFIED",
+        yearOfManufacture: { gte: params.year - 1, lte: params.year + 1 },
+        ...(byCode ?? {
+          make: { equals: params.make, mode: "insensitive" },
+          modelType: { equals: params.model, mode: "insensitive" },
+        }),
+      },
+      orderBy: { assessedAt: "desc" },
+      take: 40,
+      select: {
+        trimLevel: true,
+        yearOfManufacture: true,
+        hdv: true,
+        cifNcy: true,
+        totalTax: true,
+        exchangeRate: true,
+        assessedAt: true,
+        port: true,
+      },
+    });
+
+    // Latest observed customs FX rate across ALL verified assessments — the
+    // rate is national (weekly), not model-specific.
+    const latestFx = await prisma.dutyAssessment.findFirst({
+      where: { status: "VERIFIED", exchangeRate: { not: null } },
+      orderBy: { assessedAt: "desc" },
+      select: { exchangeRate: true, assessedAt: true },
+    });
+
+    return {
+      observations: rows.map((r) => ({
+        trimLevel: r.trimLevel,
+        yearOfManufacture: r.yearOfManufacture,
+        hdv: r.hdv ? Number(r.hdv) : null,
+        cifNcy: r.cifNcy ? Number(r.cifNcy) : null,
+        totalTax: Number(r.totalTax),
+        exchangeRate: r.exchangeRate ? Number(r.exchangeRate) : null,
+        assessedAt: r.assessedAt,
+        port: r.port,
+      })),
+      fxRate: latestFx?.exchangeRate ? Number(latestFx.exchangeRate) : null,
+      fxAsOf: latestFx?.assessedAt ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export interface InspectionRow {
   id: string;
   ref: string;
