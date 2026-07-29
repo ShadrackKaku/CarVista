@@ -242,6 +242,64 @@ export async function getAdminVerifications(): Promise<AdminVerificationRow[]> {
   }
 }
 
+export interface AdminAssessmentRow {
+  id: string;
+  chassisNumber: string;
+  vehicle: string; // "2016 Toyota Corolla LE"
+  engineSizeCc: number | null;
+  fuelType: string | null;
+  hsCode: string | null;
+  hdv: number | null;
+  cifNcy: number | null;
+  totalTax: number;
+  exchangeRate: number | null;
+  assessedAt: Date | null;
+  port: string;
+  source: string;
+  status: string;
+  documentUrls: string[];
+  notes: string | null;
+  submittedBy: string | null;
+  rejectionReason: string | null;
+  createdAt: Date;
+}
+
+/** Duty-assessment submissions for the admin verification queue (pending first). */
+export async function getAdminAssessments(): Promise<AdminAssessmentRow[]> {
+  try {
+    const rows = await prisma.dutyAssessment.findMany({
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      take: 200,
+      include: { submittedBy: { select: { name: true, email: true } } },
+    });
+    return rows.map((a) => ({
+      id: a.id,
+      chassisNumber: a.chassisNumber,
+      vehicle: [a.yearOfManufacture, a.make, a.modelType, a.trimLevel]
+        .filter(Boolean)
+        .join(" "),
+      engineSizeCc: a.engineSizeCc,
+      fuelType: a.fuelType,
+      hsCode: a.hsCode,
+      hdv: a.hdv ? Number(a.hdv) : null,
+      cifNcy: a.cifNcy ? Number(a.cifNcy) : null,
+      totalTax: Number(a.totalTax),
+      exchangeRate: a.exchangeRate ? Number(a.exchangeRate) : null,
+      assessedAt: a.assessedAt,
+      port: a.port,
+      source: a.source,
+      status: a.status,
+      documentUrls: a.documentUrls,
+      notes: a.notes,
+      submittedBy: a.submittedBy?.name ?? a.submittedBy?.email ?? null,
+      rejectionReason: a.rejectionReason,
+      createdAt: a.createdAt,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export interface InspectionRow {
   id: string;
   ref: string;

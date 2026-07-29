@@ -5,6 +5,9 @@ import {
   forgotPasswordSchema,
   vehicleListingSchema,
   dutyCalcSchema,
+  dutyAssessmentSchema,
+  assessmentReviewSchema,
+  icumsCatalogSchema,
 } from "./validations";
 
 describe("registerSchema", () => {
@@ -103,5 +106,85 @@ describe("dutyCalcSchema", () => {
   it("rejects a non-positive CIF and an out-of-range year", () => {
     expect(dutyCalcSchema.safeParse({ ...valid, cifValue: 0 }).success).toBe(false);
     expect(dutyCalcSchema.safeParse({ ...valid, manufactureYear: 1969 }).success).toBe(false);
+  });
+});
+
+describe("dutyAssessmentSchema", () => {
+  const valid = {
+    chassisNumber: "jtdbr32e720123456",
+    make: "Toyota",
+    modelType: "Corolla",
+    yearOfManufacture: 2016,
+    totalTax: "48500",
+  };
+
+  it("accepts a minimal submission, coerces numbers and uppercases the chassis", () => {
+    const parsed = dutyAssessmentSchema.safeParse(valid);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.chassisNumber).toBe("JTDBR32E720123456");
+      expect(parsed.data.totalTax).toBe(48500);
+    }
+  });
+
+  it("accepts the full ICUMS field set", () => {
+    const parsed = dutyAssessmentSchema.safeParse({
+      ...valid,
+      trimLevel: "LE",
+      vehicleType: "Saloon",
+      engineSizeCc: "1800",
+      originCode: "US",
+      fuelType: "Petrol",
+      hsCode: "8703.23",
+      hdv: "9200",
+      cifNcy: "165000",
+      assessedAt: "2026-05-10",
+      port: "Tema",
+      documentUrls: ["https://res.cloudinary.com/x/taxbill.jpg"],
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.engineSizeCc).toBe(1800);
+  });
+
+  it("rejects missing total tax and short chassis numbers", () => {
+    expect(dutyAssessmentSchema.safeParse({ ...valid, totalTax: 0 }).success).toBe(false);
+    expect(dutyAssessmentSchema.safeParse({ ...valid, chassisNumber: "AB12" }).success).toBe(false);
+  });
+
+  it("rejects future and pre-ICUMS assessment dates", () => {
+    expect(dutyAssessmentSchema.safeParse({ ...valid, assessedAt: "2030-01-01" }).success).toBe(
+      false,
+    );
+    expect(dutyAssessmentSchema.safeParse({ ...valid, assessedAt: "2019-06-01" }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("assessmentReviewSchema", () => {
+  it("accepts verify and reject actions", () => {
+    expect(assessmentReviewSchema.safeParse({ action: "VERIFY" }).success).toBe(true);
+    expect(
+      assessmentReviewSchema.safeParse({ action: "REJECT", rejectionReason: "Blurry photo" })
+        .success,
+    ).toBe(true);
+    expect(assessmentReviewSchema.safeParse({ action: "DELETE" }).success).toBe(false);
+  });
+});
+
+describe("icumsCatalogSchema", () => {
+  it("accepts makes and models with 5-digit codes", () => {
+    const parsed = icumsCatalogSchema.safeParse({
+      makes: [{ code: "00042", name: "Toyota" }],
+      models: [{ code: "00856", name: "Camry", makeCode: "00042" }],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects non-5-digit codes and empty payloads", () => {
+    expect(
+      icumsCatalogSchema.safeParse({ makes: [{ code: "42", name: "Toyota" }] }).success,
+    ).toBe(false);
+    expect(icumsCatalogSchema.safeParse({}).success).toBe(false);
   });
 });

@@ -31,48 +31,50 @@ enum UserStatus {
 }
 
 model User {
-  id              String     @id @default(cuid())
-  name            String?
-  email           String     @unique
-  emailVerified   DateTime?
-  hashedPassword  String?
-  image           String?
-  phone           String?
-  role            UserRole   @default(CUSTOMER)
-  status          UserStatus @default(ACTIVE)
-  city            String?
-  region          String?
-  bio             String?    @db.Text
+  id             String     @id @default(cuid())
+  name           String?
+  email          String     @unique
+  emailVerified  DateTime?
+  hashedPassword String?
+  image          String?
+  phone          String?
+  role           UserRole   @default(CUSTOMER)
+  status         UserStatus @default(ACTIVE)
+  city           String?
+  region         String?
+  bio            String?    @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts             Account[]
-  sessions             Session[]
-  dealer               Dealer?
-  partsStore           PartsStore?
-  serviceProvider      ServiceProvider?
-  vehicles             Vehicle[]           @relation("VehicleSeller")
-  parts                Part[]              @relation("PartSeller")
-  orders               Order[]
-  reviewsWritten       Review[]            @relation("ReviewAuthor")
-  importRequests       ImportRequest[]
-  savedVehicles        SavedVehicle[]
-  savedParts           SavedPart[]
-  cartItems            CartItem[]
-  quotationRequests    QuotationRequest[]
-  sentMessages         Message[]           @relation("MessageSender")
-  buyerConversations   Conversation[]      @relation("ConversationBuyer")
-  sellerConversations  Conversation[]      @relation("ConversationSeller")
-  notifications        Notification[]
-  blogPosts            BlogPost[]
-  passwordResetTokens  PasswordResetToken[]
-  verificationTokens   VerificationToken[]
-  serviceBookings      ServiceBooking[]
-  inspectionBookings   InspectionBooking[]
-  recordedVehicleEvents VehicleEvent[]     @relation("EventRecorder")
-  escrowPlans          EscrowPlan[]
-  savedSearches        SavedSearch[]
+  accounts              Account[]
+  sessions              Session[]
+  dealer                Dealer?
+  partsStore            PartsStore?
+  serviceProvider       ServiceProvider?
+  vehicles              Vehicle[]            @relation("VehicleSeller")
+  parts                 Part[]               @relation("PartSeller")
+  orders                Order[]
+  reviewsWritten        Review[]             @relation("ReviewAuthor")
+  importRequests        ImportRequest[]
+  savedVehicles         SavedVehicle[]
+  savedParts            SavedPart[]
+  cartItems             CartItem[]
+  quotationRequests     QuotationRequest[]
+  sentMessages          Message[]            @relation("MessageSender")
+  buyerConversations    Conversation[]       @relation("ConversationBuyer")
+  sellerConversations   Conversation[]       @relation("ConversationSeller")
+  notifications         Notification[]
+  blogPosts             BlogPost[]
+  passwordResetTokens   PasswordResetToken[]
+  verificationTokens    VerificationToken[]
+  serviceBookings       ServiceBooking[]
+  inspectionBookings    InspectionBooking[]
+  recordedVehicleEvents VehicleEvent[]       @relation("EventRecorder")
+  escrowPlans           EscrowPlan[]
+  savedSearches         SavedSearch[]
+  dutyAssessments       DutyAssessment[]     @relation("AssessmentSubmitter")
+  reviewedAssessments   DutyAssessment[]     @relation("AssessmentReviewer")
 
   @@index([role])
   @@index([email])
@@ -134,35 +136,35 @@ model PasswordResetToken {
 // ══════════════════════════════════════════════════════════════
 
 model Dealer {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  businessName  String
-  slug          String   @unique
-  description   String?  @db.Text
-  logo          String?
-  coverImage    String?
-  phone         String?
-  whatsapp      String?
-  email         String?
-  website       String?
-  address       String?
-  city          String?
-  region        String?
-  latitude      Float?
-  longitude     Float?
-  verified      Boolean  @default(false)
-  featured      Boolean  @default(false)
-  rating        Float    @default(0)
-  reviewCount   Int      @default(0)
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  businessName    String
+  slug            String  @unique
+  description     String? @db.Text
+  logo            String?
+  coverImage      String?
+  phone           String?
+  whatsapp        String?
+  email           String?
+  website         String?
+  address         String?
+  city            String?
+  region          String?
+  latitude        Float?
+  longitude       Float?
+  verified        Boolean @default(false)
+  featured        Boolean @default(false)
+  rating          Float   @default(0)
+  reviewCount     Int     @default(0)
   yearsInBusiness Int?
-  totalSales    Int      @default(0)
+  totalSales      Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicles Vehicle[]
-  reviews  Review[]  @relation("DealerReviews")
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicles     Vehicle[]
+  reviews      Review[]            @relation("DealerReviews")
   verification DealerVerification?
 
   @@index([verified])
@@ -184,7 +186,7 @@ model DealerVerification {
   taxId             String?
   contactName       String
   contactPhone      String
-  idType            String             // e.g. Ghana Card, Passport, Driver's License
+  idType            String // e.g. Ghana Card, Passport, Driver's License
   idNumber          String
   documentUrl       String?
   notes             String?            @db.Text
@@ -199,21 +201,21 @@ model DealerVerification {
 }
 
 model PartsStore {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  storeName    String
-  slug         String   @unique
-  description  String?  @db.Text
-  logo         String?
-  coverImage   String?
-  phone        String?
-  whatsapp     String?
-  address      String?
-  city         String?
-  region       String?
-  verified     Boolean  @default(false)
-  rating       Float    @default(0)
-  reviewCount  Int      @default(0)
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  storeName   String
+  slug        String  @unique
+  description String? @db.Text
+  logo        String?
+  coverImage  String?
+  phone       String?
+  whatsapp    String?
+  address     String?
+  city        String?
+  region      String?
+  verified    Boolean @default(false)
+  rating      Float   @default(0)
+  reviewCount Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -238,12 +240,12 @@ enum ServiceType {
 }
 
 model ServiceProvider {
-  id           String       @id @default(cuid())
-  userId       String       @unique
+  id           String      @id @default(cuid())
+  userId       String      @unique
   businessName String
-  slug         String       @unique
+  slug         String      @unique
   serviceType  ServiceType
-  description  String?      @db.Text
+  description  String?     @db.Text
   logo         String?
   coverImage   String?
   phone        String?
@@ -253,9 +255,9 @@ model ServiceProvider {
   region       String?
   latitude     Float?
   longitude    Float?
-  verified     Boolean      @default(false)
-  rating       Float        @default(0)
-  reviewCount  Int          @default(0)
+  verified     Boolean     @default(false)
+  rating       Float       @default(0)
+  reviewCount  Int         @default(0)
   priceRange   String?
   services     String[]
 
@@ -287,7 +289,7 @@ model Brand {
 }
 
 model VehicleModel {
-  id       String  @id @default(cuid())
+  id       String    @id @default(cuid())
   name     String
   slug     String
   brandId  String
@@ -354,63 +356,63 @@ enum ListingStatus {
 }
 
 model Vehicle {
-  id             String           @id @default(cuid())
-  slug           String           @unique
-  title          String
-  brandId        String
-  modelId        String?
-  year           Int
-  price          Decimal          @db.Decimal(12, 2)
-  currency       String           @default("GHS")
-  negotiable     Boolean          @default(true)
-  mileage        Int              @default(0)
-  fuelType       FuelType
-  transmission   Transmission
-  engineSize     Float? // in litres
-  bodyType       BodyType
-  color          String?
-  interiorColor  String?
-  doors          Int?
-  seats          Int?
-  drivetrain     String? // FWD, RWD, AWD, 4WD
-  condition      VehicleCondition
-  vin            String?
+  id                 String           @id @default(cuid())
+  slug               String           @unique
+  title              String
+  brandId            String
+  modelId            String?
+  year               Int
+  price              Decimal          @db.Decimal(12, 2)
+  currency           String           @default("GHS")
+  negotiable         Boolean          @default(true)
+  mileage            Int              @default(0)
+  fuelType           FuelType
+  transmission       Transmission
+  engineSize         Float? // in litres
+  bodyType           BodyType
+  color              String?
+  interiorColor      String?
+  doors              Int?
+  seats              Int?
+  drivetrain         String? // FWD, RWD, AWD, 4WD
+  condition          VehicleCondition
+  vin                String?
   registrationNumber String?
-  auctionGrade   String?
-  location       String?
-  city           String?
-  region         String?
+  auctionGrade       String?
+  location           String?
+  city               String?
+  region             String?
 
-  description    String?          @db.Text
-  features       String[]
+  description String?  @db.Text
+  features    String[]
 
   // history / import
-  serviceHistory String?          @db.Text
-  accidentHistory String?         @db.Text
-  importStatus   ImportStatus     @default(NOT_IMPORTED)
+  serviceHistory  String?      @db.Text
+  accidentHistory String?      @db.Text
+  importStatus    ImportStatus @default(NOT_IMPORTED)
   countryOfOrigin String?
 
-  status         ListingStatus    @default(ACTIVE)
-  featured       Boolean          @default(false)
-  verified       Boolean          @default(false)
-  views          Int              @default(0)
+  status   ListingStatus @default(ACTIVE)
+  featured Boolean       @default(false)
+  verified Boolean       @default(false)
+  views    Int           @default(0)
 
-  sellerId       String
-  dealerId       String?
+  sellerId String
+  dealerId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  brand    Brand          @relation(fields: [brandId], references: [id])
-  model    VehicleModel?  @relation(fields: [modelId], references: [id])
-  seller   User           @relation("VehicleSeller", fields: [sellerId], references: [id], onDelete: Cascade)
-  dealer   Dealer?        @relation(fields: [dealerId], references: [id])
-  images   VehicleImage[]
-  videos   VehicleVideo[]
-  savedBy  SavedVehicle[]
-  reviews  Review[]       @relation("VehicleReviews")
+  brand          Brand            @relation(fields: [brandId], references: [id])
+  model          VehicleModel?    @relation(fields: [modelId], references: [id])
+  seller         User             @relation("VehicleSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  dealer         Dealer?          @relation(fields: [dealerId], references: [id])
+  images         VehicleImage[]
+  videos         VehicleVideo[]
+  savedBy        SavedVehicle[]
+  reviews        Review[]         @relation("VehicleReviews")
   importRequests ImportRequest[]
-  passport VehiclePassport?
+  passport       VehiclePassport?
 
   @@index([brandId])
   @@index([status])
@@ -576,21 +578,21 @@ enum PartCondition {
 }
 
 model Part {
-  id             String        @id @default(cuid())
-  slug           String        @unique
-  name           String
-  description    String?       @db.Text
-  categoryId     String
-  brand          String? // part manufacturer (Bosch, Denso...)
-  oemNumber      String?
-  partNumber     String?
-  condition      PartCondition @default(NEW)
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  description String?       @db.Text
+  categoryId  String
+  brand       String? // part manufacturer (Bosch, Denso...)
+  oemNumber   String?
+  partNumber  String?
+  condition   PartCondition @default(NEW)
 
-  price          Decimal       @db.Decimal(10, 2)
-  currency       String        @default("GHS")
-  discountPrice  Decimal?      @db.Decimal(10, 2)
-  stock          Int           @default(0)
-  sku            String?
+  price         Decimal  @db.Decimal(10, 2)
+  currency      String   @default("GHS")
+  discountPrice Decimal? @db.Decimal(10, 2)
+  stock         Int      @default(0)
+  sku           String?
 
   // compatibility
   compatibleMakes  String[]
@@ -599,26 +601,26 @@ model Part {
   yearTo           Int?
   fitmentPosition  String? // front, rear, left, right
 
-  featured  Boolean       @default(false)
-  status    ListingStatus @default(ACTIVE)
-  rating    Float         @default(0)
-  reviewCount Int         @default(0)
-  views     Int           @default(0)
+  featured    Boolean       @default(false)
+  status      ListingStatus @default(ACTIVE)
+  rating      Float         @default(0)
+  reviewCount Int           @default(0)
+  views       Int           @default(0)
 
-  sellerId  String
-  storeId   String?
+  sellerId String
+  storeId  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  category  PartCategory @relation(fields: [categoryId], references: [id])
-  seller    User         @relation("PartSeller", fields: [sellerId], references: [id], onDelete: Cascade)
-  store     PartsStore?  @relation(fields: [storeId], references: [id])
-  images    PartImage[]
-  savedBy   SavedPart[]
-  cartItems CartItem[]
+  category   PartCategory @relation(fields: [categoryId], references: [id])
+  seller     User         @relation("PartSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  store      PartsStore?  @relation(fields: [storeId], references: [id])
+  images     PartImage[]
+  savedBy    SavedPart[]
+  cartItems  CartItem[]
   orderItems OrderItem[]
-  reviews   Review[]     @relation("PartReviews")
+  reviews    Review[]     @relation("PartReviews")
 
   @@index([categoryId])
   @@index([status])
@@ -689,31 +691,31 @@ enum PaymentMethod {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  orderNumber   String      @unique
-  userId        String
-  status        OrderStatus @default(PENDING)
+  id          String      @id @default(cuid())
+  orderNumber String      @unique
+  userId      String
+  status      OrderStatus @default(PENDING)
 
   // Idempotency: a client-supplied key that makes a double-submitted checkout
   // return the SAME order instead of creating a duplicate.
-  idempotencyKey String?    @unique
+  idempotencyKey String? @unique
 
-  subtotal      Decimal     @db.Decimal(10, 2)
-  shippingFee   Decimal     @db.Decimal(10, 2) @default(0)
-  discount      Decimal     @db.Decimal(10, 2) @default(0)
-  total         Decimal     @db.Decimal(10, 2)
-  currency      String      @default("GHS")
+  subtotal    Decimal @db.Decimal(10, 2)
+  shippingFee Decimal @default(0) @db.Decimal(10, 2)
+  discount    Decimal @default(0) @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+  currency    String  @default("GHS")
 
-  couponCode    String?
+  couponCode String?
 
   // shipping details
-  fullName      String
-  phone         String
-  email         String?
-  address       String
-  city          String
-  region        String
-  notes         String?     @db.Text
+  fullName String
+  phone    String
+  email    String?
+  address  String
+  city     String
+  region   String
+  notes    String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -727,12 +729,12 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  partId    String
-  name      String
-  price     Decimal @db.Decimal(10, 2)
-  quantity  Int
+  id       String  @id @default(cuid())
+  orderId  String
+  partId   String
+  name     String
+  price    Decimal @db.Decimal(10, 2)
+  quantity Int
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   part  Part  @relation(fields: [partId], references: [id])
@@ -748,19 +750,19 @@ enum PaymentStatus {
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  orderId       String        @unique
-  method        PaymentMethod
-  status        PaymentStatus @default(PENDING)
-  amount        Decimal       @db.Decimal(10, 2)
-  currency      String        @default("GHS")
-  reference     String        @unique
-  providerRef   String?
-  paidAt        DateTime?
+  id          String        @id @default(cuid())
+  orderId     String        @unique
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+  amount      Decimal       @db.Decimal(10, 2)
+  currency    String        @default("GHS")
+  reference   String        @unique
+  providerRef String?
+  paidAt      DateTime?
 
   // Refund tracking (money-back on a paid parts order).
-  refundStatus  RefundStatus  @default(NONE)
-  refundedAt    DateTime?
+  refundStatus RefundStatus @default(NONE)
+  refundedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -769,15 +771,15 @@ model Payment {
 }
 
 model Coupon {
-  id           String   @id @default(cuid())
-  code         String   @unique
+  id           String    @id @default(cuid())
+  code         String    @unique
   description  String?
-  discountType String   @default("PERCENT") // PERCENT | FIXED
-  amount       Decimal  @db.Decimal(10, 2)
-  minPurchase  Decimal? @db.Decimal(10, 2)
+  discountType String    @default("PERCENT") // PERCENT | FIXED
+  amount       Decimal   @db.Decimal(10, 2)
+  minPurchase  Decimal?  @db.Decimal(10, 2)
   maxUses      Int?
-  usedCount    Int      @default(0)
-  active       Boolean  @default(true)
+  usedCount    Int       @default(0)
+  active       Boolean   @default(true)
   expiresAt    DateTime?
 
   createdAt DateTime @default(now())
@@ -802,10 +804,10 @@ enum ImportStage {
 }
 
 model ImportRequest {
-  id              String      @id @default(cuid())
-  requestNumber   String      @unique
-  userId          String
-  vehicleId       String?
+  id            String  @id @default(cuid())
+  requestNumber String  @unique
+  userId        String
+  vehicleId     String?
 
   // request details
   countryOfOrigin String
@@ -813,28 +815,28 @@ model ImportRequest {
   make            String
   model           String
   year            Int
-  budget          Decimal?    @db.Decimal(12, 2)
+  budget          Decimal?      @db.Decimal(12, 2)
   fuelType        FuelType?
   transmission    Transmission?
   color           String?
-  notes           String?     @db.Text
+  notes           String?       @db.Text
   auctionLink     String?
 
   // quotation
-  quotedCif       Decimal?    @db.Decimal(12, 2)
-  quotedDuty      Decimal?    @db.Decimal(12, 2)
-  quotedShipping  Decimal?    @db.Decimal(12, 2)
-  quotedTotal     Decimal?    @db.Decimal(12, 2)
+  quotedCif      Decimal? @db.Decimal(12, 2)
+  quotedDuty     Decimal? @db.Decimal(12, 2)
+  quotedShipping Decimal? @db.Decimal(12, 2)
+  quotedTotal    Decimal? @db.Decimal(12, 2)
 
-  stage           ImportStage @default(REQUESTED)
-  trackingNumber  String?
+  stage            ImportStage @default(REQUESTED)
+  trackingNumber   String?
   estimatedArrival DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicle        Vehicle?             @relation(fields: [vehicleId], references: [id])
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle        Vehicle?              @relation(fields: [vehicleId], references: [id])
   trackingEvents ImportTrackingEvent[]
   escrowPlan     EscrowPlan?
 
@@ -868,29 +870,29 @@ model ImportTrackingEvent {
 // ══════════════════════════════════════════════════════════════
 
 enum EscrowPlanStatus {
-  DRAFT       // admin is still setting it up; buyer can't pay yet
-  ACTIVE      // buyer can pay unlocked installments
-  COMPLETED   // every installment paid
+  DRAFT // admin is still setting it up; buyer can't pay yet
+  ACTIVE // buyer can pay unlocked installments
+  COMPLETED // every installment paid
   CANCELLED
 }
 
 enum EscrowMilestoneStatus {
-  LOCKED      // not payable yet (import hasn't reached the unlock stage)
-  PROCESSING  // buyer started a payment, awaiting Paystack confirmation
-  PAID        // confirmed
+  LOCKED // not payable yet (import hasn't reached the unlock stage)
+  PROCESSING // buyer started a payment, awaiting Paystack confirmation
+  PAID // confirmed
 }
 
 enum RefundStatus {
-  NONE        // no refund requested
-  PENDING     // refund submitted to Paystack, awaiting settlement
-  REFUNDED    // Paystack confirmed the money went back to the buyer
-  FAILED      // Paystack could not process the refund
+  NONE // no refund requested
+  PENDING // refund submitted to Paystack, awaiting settlement
+  REFUNDED // Paystack confirmed the money went back to the buyer
+  FAILED // Paystack could not process the refund
 }
 
 model EscrowPlan {
   id              String           @id @default(cuid())
   importRequestId String           @unique
-  userId          String           // denormalized owner, for fast authorization
+  userId          String // denormalized owner, for fast authorization
   totalAmount     Decimal          @db.Decimal(12, 2)
   currency        String           @default("GHS")
   status          EscrowPlanStatus @default(DRAFT)
@@ -912,17 +914,17 @@ model EscrowMilestone {
   label       String
   description String?               @db.Text
   amount      Decimal               @db.Decimal(12, 2)
-  unlockStage ImportStage           // becomes payable when the import reaches this stage
+  unlockStage ImportStage // becomes payable when the import reaches this stage
   status      EscrowMilestoneStatus @default(LOCKED)
 
   // Each installment is its own Paystack charge.
   method      PaymentMethod?
-  reference   String?               @unique
+  reference   String?        @unique
   providerRef String?
   paidAt      DateTime?
 
   // Refund tracking (money-back when a plan is cancelled after payment).
-  refundStatus RefundStatus         @default(NONE)
+  refundStatus RefundStatus @default(NONE)
   refundedAt   DateTime?
 
   createdAt DateTime @default(now())
@@ -934,15 +936,15 @@ model EscrowMilestone {
 }
 
 model QuotationRequest {
-  id          String   @id @default(cuid())
-  userId      String?
-  name        String
-  email       String
-  phone       String
-  subject     String
-  message     String   @db.Text
-  type        String   @default("GENERAL") // GENERAL | IMPORT | SOURCING | PART
-  status      String   @default("OPEN") // OPEN | RESPONDED | CLOSED
+  id      String  @id @default(cuid())
+  userId  String?
+  name    String
+  email   String
+  phone   String
+  subject String
+  message String  @db.Text
+  type    String  @default("GENERAL") // GENERAL | IMPORT | SOURCING | PART
+  status  String  @default("OPEN") // OPEN | RESPONDED | CLOSED
 
   createdAt DateTime @default(now())
 
@@ -956,27 +958,27 @@ model QuotationRequest {
 // ══════════════════════════════════════════════════════════════
 
 model DutyRate {
-  id             String  @id @default(cuid())
+  id        String   @id @default(cuid())
   // matching criteria
-  category       String // e.g. "SEDAN_UNDER_1900CC", "SUV_OVER_3000CC"
-  label          String
-  engineMin      Int? // cc
-  engineMax      Int? // cc
-  bodyTypes      String[] // applicable body types
-  fuelTypes      String[]
+  category  String // e.g. "SEDAN_UNDER_1900CC", "SUV_OVER_3000CC"
+  label     String
+  engineMin Int? // cc
+  engineMax Int? // cc
+  bodyTypes String[] // applicable body types
+  fuelTypes String[]
 
   // rates (percentages, 0-100)
-  importDutyRate Float   @default(20)
-  vatRate        Float   @default(15)
-  nhilRate       Float   @default(2.5)
-  getfundRate    Float   @default(2.5)
-  covidLevyRate  Float   @default(1)
-  ecowasLevyRate Float   @default(0.5)
-  examinationFee Float   @default(0.5)
-  networkCharge  Float   @default(0.4)
+  importDutyRate Float @default(20)
+  vatRate        Float @default(15)
+  nhilRate       Float @default(2.5)
+  getfundRate    Float @default(2.5)
+  covidLevyRate  Float @default(1)
+  ecowasLevyRate Float @default(0.5)
+  examinationFee Float @default(0.5)
+  networkCharge  Float @default(0.4)
 
-  active         Boolean @default(true)
-  effectiveFrom  DateTime @default(now())
+  active        Boolean  @default(true)
+  effectiveFrom DateTime @default(now())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -986,7 +988,7 @@ model DutyRate {
 
 // Depreciation schedule for over-age penalties / valuation
 model OverageRate {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   minAge      Int // years
   maxAge      Int
   penaltyRate Float // % penalty on CIF for over-aged vehicles
@@ -994,17 +996,17 @@ model OverageRate {
 }
 
 model ShippingRate {
-  id             String  @id @default(cuid())
-  originCountry  String
-  originPort     String
-  destinationPort String @default("Tema")
-  method         String // RORO | CONTAINER_20 | CONTAINER_40
-  vehicleClass   String // SEDAN | SUV | PICKUP | BUS
-  cost           Decimal @db.Decimal(10, 2)
-  currency       String  @default("USD")
-  transitDaysMin Int     @default(21)
-  transitDaysMax Int     @default(45)
-  active         Boolean @default(true)
+  id              String  @id @default(cuid())
+  originCountry   String
+  originPort      String
+  destinationPort String  @default("Tema")
+  method          String // RORO | CONTAINER_20 | CONTAINER_40
+  vehicleClass    String // SEDAN | SUV | PICKUP | BUS
+  cost            Decimal @db.Decimal(10, 2)
+  currency        String  @default("USD")
+  transitDaysMin  Int     @default(21)
+  transitDaysMax  Int     @default(45)
+  active          Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1015,28 +1017,139 @@ model ShippingRate {
 
 // Saved calculation results (for logged-in users / analytics)
 model DutyCalculation {
-  id             String   @id @default(cuid())
-  userId         String?
-  make           String?
-  model          String?
-  year           Int
-  cifValue       Decimal  @db.Decimal(12, 2)
-  engineSize     Int
-  fuelType       String
-  bodyType       String
+  id         String  @id @default(cuid())
+  userId     String?
+  make       String?
+  model      String?
+  year       Int
+  cifValue   Decimal @db.Decimal(12, 2)
+  engineSize Int
+  fuelType   String
+  bodyType   String
 
-  importDuty     Decimal  @db.Decimal(12, 2)
-  vat            Decimal  @db.Decimal(12, 2)
-  nhil           Decimal  @db.Decimal(12, 2)
-  getfund        Decimal  @db.Decimal(12, 2)
-  otherLevies    Decimal  @db.Decimal(12, 2)
-  processingFees Decimal  @db.Decimal(12, 2)
+  importDuty      Decimal @db.Decimal(12, 2)
+  vat             Decimal @db.Decimal(12, 2)
+  nhil            Decimal @db.Decimal(12, 2)
+  getfund         Decimal @db.Decimal(12, 2)
+  otherLevies     Decimal @db.Decimal(12, 2)
+  processingFees  Decimal @db.Decimal(12, 2)
   totalLandedCost Decimal @db.Decimal(12, 2)
-  currency       String   @default("GHS")
+  currency        String  @default("GHS")
 
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// ICUMS's own coded vehicle taxonomy (from the used-vehicle duty checker's
+// Make / Model popups — e.g. 00042 = Toyota, 00856 = Camry). Our forms speak
+// this vocabulary so every collected observation joins cleanly to the
+// catalogue GRA actually assesses against. Seeded with verified codes;
+// extended via the admin bulk import.
+model IcumsMake {
+  code String @id // 5-digit ICUMS make code, e.g. "00042"
+  name String // "Toyota"
+
+  models IcumsModel[]
+
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([name])
+}
+
+model IcumsModel {
+  code     String @id // 5-digit ICUMS model code, e.g. "00856"
+  name     String // "Camry"
+  makeCode String
+
+  make IcumsMake @relation(fields: [makeCode], references: [code], onDelete: Cascade)
+
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([makeCode])
+  @@index([name])
+}
+
+// Where a duty-assessment observation came from.
+enum AssessmentSource {
+  PLATFORM_DEAL // a CarVista-managed import that cleared
+  AGENT // logged by a partner clearing agent
+  COMMUNITY // public "check my duty bill" submission
+  ICUMS_LOOKUP // read off the public ICUMS used-vehicle checker
+}
+
+enum AssessmentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// A REAL customs outcome: what ICUMS actually assessed for a specific
+// vehicle. This is the training data for the landed-cost engine — every
+// verified row sharpens the HDV prediction. Field names mirror the ICUMS
+// "Tax Result" screen (Details tab) so ops can transcribe 1:1.
+model DutyAssessment {
+  id String @id @default(cuid())
+
+  // ---- Vehicle identity (ICUMS Details tab) ----
+  chassisNumber     String // VIN / chassis, as ICUMS keys the lookup
+  make              String
+  modelType         String
+  trimLevel         String?
+  vehicleType       String? // ICUMS vehicle-type label (e.g. Saloon, SUV)
+  engineNo          String?
+  engineSizeCc      Int?
+  yearOfManufacture Int
+  originCode        String? // country-of-origin code
+  color             String?
+  fuelType          String?
+
+  // ---- Classification + money (ICUMS Details tab) ----
+  hsCode        String?
+  hsDescription String?
+  hdv           Decimal? @db.Decimal(14, 2) // Home Delivery Value
+  hdvCurrency   String   @default("USD")
+  fobNcy        Decimal? @db.Decimal(14, 2) // FOB in GHS ("national currency")
+  cifNcy        Decimal? @db.Decimal(14, 2) // CIF in GHS
+  totalTax      Decimal  @db.Decimal(14, 2) // GHS — the number that matters
+  // Itemised "Tax List" tab lines: [{ name, rate, amount }, …]
+  taxLines      Json?
+
+  // ---- Assessment context ----
+  assessedAt   DateTime? // date on the tax bill
+  port         String    @default("Tema")
+  // GHS per USD applied on this assessment (visible per row in the ICUMS
+  // checker) — lets us track the weekly customs FX rate from observations.
+  exchangeRate Decimal?  @db.Decimal(10, 4)
+
+  // ICUMS taxonomy codes when the submission came from our coded pickers —
+  // deliberately loose (no FK) so a submission never fails on a code the
+  // catalogue hasn't imported yet.
+  icumsMakeCode  String?
+  icumsModelCode String?
+
+  // ---- Provenance + verification (one bad bill must not poison a cohort) ----
+  source          AssessmentSource
+  status          AssessmentStatus @default(PENDING)
+  documentUrls    String[] // tax-bill photos / PDFs
+  notes           String?          @db.Text
+  submittedById   String?
+  submittedBy     User?            @relation("AssessmentSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  reviewedById    String?
+  reviewedBy      User?            @relation("AssessmentReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  rejectionReason String?
+
+  // What our engine predicted at quote time, if this car was quoted —
+  // the residual (totalTax − predictedTotalTax) is the calibration signal.
+  predictedTotalTax Decimal? @db.Decimal(14, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chassisNumber])
+  @@index([make, modelType, yearOfManufacture])
+  @@index([status])
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1044,17 +1157,17 @@ model DutyCalculation {
 // ══════════════════════════════════════════════════════════════
 
 model Review {
-  id          String   @id @default(cuid())
-  authorId    String
-  rating      Int // 1-5
-  title       String?
-  comment     String   @db.Text
-  verified    Boolean  @default(false)
+  id       String  @id @default(cuid())
+  authorId String
+  rating   Int // 1-5
+  title    String?
+  comment  String  @db.Text
+  verified Boolean @default(false)
 
   // polymorphic-ish targets (one set per review)
-  vehicleId        String?
-  partId           String?
-  dealerId         String?
+  vehicleId         String?
+  partId            String?
+  dealerId          String?
   serviceProviderId String?
 
   createdAt DateTime @default(now())
@@ -1075,7 +1188,7 @@ model Review {
 // owner), optionally about a specific vehicle or part. Both sides can post
 // messages back and forth.
 model Conversation {
-  id       String  @id @default(cuid())
+  id       String @id @default(cuid())
   buyerId  String
   sellerId String
 
@@ -1123,13 +1236,13 @@ enum NotificationType {
 }
 
 model Notification {
-  id      String           @id @default(cuid())
-  userId  String
-  type    NotificationType @default(SYSTEM)
-  title   String
-  body    String?          @db.Text
-  link    String?
-  read    Boolean          @default(false)
+  id     String           @id @default(cuid())
+  userId String
+  type   NotificationType @default(SYSTEM)
+  title  String
+  body   String?          @db.Text
+  link   String?
+  read   Boolean          @default(false)
 
   createdAt DateTime @default(now())
 
@@ -1147,19 +1260,19 @@ model BlogCategory {
 }
 
 model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  excerpt     String?  @db.Text
-  content     String   @db.Text
-  coverImage  String?
-  published   Boolean  @default(false)
-  featured    Boolean  @default(false)
-  views       Int      @default(0)
-  readTime    Int      @default(5)
-  authorId    String
-  categoryId  String?
-  tags        String[]
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  title      String
+  excerpt    String?  @db.Text
+  content    String   @db.Text
+  coverImage String?
+  published  Boolean  @default(false)
+  featured   Boolean  @default(false)
+  views      Int      @default(0)
+  readTime   Int      @default(5)
+  authorId   String
+  categoryId String?
+  tags       String[]
 
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
@@ -1205,20 +1318,20 @@ model ServiceBooking {
 }
 
 model InspectionBooking {
-  id             String        @id @default(cuid())
-  bookingNumber  String        @unique
-  userId         String
-  vehicleInfo    String
-  location       String
-  scheduledAt    DateTime
-  status         BookingStatus @default(PENDING)
-  notes          String?       @db.Text
+  id            String        @id @default(cuid())
+  bookingNumber String        @unique
+  userId        String
+  vehicleInfo   String
+  location      String
+  scheduledAt   DateTime
+  status        BookingStatus @default(PENDING)
+  notes         String?       @db.Text
 
   // Inspection report (filled in once the inspection is done).
-  overallGrade   String?       // e.g. A, B, C or a 1–5 score
-  reportSummary  String?       @db.Text
-  reportUrl      String?       // link to the full PDF, if any
-  inspectedAt    DateTime?
+  overallGrade  String? // e.g. A, B, C or a 1–5 score
+  reportSummary String?   @db.Text
+  reportUrl     String? // link to the full PDF, if any
+  inspectedAt   DateTime?
 
   createdAt DateTime @default(now())
 
@@ -1232,16 +1345,16 @@ model InspectionBooking {
 // ══════════════════════════════════════════════════════════════
 
 model Advertisement {
-  id        String   @id @default(cuid())
-  title     String
-  image     String
-  link      String?
-  placement String // HOME_HERO | SIDEBAR | MARKETPLACE_TOP
-  active    Boolean  @default(true)
-  startDate DateTime?
-  endDate   DateTime?
-  clicks    Int      @default(0)
-  impressions Int    @default(0)
+  id          String    @id @default(cuid())
+  title       String
+  image       String
+  link        String?
+  placement   String // HOME_HERO | SIDEBAR | MARKETPLACE_TOP
+  active      Boolean   @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  clicks      Int       @default(0)
+  impressions Int       @default(0)
 
   createdAt DateTime @default(now())
 }
