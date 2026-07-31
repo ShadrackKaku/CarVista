@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildCohortQuote, median, type CohortObservation } from "@/lib/landed-cost";
+import {
+  ageAtAssessment,
+  buildCohortQuote,
+  buildHdvQuote,
+  calibrate,
+  median,
+  type CohortObservation,
+} from "@/lib/landed-cost";
 
 const NOW = new Date("2026-07-29T00:00:00Z");
 
@@ -94,5 +101,72 @@ describe("buildCohortQuote", () => {
     );
     // Freshest first.
     expect(q!.receipts[0].assessedAt).toBe("2026-07-12");
+  });
+});
+
+describe("HDV-anchored estimation (v2)", () => {
+  // The real ICUMS Camry 2025 rows, in calibration shape.
+  const calObs = [
+    { hsCode: "8703402000", hdv: 31000, cifNcy: 309985.86, totalTax: 154717.49, exchangeRate: 11.2981, yearOfManufacture: 2025, assessedAt: new Date("2026-07-01") },
+    { hsCode: "8703402000", hdv: 33700, cifNcy: 284883.28, totalTax: 139334.45, exchangeRate: 11.5558, yearOfManufacture: 2025, assessedAt: new Date("2026-07-20") },
+    { hsCode: "8703402000", hdv: 28700, cifNcy: 281527.09, totalTax: 137694.43, exchangeRate: 11.0555, yearOfManufacture: 2025, assessedAt: new Date("2026-07-15") },
+    { hsCode: "8703402000", hdv: 32525, cifNcy: 326024.19, totalTax: 159458.01, exchangeRate: 11.2981, yearOfManufacture: 2025, assessedAt: new Date("2026-07-02") },
+  ];
+
+  it("derives a stable tax-per-HDV ratio and the decomposition", () => {
+    const cal = calibrate(calObs, { targetAgeYears: 1, hsCode: "8703402000" })!;
+    expect(cal).not.toBeNull();
+    expect(cal.basis).toBe("AGE"); // all four are 1 year old at assessment
+    expect(cal.sampleSize).toBe(4);
+    expect(cal.ratio.point).toBeCloseTo(0.434, 3);
+    // The decomposition shown to users: ~48.91% of CIF, CIF ~0.887 of HDV.
+    expect(cal.effectiveRate!).toBeCloseTo(0.4891, 3);
+    expect(cal.cifFactor!).toBeCloseTo(0.886, 2);
+  });
+
+  it("reproduces a real assessment from HDV alone", () => {
+    const cal = calibrate(calObs, { targetAgeYears: 1, hsCode: "8703402000" })!;
+    // Predict the LE row (HDV 28,700 at its own rate) and compare to actual.
+    const quote = buildHdvQuote({
+      hdv: 28700,
+      exactTrim: true,
+      fxRate: 11.0555,
+      ageYears: 1,
+      calibration: cal,
+    })!;
+    expect(quote.tier).toBe("EXACT");
+    expect(quote.taxGhs.point).toBeCloseTo(137694.43, -2); // within ~GHS 50
+    expect(quote.taxGhs.low).toBeLessThanOrEqual(quote.taxGhs.point);
+    expect(quote.taxGhs.high).toBeGreaterThanOrEqual(quote.taxGhs.point);
+  });
+
+  it("falls back through age → HS code → global as data thins", () => {
+    // No observation matches age 9, but the HS code does.
+    const byHs = calibrate(calObs, { targetAgeYears: 9, hsCode: "8703402000" })!;
+    expect(byHs.basis).toBe("HS_CODE");
+    // Neither age nor HS code match — still usable, flagged GLOBAL.
+    const global = calibrate(calObs, { targetAgeYears: 9, hsCode: "9999999999" })!;
+    expect(global.basis).toBe("GLOBAL");
+    expect(global.sampleSize).toBe(4);
+  });
+
+  it("marks a model-year median HDV as MODEL rather than EXACT", () => {
+    const cal = calibrate(calObs, { targetAgeYears: 1 })!;
+    const quote = buildHdvQuote({ hdv: 31000, exactTrim: false, fxRate: 12, ageYears: 1, calibration: cal })!;
+    expect(quote.tier).toBe("MODEL");
+    expect(quote.hdvCurrency).toBe("USD");
+  });
+
+  it("returns null when there's nothing to calibrate from or the inputs are invalid", () => {
+    expect(calibrate([], { targetAgeYears: 1 })).toBeNull();
+    const noHdv = calObs.map((o) => ({ ...o, hdv: null }));
+    expect(calibrate(noHdv, { targetAgeYears: 1 })).toBeNull();
+    const cal = calibrate(calObs, { targetAgeYears: 1 })!;
+    expect(buildHdvQuote({ hdv: 0, exactTrim: true, fxRate: 12, ageYears: 1, calibration: cal })).toBeNull();
+  });
+
+  it("computes age at assessment, not age today", () => {
+    expect(ageAtAssessment(calObs[0])).toBe(1);
+    expect(ageAtAssessment({ ...calObs[0], assessedAt: null })).toBeNull();
   });
 });

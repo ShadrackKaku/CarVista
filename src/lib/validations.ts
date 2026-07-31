@@ -423,6 +423,8 @@ export const landedCostQuerySchema = z.object({
     .string()
     .regex(/^\d{5}$/)
     .optional(),
+  /** Optional trim — when we hold its HDV the estimate gets much tighter. */
+  trim: z.string().trim().max(80).optional(),
 });
 
 // ── ICUMS vehicle taxonomy (coded make/model catalogue) ───────

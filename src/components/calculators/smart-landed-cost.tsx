@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
-import type { CohortQuote } from "@/lib/landed-cost";
+import type { CohortQuote, HdvQuote } from "@/lib/landed-cost";
 
 interface CatalogEntry {
   code: string;
@@ -25,11 +25,24 @@ interface CatalogEntry {
 const OTHER = "__other__";
 const CURRENT_YEAR = new Date().getFullYear();
 
+/** The HDV-anchored estimate, plus the extras the API attaches to it. */
+type HdvQuoteResponse = HdvQuote & {
+  availableTrims?: string[];
+  hsCode?: string | null;
+  fxAsOf?: string | null;
+};
+type AnyQuote = CohortQuote | HdvQuoteResponse;
+
+/** HDV-anchored quotes carry a calibration; cohort quotes don't. */
+function isHdvQuote(q: AnyQuote): q is HdvQuoteResponse {
+  return q.tier === "EXACT" || q.tier === "MODEL";
+}
+
 type QuoteState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "basic" } // no cohort data — fall back to the classic calculator
-  | { status: "quote"; quote: CohortQuote };
+  | { status: "basic" } // no data at all — fall back to the classic calculator
+  | { status: "quote"; quote: AnyQuote };
 
 /**
  * Data-backed duty & taxes estimate: pick the car the ICUMS way (coded Make →
@@ -46,6 +59,7 @@ export function SmartLandedCost() {
   const [makeText, setMakeText] = useState("");
   const [modelText, setModelText] = useState("");
   const [year, setYear] = useState(String(CURRENT_YEAR - 4));
+  const [trim, setTrim] = useState("");
   const [state, setState] = useState<QuoteState>({ status: "idle" });
 
   // "Complete the picture" inputs for the grand total.
@@ -81,8 +95,9 @@ export function SmartLandedCost() {
     ? modelText
     : (models.find((m) => m.code === modelCode)?.name ?? "");
 
-  async function getEstimate(e: React.FormEvent) {
-    e.preventDefault();
+  async function getEstimate(e?: React.FormEvent, trimOverride?: string) {
+    e?.preventDefault();
+    const effectiveTrim = trimOverride !== undefined ? trimOverride : trim;
     if (!makeName.trim() || !modelName.trim()) {
       toast.error("Select or enter the make and model");
       return;
@@ -98,6 +113,7 @@ export function SmartLandedCost() {
           year,
           icumsMakeCode: makeCode && makeCode !== OTHER ? makeCode : undefined,
           icumsModelCode: modelCode && modelCode !== OTHER ? modelCode : undefined,
+          trim: effectiveTrim || undefined,
         }),
       });
       const data = await res.json();
@@ -240,22 +256,80 @@ export function SmartLandedCost() {
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={
-                quote.tier === "HIGH"
+                quote.tier === "EXACT" || quote.tier === "HIGH"
                   ? "inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success"
                   : "inline-flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-1 text-xs font-semibold text-warning"
               }
             >
               <BadgeCheck className="h-3.5 w-3.5" />
-              {quote.tier === "HIGH" ? "High confidence" : "Medium confidence"}
+              {quote.tier === "EXACT"
+                ? "Highest confidence"
+                : quote.tier === "HIGH"
+                  ? "High confidence"
+                  : quote.tier === "MODEL"
+                    ? "Good confidence"
+                    : "Medium confidence"}
             </span>
             <span className="text-xs text-muted-foreground">
-              Based on {quote.observationCount} similar car
-              {quote.observationCount === 1 ? "" : "s"} cleared recently
-              {quote.tier === "MEDIUM" ? " (includes nearby years)" : ""} · customs rate{" "}
-              {quote.fxRate.toFixed(4)} GHS/USD
-              {quote.fxAsOf ? ` (as of ${quote.fxAsOf})` : ""}
+              {isHdvQuote(quote) ? (
+                <>
+                  {quote.tier === "EXACT"
+                    ? "Anchored on GRA's own valuation for this exact trim"
+                    : "Anchored on GRA's valuation for this model-year (trim not specified)"}
+                  , calibrated on {quote.calibration.sampleSize} clearance
+                  {quote.calibration.sampleSize === 1 ? "" : "s"} · customs rate{" "}
+                  {quote.fxRate.toFixed(4)} GHS/USD
+                  {quote.fxAsOf ? ` (as of ${quote.fxAsOf})` : ""}
+                </>
+              ) : (
+                <>
+                  Based on {quote.observationCount} similar car
+                  {quote.observationCount === 1 ? "" : "s"} cleared recently
+                  {quote.tier === "MEDIUM" ? " (includes nearby years)" : ""} · customs rate{" "}
+                  {quote.fxRate.toFixed(4)} GHS/USD
+                  {quote.fxAsOf ? ` (as of ${quote.fxAsOf})` : ""}
+                </>
+              )}
             </span>
           </div>
+
+          {/* Trim picker — a trim-specific HDV tightens the estimate a lot. */}
+          {isHdvQuote(quote) && (quote.availableTrims?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border p-3">
+              <span className="text-xs font-medium text-muted-foreground">
+                Know the trim? Pick it for an exact valuation:
+              </span>
+              {quote.availableTrims!.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    setTrim(t);
+                    void getEstimate(undefined, t);
+                  }}
+                  className={
+                    trim === t
+                      ? "rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white"
+                      : "rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  }
+                >
+                  {t}
+                </button>
+              ))}
+              {trim && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTrim("");
+                    void getEstimate(undefined, "");
+                  }}
+                  className="text-xs text-muted-foreground underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 p-5 text-white">
             <p className="text-sm text-brand-100">Estimated duty & taxes</p>
@@ -298,6 +372,64 @@ export function SmartLandedCost() {
                 {formatCurrency(grandTotal)}
               </span>
             </div>
+          )}
+
+          {/* The arithmetic, in the open — so anyone can check it on ICUMS. */}
+          {isHdvQuote(quote) && (
+            <details className="rounded-xl border p-4">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                How we worked this out
+              </summary>
+              <dl className="mt-3 space-y-1.5 text-sm">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">
+                    GRA valuation (HDV){quote.tier === "MODEL" ? ", model-year median" : ""}
+                  </dt>
+                  <dd className="font-medium">
+                    {formatCurrency(quote.hdv, quote.hdvCurrency)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">× customs exchange rate</dt>
+                  <dd className="font-medium tabular-nums">{quote.fxRate.toFixed(4)}</dd>
+                </div>
+                {quote.calibration.cifFactor != null && (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">
+                      × CIF factor (depreciation + freight, {quote.ageYears}y old)
+                    </dt>
+                    <dd className="font-medium tabular-nums">
+                      {quote.calibration.cifFactor.toFixed(3)}
+                    </dd>
+                  </div>
+                )}
+                {quote.calibration.effectiveRate != null && (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">
+                      × tax rate on CIF{quote.hsCode ? ` (HS ${quote.hsCode})` : ""}
+                    </dt>
+                    <dd className="font-medium tabular-nums">
+                      {(quote.calibration.effectiveRate * 100).toFixed(2)}%
+                    </dd>
+                  </div>
+                )}
+                <Separator className="my-2" />
+                <div className="flex justify-between gap-3">
+                  <dt className="font-semibold">Estimated duty &amp; taxes</dt>
+                  <dd className="font-semibold">{formatCurrency(quote.taxGhs.point)}</dd>
+                </div>
+              </dl>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Calibrated on {quote.calibration.sampleSize} verified clearance
+                {quote.calibration.sampleSize === 1 ? "" : "s"}
+                {quote.calibration.basis === "AGE"
+                  ? " of the same age"
+                  : quote.calibration.basis === "HS_CODE"
+                    ? " in the same tax class"
+                    : " across our records"}
+                . You can check the valuation yourself on the GRA ICUMS portal.
+              </p>
+            </details>
           )}
 
           <div>
