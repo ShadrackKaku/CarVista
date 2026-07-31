@@ -153,3 +153,162 @@ export function buildCohortQuote(input: BuildQuoteInput): CohortQuote | null {
     receipts,
   };
 }
+
+// ─────────────────────────────────────────────────────────────
+//  HDV-anchored estimation (v2)
+//
+//  Observed ICUMS rows show the whole assessment is proportional to the
+//  vehicle's HDV: depreciation, CIF build-up and the levy stack are all
+//  multiplicative. So `totalTax / (HDV × FX)` — the tax as a multiple of the
+//  HDV converted at that assessment's own rate — is a single stable ratio.
+//  On the real Camry rows it lands at 0.4340 for three of four rows (the
+//  fourth is a known outlier), and applying it back reproduces actual tax to
+//  within ~0.01%.
+//
+//  Predicting from a stored HDV therefore beats averaging past tax amounts:
+//  it is trim-specific, it transfers across cars we've never seen assessed,
+//  and today's FX is applied fresh. We keep the two-part decomposition
+//  (effective tax rate × CIF factor) alongside it purely to explain the
+//  number to the user.
+// ─────────────────────────────────────────────────────────────
+
+export interface CalibrationObservation {
+  hsCode: string | null;
+  hdv: number | null;
+  cifNcy: number | null;
+  totalTax: number;
+  exchangeRate: number | null;
+  yearOfManufacture: number;
+  assessedAt: Date | null;
+}
+
+/** Tax as a multiple of HDV-in-GHS — the ratio the estimate is built on. */
+export function taxPerHdvGhs(o: CalibrationObservation): number | null {
+  if (!o.hdv || !o.exchangeRate || o.hdv <= 0 || o.exchangeRate <= 0) return null;
+  const hdvGhs = o.hdv * o.exchangeRate;
+  return hdvGhs > 0 ? o.totalTax / hdvGhs : null;
+}
+
+/** Total tax ÷ CIF — near-constant per HS code. Shown, not used to predict. */
+export function observedEffectiveRate(o: CalibrationObservation): number | null {
+  if (!o.cifNcy || o.cifNcy <= 0) return null;
+  return o.totalTax / o.cifNcy;
+}
+
+/** CIF ÷ (HDV × FX) — depreciation plus freight. Shown, not used to predict. */
+export function observedCifFactor(o: CalibrationObservation): number | null {
+  if (!o.cifNcy || !o.hdv || !o.exchangeRate) return null;
+  const hdvGhs = o.hdv * o.exchangeRate;
+  return hdvGhs > 0 ? o.cifNcy / hdvGhs : null;
+}
+
+/** Vehicle age at the moment it was assessed (null when undated). */
+export function ageAtAssessment(o: CalibrationObservation): number | null {
+  if (!o.assessedAt) return null;
+  return o.assessedAt.getFullYear() - o.yearOfManufacture;
+}
+
+export type CalibrationBasis = "AGE" | "HS_CODE" | "GLOBAL";
+
+export interface Calibration {
+  /** Median tax-per-HDV-GHS, and the spread across the pool. */
+  ratio: { point: number; low: number; high: number };
+  /** Which pool the numbers came from, and how big it was. */
+  basis: CalibrationBasis;
+  sampleSize: number;
+  /** Decomposition for the "how we worked this out" panel (may be null). */
+  effectiveRate: number | null;
+  cifFactor: number | null;
+}
+
+/**
+ * Calibrate the ratio from observations, preferring the most specific pool
+ * that has enough data: same vehicle age → same HS code → everything.
+ * Age comes first because depreciation is the biggest driver of variation.
+ */
+export function calibrate(
+  observations: CalibrationObservation[],
+  opts: { targetAgeYears: number; hsCode?: string | null; minSamples?: number },
+): Calibration | null {
+  const minSamples = opts.minSamples ?? 2;
+  const usable = observations.filter((o) => taxPerHdvGhs(o) !== null);
+  if (usable.length === 0) return null;
+
+  const sameAge = usable.filter((o) => {
+    const age = ageAtAssessment(o);
+    return age !== null && age === opts.targetAgeYears;
+  });
+  const sameHs = opts.hsCode
+    ? usable.filter((o) => o.hsCode && o.hsCode === opts.hsCode)
+    : [];
+
+  let pool = usable;
+  let basis: CalibrationBasis = "GLOBAL";
+  if (sameAge.length >= minSamples) {
+    pool = sameAge;
+    basis = "AGE";
+  } else if (sameHs.length >= minSamples) {
+    pool = sameHs;
+    basis = "HS_CODE";
+  }
+
+  const ratios = pool.map(taxPerHdvGhs).filter((r): r is number => r !== null);
+  if (ratios.length === 0) return null;
+
+  const rates = pool.map(observedEffectiveRate).filter((r): r is number => r !== null);
+  const factors = pool.map(observedCifFactor).filter((r): r is number => r !== null);
+
+  return {
+    ratio: { point: median(ratios), low: Math.min(...ratios), high: Math.max(...ratios) },
+    basis,
+    sampleSize: pool.length,
+    effectiveRate: rates.length ? median(rates) : null,
+    cifFactor: factors.length ? median(factors) : null,
+  };
+}
+
+export interface HdvQuote {
+  /** EXACT = we hold the HDV for this precise trim; MODEL = model-year median. */
+  tier: "EXACT" | "MODEL";
+  taxGhs: { point: number; low: number; high: number };
+  /** The inputs, so the user can check the arithmetic themselves. */
+  hdv: number;
+  hdvCurrency: string;
+  fxRate: number;
+  ageYears: number;
+  calibration: Calibration;
+  receipts: QuoteReceipt[];
+}
+
+export interface BuildHdvQuoteInput {
+  hdv: number;
+  hdvCurrency?: string;
+  /** True when the HDV is for the exact trim the user chose. */
+  exactTrim: boolean;
+  fxRate: number;
+  ageYears: number;
+  calibration: Calibration;
+  receipts?: QuoteReceipt[];
+}
+
+/** Turn a stored HDV plus a calibration into a quote. */
+export function buildHdvQuote(input: BuildHdvQuoteInput): HdvQuote | null {
+  if (input.hdv <= 0 || input.fxRate <= 0) return null;
+  const hdvGhs = input.hdv * input.fxRate;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+
+  return {
+    tier: input.exactTrim ? "EXACT" : "MODEL",
+    taxGhs: {
+      point: r2(input.calibration.ratio.point * hdvGhs),
+      low: r2(input.calibration.ratio.low * hdvGhs),
+      high: r2(input.calibration.ratio.high * hdvGhs),
+    },
+    hdv: input.hdv,
+    hdvCurrency: input.hdvCurrency ?? "USD",
+    fxRate: input.fxRate,
+    ageYears: input.ageYears,
+    calibration: input.calibration,
+    receipts: input.receipts ?? [],
+  };
+}

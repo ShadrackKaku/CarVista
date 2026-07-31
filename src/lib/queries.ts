@@ -383,6 +383,105 @@ export async function getLandedCostCohort(params: {
   }
 }
 
+/** Inputs for the HDV-anchored estimate: the vehicle's stored HDV plus the
+ *  observations to calibrate the tax ratio from. */
+export async function getHdvQuoteInputs(params: {
+  make: string;
+  model: string;
+  year: number;
+  trim?: string;
+}): Promise<{
+  hdv: number;
+  hdvCurrency: string;
+  hsCode: string | null;
+  exactTrim: boolean;
+  /** Trims we hold an HDV for, so the UI can offer them. */
+  availableTrims: string[];
+  observations: import("@/lib/landed-cost").CalibrationObservation[];
+  fxRate: number | null;
+  fxAsOf: Date | null;
+} | null> {
+  try {
+    const make = params.make.trim().toUpperCase();
+    const model = params.model.trim().toUpperCase();
+
+    const refs = await prisma.hdvReference.findMany({
+      where: { make, model, year: params.year },
+      select: { trim: true, hdv: true, currency: true, hsCode: true },
+    });
+    if (refs.length === 0) return null;
+
+    const wantTrim = params.trim?.trim().toUpperCase();
+    const exact = wantTrim ? refs.find((r) => r.trim === wantTrim) : undefined;
+    // Without a trim (or on an unknown one) the model-year median is the fair
+    // central estimate — trims differ in value, so we say so in the tier.
+    const chosenHdv = exact
+      ? Number(exact.hdv)
+      : medianOf(refs.map((r) => Number(r.hdv)));
+    const chosen = exact ?? refs[0];
+
+    const hsCode = (exact ?? refs.find((r) => r.hsCode))?.hsCode ?? null;
+
+    // Calibrate from assessments of the same HS class (the ratio is a property
+    // of the tax regime, not the model), falling back to the same vehicle.
+    const observations = await prisma.dutyAssessment.findMany({
+      where: {
+        status: "VERIFIED",
+        hdv: { not: null },
+        exchangeRate: { not: null },
+        ...(hsCode
+          ? { OR: [{ hsCode }, { make: { equals: params.make, mode: "insensitive" } }] }
+          : { make: { equals: params.make, mode: "insensitive" } }),
+      },
+      orderBy: { assessedAt: "desc" },
+      take: 200,
+      select: {
+        hsCode: true,
+        hdv: true,
+        cifNcy: true,
+        totalTax: true,
+        exchangeRate: true,
+        yearOfManufacture: true,
+        assessedAt: true,
+      },
+    });
+
+    const latestFx = await prisma.dutyAssessment.findFirst({
+      where: { status: "VERIFIED", exchangeRate: { not: null } },
+      orderBy: { assessedAt: "desc" },
+      select: { exchangeRate: true, assessedAt: true },
+    });
+
+    return {
+      hdv: chosenHdv,
+      hdvCurrency: chosen.currency,
+      hsCode,
+      exactTrim: Boolean(exact),
+      availableTrims: refs.map((r) => r.trim).filter(Boolean).sort(),
+      observations: observations.map((o) => ({
+        hsCode: o.hsCode,
+        hdv: o.hdv ? Number(o.hdv) : null,
+        cifNcy: o.cifNcy ? Number(o.cifNcy) : null,
+        totalTax: Number(o.totalTax),
+        exchangeRate: o.exchangeRate ? Number(o.exchangeRate) : null,
+        yearOfManufacture: o.yearOfManufacture,
+        assessedAt: o.assessedAt,
+      })),
+      fxRate: latestFx?.exchangeRate ? Number(latestFx.exchangeRate) : null,
+      fxAsOf: latestFx?.assessedAt ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Local median so this file doesn't depend on the estimator module. */
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 export interface InspectionRow {
   id: string;
   ref: string;
