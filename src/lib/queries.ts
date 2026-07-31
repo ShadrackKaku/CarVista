@@ -475,6 +475,68 @@ export async function getHdvQuoteInputs(params: {
   }
 }
 
+/** Every verified observation the engine could learn from, for the accuracy
+ *  backtest. Labelled so the admin view can name the worst misses. */
+export async function getBacktestObservations(): Promise<
+  { observation: import("@/lib/landed-cost").CalibrationObservation; label: string }[]
+> {
+  try {
+    const rows = await prisma.dutyAssessment.findMany({
+      where: { status: "VERIFIED", hdv: { not: null }, exchangeRate: { not: null } },
+      orderBy: { assessedAt: "desc" },
+      take: 500,
+      select: {
+        hsCode: true,
+        hdv: true,
+        cifNcy: true,
+        totalTax: true,
+        exchangeRate: true,
+        yearOfManufacture: true,
+        assessedAt: true,
+        make: true,
+        modelType: true,
+        trimLevel: true,
+      },
+    });
+    return rows.map((r) => ({
+      observation: {
+        hsCode: r.hsCode,
+        hdv: r.hdv ? Number(r.hdv) : null,
+        cifNcy: r.cifNcy ? Number(r.cifNcy) : null,
+        totalTax: Number(r.totalTax),
+        exchangeRate: r.exchangeRate ? Number(r.exchangeRate) : null,
+        yearOfManufacture: r.yearOfManufacture,
+        assessedAt: r.assessedAt,
+      },
+      label: [r.yearOfManufacture, r.make, r.modelType, r.trimLevel]
+        .filter(Boolean)
+        .join(" "),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** How much reference data we hold — the coverage half of the scoreboard. */
+export async function getCoverageStats(): Promise<{
+  assessments: number;
+  verified: number;
+  hdvReferences: number;
+  distinctModels: number;
+}> {
+  try {
+    const [assessments, verified, hdvReferences, grouped] = await Promise.all([
+      prisma.dutyAssessment.count(),
+      prisma.dutyAssessment.count({ where: { status: "VERIFIED" } }),
+      prisma.hdvReference.count(),
+      prisma.hdvReference.groupBy({ by: ["make", "model"], _count: true }),
+    ]);
+    return { assessments, verified, hdvReferences, distinctModels: grouped.length };
+  } catch {
+    return { assessments: 0, verified: 0, hdvReferences: 0, distinctModels: 0 };
+  }
+}
+
 /** Local median so this file doesn't depend on the estimator module. */
 function medianOf(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);

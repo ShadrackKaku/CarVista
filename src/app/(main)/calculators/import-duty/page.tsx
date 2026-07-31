@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
@@ -23,7 +24,9 @@ export default function ImportDutyPage() {
       <div className="container-page py-10">
         <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
           <div className="space-y-8">
-            <SmartLandedCost />
+            <Suspense fallback={null}>
+              <SmartLandedCost />
+            </Suspense>
             <div>
               <h2 className="mb-4 font-display text-xl font-bold">Classic calculator</h2>
               <DutyCalculator />

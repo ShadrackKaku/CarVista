@@ -3,8 +3,10 @@ import {
   ageAtAssessment,
   buildCohortQuote,
   buildHdvQuote,
+  backtest,
   calibrate,
   median,
+  parseTaxList,
   type CohortObservation,
 } from "@/lib/landed-cost";
 
@@ -168,5 +170,59 @@ describe("HDV-anchored estimation (v2)", () => {
   it("computes age at assessment, not age today", () => {
     expect(ageAtAssessment(calObs[0])).toBe(1);
     expect(ageAtAssessment({ ...calObs[0], assessedAt: null })).toBeNull();
+  });
+});
+
+describe("backtest", () => {
+  const calObs = [
+    { hsCode: "8703402000", hdv: 31000, cifNcy: 309985.86, totalTax: 154717.49, exchangeRate: 11.2981, yearOfManufacture: 2025, assessedAt: new Date("2026-07-01") },
+    { hsCode: "8703402000", hdv: 33700, cifNcy: 284883.28, totalTax: 139334.45, exchangeRate: 11.5558, yearOfManufacture: 2025, assessedAt: new Date("2026-07-20") },
+    { hsCode: "8703402000", hdv: 28700, cifNcy: 281527.09, totalTax: 137694.43, exchangeRate: 11.0555, yearOfManufacture: 2025, assessedAt: new Date("2026-07-15") },
+    { hsCode: "8703402000", hdv: 32525, cifNcy: 326024.19, totalTax: 159458.01, exchangeRate: 11.2981, yearOfManufacture: 2025, assessedAt: new Date("2026-07-02") },
+  ];
+
+  it("holds each observation out and scores the prediction", () => {
+    const result = backtest(calObs)!;
+    expect(result).not.toBeNull();
+    expect(result.sampleSize).toBe(4);
+    // Three of four rows are near-identical, so the median miss is tiny.
+    expect(result.medianAbsPctError).toBeLessThan(0.02);
+    expect(result.withinFivePct).toBeGreaterThanOrEqual(3);
+    // The known XLE outlier should surface as the worst case.
+    expect(Math.abs(result.worstCases[0].pctError)).toBeGreaterThan(
+      Math.abs(result.worstCases[result.worstCases.length - 1].pctError),
+    );
+  });
+
+  it("labels cases when a labeller is supplied", () => {
+    const result = backtest(calObs, { labelOf: (o) => `HDV ${o.hdv}` })!;
+    expect(result.worstCases[0].label).toContain("HDV");
+  });
+
+  it("returns null without enough data to hold one out", () => {
+    expect(backtest(calObs.slice(0, 2))).toBeNull();
+    expect(backtest([])).toBeNull();
+  });
+});
+
+describe("parseTaxList", () => {
+  it("parses the ICUMS Tax List tab into named levies", () => {
+    const pasted = [
+      "Import Duty\t20%\t61,997.17",
+      "VAT\t15%\t58,587.32",
+      "NHIL\t2.5%\t7,749.65",
+      "GETFund Levy\t2.5%\t7,749.65",
+    ].join("\n");
+    const lines = parseTaxList(pasted);
+    expect(lines).toHaveLength(4);
+    expect(lines[0]).toEqual({ name: "Import Duty", rate: 20, amount: 61997.17 });
+    expect(lines[1].name).toBe("VAT");
+    expect(lines[3].amount).toBeCloseTo(7749.65, 2);
+  });
+
+  it("copes with missing rates and skips noise", () => {
+    const lines = parseTaxList("Processing Fee\t\t250.00\n\nTotal : 4\n");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toEqual({ name: "Processing Fee", rate: null, amount: 250 });
   });
 });
