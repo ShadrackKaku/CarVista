@@ -64,7 +64,36 @@ export async function POST(req: Request) {
     let duplicates = 0;
     let hdvUpserted = 0;
 
+    // Resolve ICUMS codes from the catalogue by name, so pasted rows join to
+    // the coded taxonomy the calculator's pickers use. Cached per make/model —
+    // a pasted table is all one vehicle, so this is one lookup, not one per row.
+    const codeCache = new Map<string, { makeCode: string | null; modelCode: string | null }>();
+    async function resolveCodes(make: string, model: string) {
+      const key = `${make}|${model}`.toUpperCase();
+      const hit = codeCache.get(key);
+      if (hit) return hit;
+
+      const makeRow = await prisma.icumsMake.findFirst({
+        where: { name: { equals: make, mode: "insensitive" } },
+        select: { code: true },
+      });
+      const modelRow = makeRow
+        ? await prisma.icumsModel.findFirst({
+            where: { makeCode: makeRow.code, name: { equals: model, mode: "insensitive" } },
+            select: { code: true },
+          })
+        : null;
+
+      const resolved = { makeCode: makeRow?.code ?? null, modelCode: modelRow?.code ?? null };
+      codeCache.set(key, resolved);
+      return resolved;
+    }
+
     for (const row of result.rows) {
+      // Explicit codes on the request win; otherwise resolve from the catalogue.
+      const resolved = await resolveCodes(row.make, row.model);
+      const rowMakeCode = icumsMakeCode ?? resolved.makeCode;
+      const rowModelCode = icumsModelCode ?? resolved.modelCode;
       const assessedAt = row.assessmentDate ? new Date(row.assessmentDate) : null;
 
       // Natural key for a list-view row (no chassis is shown there).
@@ -98,8 +127,8 @@ export async function POST(req: Request) {
           totalTax: row.totalTax,
           exchangeRate: row.exchangeRate ?? null,
           assessedAt,
-          icumsMakeCode: icumsMakeCode ?? null,
-          icumsModelCode: icumsModelCode ?? null,
+          icumsMakeCode: rowMakeCode,
+          icumsModelCode: rowModelCode,
           // Read straight off the official portal by an admin — trusted on entry.
           source: "ICUMS_LOOKUP",
           status: "VERIFIED",
@@ -128,8 +157,8 @@ export async function POST(req: Request) {
               hdv: row.hdv,
               currency: row.currency,
               hsCode: row.hsCode,
-              icumsMakeCode: icumsMakeCode ?? null,
-              icumsModelCode: icumsModelCode ?? null,
+              icumsMakeCode: rowMakeCode,
+              icumsModelCode: rowModelCode,
               lastObservedAt: observedAt,
             },
           });

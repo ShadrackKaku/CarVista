@@ -314,19 +314,33 @@ export async function getLandedCostCohort(params: {
   fxAsOf: Date | null;
 } | null> {
   try {
-    const byCode =
-      params.icumsMakeCode && params.icumsModelCode
-        ? { icumsMakeCode: params.icumsMakeCode, icumsModelCode: params.icumsModelCode }
-        : null;
+    // Match on the ICUMS codes OR the names — never codes alone. Observations
+    // arrive from several routes (pasted checker rows, community tax bills,
+    // agent logs) and only some carry codes, so a code-exclusive filter would
+    // silently ignore perfectly good records for the same vehicle.
+    const matchers: {
+      make?: { equals: string; mode: "insensitive" };
+      modelType?: { equals: string; mode: "insensitive" };
+      icumsMakeCode?: string;
+      icumsModelCode?: string;
+    }[] = [
+      {
+        make: { equals: params.make, mode: "insensitive" },
+        modelType: { equals: params.model, mode: "insensitive" },
+      },
+    ];
+    if (params.icumsMakeCode && params.icumsModelCode) {
+      matchers.push({
+        icumsMakeCode: params.icumsMakeCode,
+        icumsModelCode: params.icumsModelCode,
+      });
+    }
 
     const rows = await prisma.dutyAssessment.findMany({
       where: {
         status: "VERIFIED",
         yearOfManufacture: { gte: params.year - 1, lte: params.year + 1 },
-        ...(byCode ?? {
-          make: { equals: params.make, mode: "insensitive" },
-          modelType: { equals: params.model, mode: "insensitive" },
-        }),
+        OR: matchers,
       },
       orderBy: { assessedAt: "desc" },
       take: 40,
