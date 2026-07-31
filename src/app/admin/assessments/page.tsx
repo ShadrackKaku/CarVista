@@ -1,6 +1,8 @@
-import { Database, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { ClipboardPaste, Database, ExternalLink } from "lucide-react";
 import { getAdminAssessments } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { AssessmentReview } from "@/components/admin/assessment-review";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -26,9 +28,16 @@ export default async function AdminAssessmentsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex items-center gap-2">
-        <Database className="h-6 w-6 text-brand-600" />
-        <h1 className="font-display text-2xl font-bold">Duty assessments</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Database className="h-6 w-6 text-brand-600" />
+          <h1 className="font-display text-2xl font-bold">Duty assessments</h1>
+        </div>
+        <Button asChild variant="gradient" size="sm">
+          <Link href="/admin/assessments/import">
+            <ClipboardPaste className="h-4 w-4" /> Import from ICUMS
+          </Link>
+        </Button>
       </div>
       <p className="mt-1 text-muted-foreground">
         Real ICUMS outcomes submitted by importers and agents — the training data for the
@@ -55,7 +64,8 @@ export default async function AdminAssessmentsPage() {
                     <Badge variant="outline">{SOURCE_LABELS[a.source] ?? a.source}</Badge>
                   </div>
                   <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                    {a.chassisNumber} · submitted {formatDate(a.createdAt)}
+                    {a.chassisNumber ?? "no chassis (list view)"} · submitted{" "}
+                    {formatDate(a.createdAt)}
                     {a.submittedBy ? ` by ${a.submittedBy}` : ""}
                   </p>
                 </div>

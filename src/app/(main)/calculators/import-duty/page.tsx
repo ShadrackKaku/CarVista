@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { DutyCalculator } from "@/components/calculators/duty-calculator";
+import { SmartLandedCost } from "@/components/calculators/smart-landed-cost";
 import { LiveRates } from "@/components/calculators/live-rates";
 
 export const metadata: Metadata = {
@@ -21,7 +22,13 @@ export default function ImportDutyPage() {
       />
       <div className="container-page py-10">
         <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
-          <DutyCalculator />
+          <div className="space-y-8">
+            <SmartLandedCost />
+            <div>
+              <h2 className="mb-4 font-display text-xl font-bold">Classic calculator</h2>
+              <DutyCalculator />
+            </div>
+          </div>
           <div className="space-y-6">
             <LiveRates />
             <div className="rounded-2xl border bg-brand-600 p-6 text-white">

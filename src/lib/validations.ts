@@ -406,6 +406,25 @@ export const assessmentReviewSchema = z.object({
   rejectionReason: z.string().trim().max(500).optional(),
 });
 
+// ── Landed-cost quote (data-backed duty estimate) ─────────────
+export const landedCostQuerySchema = z.object({
+  make: z.string().trim().min(2, "Enter the make").max(60),
+  model: z.string().trim().min(1, "Enter the model").max(80),
+  year: z.coerce
+    .number()
+    .int()
+    .min(1980)
+    .max(new Date().getFullYear() + 1),
+  icumsMakeCode: z
+    .string()
+    .regex(/^\d{5}$/)
+    .optional(),
+  icumsModelCode: z
+    .string()
+    .regex(/^\d{5}$/)
+    .optional(),
+});
+
 // ── ICUMS vehicle taxonomy (coded make/model catalogue) ───────
 const icumsCode = z.string().regex(/^\d{5}$/, "ICUMS codes are 5 digits, e.g. 00042");
 
