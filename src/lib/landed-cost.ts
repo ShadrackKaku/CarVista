@@ -312,3 +312,118 @@ export function buildHdvQuote(input: BuildHdvQuoteInput): HdvQuote | null {
     receipts: input.receipts ?? [],
   };
 }
+
+// ─────────────────────────────────────────────────────────────
+//  Accuracy measurement
+//
+//  Leave-one-out backtest: for each real assessment, calibrate on every OTHER
+//  observation and predict it. That measures what the engine would have quoted
+//  before the car cleared, using only data it would have had — so we can state
+//  accuracy honestly today rather than waiting for future quotes to settle.
+//  It is also the prerequisite for ever pricing a guaranteed landed cost:
+//  you cannot underwrite variance you have not measured.
+// ─────────────────────────────────────────────────────────────
+
+export interface BacktestCase {
+  label: string;
+  predicted: number;
+  actual: number;
+  /** Signed relative error: positive = we over-estimated. */
+  pctError: number;
+}
+
+export interface BacktestResult {
+  sampleSize: number;
+  medianAbsPctError: number;
+  p90AbsPctError: number;
+  withinOnePct: number;
+  withinFivePct: number;
+  /** Biggest misses first — the cases worth investigating. */
+  worstCases: BacktestCase[];
+}
+
+/** Percentile of a numeric array (0–1), nearest-rank. */
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return NaN;
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1));
+  return sorted[idx];
+}
+
+export function backtest(
+  observations: CalibrationObservation[],
+  opts: { labelOf?: (o: CalibrationObservation, i: number) => string } = {},
+): BacktestResult | null {
+  const usable = observations.filter((o) => taxPerHdvGhs(o) !== null);
+  if (usable.length < 3) return null; // need at least one to hold out plus a pool
+
+  const cases: BacktestCase[] = [];
+  for (let i = 0; i < usable.length; i++) {
+    const held = usable[i];
+    const others = usable.filter((_, j) => j !== i);
+    const age = ageAtAssessment(held);
+    const cal = calibrate(others, {
+      targetAgeYears: age ?? 0,
+      hsCode: held.hsCode,
+    });
+    if (!cal || !held.hdv || !held.exchangeRate) continue;
+
+    const predicted = cal.ratio.point * held.hdv * held.exchangeRate;
+    const pctError = (predicted - held.totalTax) / held.totalTax;
+    cases.push({
+      label: opts.labelOf?.(held, i) ?? `#${i + 1}`,
+      predicted: Math.round(predicted * 100) / 100,
+      actual: held.totalTax,
+      pctError,
+    });
+  }
+  if (cases.length === 0) return null;
+
+  const absErrors = cases.map((c) => Math.abs(c.pctError)).sort((a, b) => a - b);
+  return {
+    sampleSize: cases.length,
+    medianAbsPctError: median(absErrors),
+    p90AbsPctError: percentile(absErrors, 0.9),
+    withinOnePct: absErrors.filter((e) => e <= 0.01).length,
+    withinFivePct: absErrors.filter((e) => e <= 0.05).length,
+    worstCases: [...cases]
+      .sort((a, b) => Math.abs(b.pctError) - Math.abs(a.pctError))
+      .slice(0, 10),
+  };
+}
+
+/** Parse the ICUMS "Tax List" tab: one levy per line (name, rate?, amount). */
+export interface TaxLine {
+  name: string;
+  rate: number | null;
+  amount: number;
+}
+
+export function parseTaxList(text: string): TaxLine[] {
+  const lines: TaxLine[] = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const cells = (line.includes("\t") ? line.split("\t") : line.split(/ {2,}/)).map((c) =>
+      c.trim(),
+    );
+    if (cells.length < 2) continue;
+
+    // Name is the first non-numeric cell; amount is the last numeric one.
+    const name = cells.find((c) => c && !/^[\d.,%\s-]+$/.test(c));
+    if (!name) continue;
+    const numbers = cells
+      .map((c) => {
+        const cleaned = c.replace(/[^0-9.\-]/g, "");
+        return cleaned === "" || cleaned === "-" ? null : Number(cleaned);
+      })
+      .filter((n): n is number => n !== null && Number.isFinite(n));
+    if (numbers.length === 0) continue;
+
+    const amount = numbers[numbers.length - 1];
+    // A leading percentage-looking cell is the rate, not the amount.
+    const rateCell = cells.find((c) => c.includes("%"));
+    const rate = rateCell ? Number(rateCell.replace(/[^0-9.\-]/g, "")) : null;
+    lines.push({ name, rate: Number.isFinite(rate as number) ? rate : null, amount });
+  }
+  return lines;
+}

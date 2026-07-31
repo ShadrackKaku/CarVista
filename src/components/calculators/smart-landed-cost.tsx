@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BadgeCheck, FileSearch, Loader2, Sparkles } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { BadgeCheck, ExternalLink, FileSearch, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,6 +25,8 @@ interface CatalogEntry {
 }
 
 const OTHER = "__other__";
+const ICUMS_CHECKER =
+  "https://external.unipassghana.com/cl/tm/tax/selectUsedVehicleTaxCalculate.do?decorator=popup&MENU_ID=IIM01S03V02";
 const CURRENT_YEAR = new Date().getFullYear();
 
 /** The HDV-anchored estimate, plus the extras the API attaches to it. */
@@ -62,9 +66,25 @@ export function SmartLandedCost() {
   const [trim, setTrim] = useState("");
   const [state, setState] = useState<QuoteState>({ status: "idle" });
 
+  // "Verify on ICUMS" paste-back — users check us, then hand the rows back.
+  const [pasteBack, setPasteBack] = useState("");
+  const [pasteBusy, setPasteBusy] = useState(false);
+  const [pasteDone, setPasteDone] = useState(false);
+
   // "Complete the picture" inputs for the grand total.
   const [priceUsd, setPriceUsd] = useState("");
   const [shippingGhs, setShippingGhs] = useState("18000");
+
+  // Deep links from vehicle listings arrive as ?make=&model=&year=.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const m = searchParams.get("make");
+    const mo = searchParams.get("model");
+    const y = searchParams.get("year");
+    if (m) setMakeText(m);
+    if (mo) setModelText(mo);
+    if (y) setYear(y);
+  }, [searchParams]);
 
   useEffect(() => {
     fetch("/api/icums/makes")
@@ -126,6 +146,33 @@ export function SmartLandedCost() {
     } catch {
       toast.error("Something went wrong. Please try again.");
       setState({ status: "idle" });
+    }
+  }
+
+  async function submitPasteBack() {
+    if (pasteBack.trim().length < 10) {
+      toast.error("Paste the rows you saw on ICUMS");
+      return;
+    }
+    setPasteBusy(true);
+    try {
+      const res = await fetch("/api/duty-assessments/paste", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: pasteBack }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Couldn't save that");
+        return;
+      }
+      setPasteDone(true);
+      setPasteBack("");
+      toast.success("Thank you — that helps every importer after you.");
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setPasteBusy(false);
     }
   }
 
@@ -431,6 +478,55 @@ export function SmartLandedCost() {
               </p>
             </details>
           )}
+
+          {/* Don't take our word for it — and if you check, share it back. */}
+          <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4 dark:border-brand-900 dark:bg-brand-950/30">
+            <p className="text-sm font-semibold">Don&apos;t take our word for it</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Check this against GRA&apos;s official record. Search{" "}
+              <span className="font-medium text-foreground">
+                {makeName} {modelName} {year}
+              </span>{" "}
+              on the ICUMS used-vehicle checker.
+            </p>
+            <a
+              href={ICUMS_CHECKER}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline"
+            >
+              <ExternalLink className="h-4 w-4" /> Open the ICUMS checker
+            </a>
+
+            {pasteDone ? (
+              <p className="mt-3 text-sm text-success">
+                Thank you — your rows are queued for review and will sharpen the next estimate.
+              </p>
+            ) : (
+              <div className="mt-3">
+                <Label htmlFor="slc-paste" className="text-xs text-muted-foreground">
+                  Saw the official rows? Paste them here to improve this estimate for everyone.
+                </Label>
+                <Textarea
+                  id="slc-paste"
+                  rows={3}
+                  value={pasteBack}
+                  onChange={(e) => setPasteBack(e.target.value)}
+                  placeholder="Copy the results table from ICUMS and paste it here…"
+                  className="mt-1.5 font-mono text-xs"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  disabled={pasteBusy}
+                  onClick={submitPasteBack}
+                >
+                  {pasteBusy && <Loader2 className="h-4 w-4 animate-spin" />} Share what I found
+                </Button>
+              </div>
+            )}
+          </div>
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

@@ -302,11 +302,15 @@ export default async function VehicleDetailPage({ params }: { params: { slug: st
                   </span>
                 </div>
               </div>
+              {/* Deep-link the data-backed estimator with this exact car, so
+                  the user lands on a real quote rather than an empty form. */}
               <Link
-                href="/calculators/import-duty"
+                href={`/calculators/import-duty?make=${encodeURIComponent(
+                  vehicle.brand,
+                )}&model=${encodeURIComponent(vehicle.model)}&year=${vehicle.year}`}
                 className="mt-4 inline-block text-sm font-medium text-brand-600 hover:underline"
               >
-                Customise this estimate →
+                Estimate landed cost for this car →
               </Link>
             </section>
           )}

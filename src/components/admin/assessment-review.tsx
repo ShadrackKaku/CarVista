@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, ListTree, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -11,8 +11,52 @@ export function AssessmentReview({ id, status }: { id: string; status: string })
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
+  /** Attach the ICUMS "Tax List" tab so we can verify the levy formula. */
+  async function addTaxLines() {
+    const text = window.prompt(
+      "Paste the ICUMS Tax List rows (one levy per line: name, rate, amount)",
+    );
+    if (!text) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/duty-assessments/${id}/tax-lines`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not save the breakdown");
+        return;
+      }
+      toast.success(`Saved ${data.lines?.length ?? 0} levy lines`);
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const breakdownButton = (
+    <Button
+      size="sm"
+      variant="ghost"
+      disabled={busy}
+      className="h-7 px-2 text-xs"
+      onClick={addTaxLines}
+    >
+      <ListTree className="h-3.5 w-3.5" /> Breakdown
+    </Button>
+  );
+
   if (status === "VERIFIED") {
-    return <span className="text-xs font-medium text-success">Verified</span>;
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-medium text-success">Verified</span>
+        {breakdownButton}
+      </div>
+    );
   }
 
   async function review(action: "VERIFY" | "REJECT") {
@@ -63,6 +107,7 @@ export function AssessmentReview({ id, status }: { id: string; status: string })
       >
         <X className="h-3.5 w-3.5" /> Reject
       </Button>
+      {breakdownButton}
     </div>
   );
 }
