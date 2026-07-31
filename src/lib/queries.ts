@@ -244,7 +244,7 @@ export async function getAdminVerifications(): Promise<AdminVerificationRow[]> {
 
 export interface AdminAssessmentRow {
   id: string;
-  chassisNumber: string;
+  chassisNumber: string | null;
   vehicle: string; // "2016 Toyota Corolla LE"
   engineSizeCc: number | null;
   fuelType: string | null;
