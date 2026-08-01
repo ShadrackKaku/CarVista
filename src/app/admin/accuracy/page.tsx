@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Gauge, Target } from "lucide-react";
+import { Target } from "lucide-react";
 import { getBacktestObservations, getCoverageStats } from "@/lib/queries";
 import { backtest } from "@/lib/landed-cost";
 import { Button } from "@/components/ui/button";
@@ -22,16 +22,12 @@ export default async function AdminAccuracyPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="flex items-center gap-2">
-        <Gauge className="h-6 w-6 text-brand-600" />
-        <h1 className="font-display text-2xl font-bold">Estimate accuracy</h1>
-      </div>
-      <p className="mt-1 text-muted-foreground">
+      <p className="text-muted-foreground">
         Every verified assessment is held out in turn and predicted from the others — so this
         is what the engine would have quoted <em>before</em> each car cleared.
       </p>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-4">
         {[
           { label: "Assessments", value: coverage.assessments },
           { label: "Verified", value: coverage.verified },

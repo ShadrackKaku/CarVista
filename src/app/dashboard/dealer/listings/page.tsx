@@ -15,13 +15,6 @@ export default async function DealerListingsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold">My Listings</h1>
-          <p className="mt-1 text-muted-foreground">
-            {formatNumber(listings.length)} vehicle{listings.length === 1 ? "" : "s"} listed. Select
-            rows to update several at once.
-          </p>
-        </div>
         <Button asChild variant="gradient">
           <Link href="/vehicles/new">
             <Plus className="h-4 w-4" /> Add vehicle

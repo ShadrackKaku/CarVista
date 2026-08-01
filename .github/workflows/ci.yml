@@ -19,12 +19,30 @@ jobs:
     name: Typecheck · Lint · Build
     runs-on: ubuntu-latest
 
+    # A throwaway Postgres so the responsive check exercises real pages. Without
+    # it the data-backed routes render the error boundary, and a check that only
+    # ever sees an error page proves nothing. Nothing here is a secret: the
+    # database is created, used and destroyed inside this runner.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: carvista
+          POSTGRES_PASSWORD: carvista
+          POSTGRES_DB: carvista
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
-      # Dummy values so `prisma generate` and `next build` don't fail.
-      # No real database is contacted — data pages are dynamic and are not
-      # pre-rendered during the build.
-      DATABASE_URL: "postgresql://user:password@localhost:5432/carvista?schema=public"
+      DATABASE_URL: "postgresql://carvista:carvista@localhost:5432/carvista?schema=public"
+      DIRECT_URL: "postgresql://carvista:carvista@localhost:5432/carvista?schema=public"
       NEXTAUTH_SECRET: "ci-placeholder-secret"
+      NEXTAUTH_URL: "http://localhost:3000"
       NEXT_TELEMETRY_DISABLED: "1"
 
     steps:
@@ -58,3 +76,26 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # A page that scrolls sideways is invisible to every step above. This
+      # boots the built app and drives a headless Chromium over the public
+      # routes at five widths. It runs inside the existing job on purpose: the
+      # required status check is this job's name, and a second job would leave
+      # branch protection waiting on a check it does not know about.
+      - name: Prepare the database
+        run: |
+          npm run prisma:deploy
+          npm run db:seed
+
+      - name: Install Chromium
+        run: npx --yes playwright@1.49.1 install --with-deps chromium
+
+      # `output: standalone` means `next start` is not the supported entry
+      # point; the standalone server needs static assets copied beside it.
+      - name: Responsive check
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+          node .next/standalone/server.js &
+          npx --yes wait-on -t 90000 http://localhost:3000
+          npm run test:responsive

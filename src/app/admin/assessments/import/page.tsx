@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ClipboardPaste, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { IcumsImportForm } from "@/components/admin/icums-import-form";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +17,6 @@ export default function IcumsImportPage() {
         <ArrowLeft className="h-4 w-4" /> Duty data
       </Link>
 
-      <div className="mt-3 flex items-center gap-2">
-        <ClipboardPaste className="h-6 w-6 text-brand-600" />
-        <h1 className="font-display text-2xl font-bold">Import from ICUMS</h1>
-      </div>
       <p className="mt-1 text-muted-foreground">
         Capture real customs outcomes straight from the official checker — the fastest way to
         widen quote coverage. Each import also updates the HDV reference table.

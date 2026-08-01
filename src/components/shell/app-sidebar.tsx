@@ -23,6 +23,14 @@ import { openCommandPalette } from "@/lib/ui-events";
 const COLLAPSE_KEY = "carvista:sidebar-collapsed";
 const CLOSED_SECTIONS_KEY = "carvista:sidebar-closed-sections";
 
+/**
+ * Folded on first run. Marketplace is the public site, already one click away
+ * via "Back to site" and the public header — so a signed-in user starts with
+ * their own work in view instead of scrolling past the storefront to reach it.
+ * An explicit choice, in either direction, replaces this and persists.
+ */
+const DEFAULT_CLOSED_SECTIONS = ["marketplace"];
+
 export interface AppSidebarProps {
   role: UserRole;
   userName?: string | null;
@@ -54,7 +62,7 @@ export function AppSidebar({
   const sections = navigationFor(role);
   const isDrawer = variant === "drawer";
   const [collapsed, setCollapsed] = useState(false);
-  const [closedSections, setClosedSections] = useState<string[]>([]);
+  const [closedSections, setClosedSections] = useState<string[]>(DEFAULT_CLOSED_SECTIONS);
   const navRef = useRef<HTMLElement>(null);
 
   // Restore which sections the user folded away. Read after mount so the
@@ -62,9 +70,11 @@ export function AppSidebar({
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(CLOSED_SECTIONS_KEY);
+      // Absent key means "never chosen" — keep the default. An empty array is
+      // a real choice (everything unfolded) and must be honoured.
       if (raw) setClosedSections(JSON.parse(raw));
     } catch {
-      // Corrupt or unavailable storage just means "nothing folded".
+      // Corrupt or unavailable storage just falls back to the default.
     }
   }, []);
 

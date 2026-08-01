@@ -25,16 +25,13 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="font-display text-2xl font-bold">User Management</h1>
-      <p className="mt-1 text-muted-foreground">Manage all platform users, roles and status.</p>
-
       {users.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <Users className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No users yet</p>
         </div>
       ) : (
-        <div className="mt-8 overflow-hidden rounded-2xl border bg-card shadow-soft">
+        <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">

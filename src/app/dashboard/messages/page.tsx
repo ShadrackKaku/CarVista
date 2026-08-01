@@ -13,13 +13,8 @@ export default async function MessagesPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="font-display text-2xl font-bold">Messages</h1>
-      <p className="mt-1 text-muted-foreground">
-        Your conversations with buyers and sellers. Tap one to reply.
-      </p>
-
       {conversations.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <MessageSquare className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No conversations yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -27,7 +22,7 @@ export default async function MessagesPage() {
           </p>
         </div>
       ) : (
-        <div className="mt-8 divide-y overflow-hidden rounded-2xl border bg-card shadow-soft">
+        <div className="divide-y overflow-hidden rounded-2xl border bg-card shadow-soft">
           {conversations.map((c) => (
             <Link
               key={c.id}

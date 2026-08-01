@@ -29,10 +29,6 @@ export default async function AdminAssessmentsPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Database className="h-6 w-6 text-brand-600" />
-          <h1 className="font-display text-2xl font-bold">Duty assessments</h1>
-        </div>
         <Button asChild variant="gradient" size="sm">
           <Link href="/admin/assessments/import">
             <ClipboardPaste className="h-4 w-4" /> Import from ICUMS

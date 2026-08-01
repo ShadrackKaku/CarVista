@@ -22,11 +22,8 @@ export default async function SellerOrdersPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="font-display text-2xl font-bold">Orders</h1>
-      <p className="mt-1 text-muted-foreground">Orders containing your products.</p>
-
       {orders.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <Receipt className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No orders yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -34,7 +31,7 @@ export default async function SellerOrdersPage() {
           </p>
         </div>
       ) : (
-        <div className="mt-8 overflow-hidden rounded-2xl border bg-card shadow-soft">
+        <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">

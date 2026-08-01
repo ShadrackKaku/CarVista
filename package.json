@@ -21,7 +21,8 @@
     "prisma:studio": "prisma studio",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "test:responsive": "node scripts/check-responsive.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -82,6 +83,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.35",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "playwright-core": "^1.62.1",
     "postcss": "^8.4.49",
     "prettier": "^3.4.2",
     "prisma": "^5.22.0",

@@ -26,11 +26,6 @@ export default async function SellerAnalyticsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Analytics</h1>
-        <p className="mt-1 text-muted-foreground">How your store is performing.</p>
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Products" value={products.length} icon={Boxes} />
         <StatCard label="In stock" value={inStock} icon={PackageCheck} />

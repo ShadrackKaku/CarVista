@@ -11,16 +11,13 @@ export default async function AdminReviewsPage() {
   const reviews = await getAllReviews();
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="font-display text-2xl font-bold">Reviews</h1>
-      <p className="mt-1 text-muted-foreground">Moderate customer reviews across the platform.</p>
-
       {reviews.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <MessageSquare className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No reviews yet</p>
         </div>
       ) : (
-        <div className="mt-8 space-y-3">
+        <div className="space-y-3">
           {reviews.map((r) => (
             <div key={r.id} className="rounded-xl border bg-card p-5 shadow-soft">
               <div className="flex items-center justify-between gap-3">

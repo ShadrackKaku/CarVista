@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { BadgeCheck, Clock, ShieldCheck, XCircle } from "lucide-react";
+import { BadgeCheck, Clock, XCircle } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getDealerVerification } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,7 @@ export default async function DealerVerificationPage() {
   if (!v.isDealer) {
     return (
       <div className="mx-auto max-w-2xl">
-        <h1 className="font-display text-2xl font-bold">Verification</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="text-muted-foreground">
           Only dealer accounts can apply for verification. Set up your dealer profile first.
         </p>
       </div>
@@ -26,10 +25,6 @@ export default async function DealerVerificationPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center gap-2">
-        <ShieldCheck className="h-6 w-6 text-brand-600" />
-        <h1 className="font-display text-2xl font-bold">Get verified</h1>
-      </div>
       <p className="text-muted-foreground">
         Verified dealers earn a trust badge and rank higher in search. Submit your business details
         for review — it usually takes a day or two.

@@ -31,8 +31,7 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
-        <h1 className="font-display text-2xl font-bold">Welcome back, {firstName} 👋</h1>
-        <p className="mt-1 text-muted-foreground">Here's what's happening with your account.</p>
+        <h2 className="font-display text-2xl font-bold">Welcome back, {firstName} 👋</h2>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

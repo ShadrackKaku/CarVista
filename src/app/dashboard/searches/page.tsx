@@ -17,12 +17,6 @@ export default async function SavedSearchesPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Saved searches</h1>
-          <p className="mt-1 text-muted-foreground">
-            Jump back into the searches you care about, or start a new one.
-          </p>
-        </div>
         <Button asChild variant="outline">
           <Link href="/vehicles">
             <Search className="h-4 w-4" /> Browse vehicles
@@ -31,7 +25,7 @@ export default async function SavedSearchesPage() {
       </div>
 
       {searches.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <Bookmark className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No saved searches yet</p>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">

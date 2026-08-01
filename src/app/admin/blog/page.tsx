@@ -13,10 +13,6 @@ export default async function AdminBlogPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Blog</h1>
-          <p className="mt-1 text-muted-foreground">Manage articles and guides.</p>
-        </div>
         <Button asChild variant="gradient">
           <Link href="/admin/blog/new">
             <Plus className="h-4 w-4" /> New post
@@ -25,7 +21,7 @@ export default async function AdminBlogPage() {
       </div>
 
       {posts.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <p className="font-semibold">No posts yet</p>
           <p className="mt-1 text-sm text-muted-foreground">Write your first article to get started.</p>
           <Button asChild variant="gradient" className="mt-5">
