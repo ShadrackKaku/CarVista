@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,26 @@ const ROLES = [
   { value: "SERVICE_PROVIDER", label: "Service Provider" },
 ];
 
-export function RegisterForm() {
+export interface RegisterFormProps {
+  /** Where to land once the new account is signed in. */
+  callbackUrl?: string;
+  /**
+   * Called instead of navigating, after the new account has been signed in.
+   * The dialog uses this to close itself and stay put.
+   */
+  onSuccess?: () => void;
+  /** Unique-ify field ids when the form is mounted twice (page + dialog). */
+  idPrefix?: string;
+  /** Compact spacing for the dialog, where vertical room is tight. */
+  compact?: boolean;
+}
+
+export function RegisterForm({
+  callbackUrl,
+  onSuccess,
+  idPrefix = "register",
+  compact = false,
+}: RegisterFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -41,6 +61,10 @@ export function RegisterForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      toast.error("Those passwords don't match.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
@@ -53,8 +77,30 @@ export function RegisterForm() {
         toast.error(data.error ?? "Registration failed");
         return;
       }
-      toast.success("Account created! Please sign in.");
-      router.push("/login?registered=1");
+
+      // Sign the new account straight in — asking someone to re-type the
+      // credentials they just chose is friction with nothing behind it.
+      const signInRes = await signIn("credentials", {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+
+      if (signInRes?.error) {
+        // The account exists; only the automatic sign-in failed.
+        toast.success("Account created! Please sign in.");
+        if (!onSuccess) router.push("/login?registered=1");
+        return;
+      }
+
+      toast.success("Welcome to CarVista!");
+      if (onSuccess) {
+        onSuccess();
+        router.refresh();
+        return;
+      }
+      router.push(callbackUrl ?? "/dashboard");
+      router.refresh();
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
@@ -63,33 +109,36 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className={compact ? "space-y-3" : "space-y-4"}>
       <div className="space-y-2">
-        <Label htmlFor="name">Full name</Label>
+        <Label htmlFor={`${idPrefix}-name`}>Full name</Label>
         <Input
-          id="name"
+          id={`${idPrefix}-name`}
           required
+          autoComplete="name"
           placeholder="Kwame Mensah"
           value={form.name}
           onChange={(e) => update("name", e.target.value)}
         />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={compact ? "grid gap-3 sm:grid-cols-2" : "grid gap-4 sm:grid-cols-2"}>
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor={`${idPrefix}-email`}>Email</Label>
           <Input
-            id="email"
+            id={`${idPrefix}-email`}
             type="email"
             required
+            autoComplete="email"
             placeholder="you@email.com"
             value={form.email}
             onChange={(e) => update("email", e.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone</Label>
+          <Label htmlFor={`${idPrefix}-phone`}>Phone</Label>
           <Input
-            id="phone"
+            id={`${idPrefix}-phone`}
+            autoComplete="tel"
             placeholder="0201234567"
             value={form.phone}
             onChange={(e) => update("phone", e.target.value)}
@@ -97,9 +146,9 @@ export function RegisterForm() {
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="role">I want to</Label>
+        <Label htmlFor={`${idPrefix}-role`}>I want to</Label>
         <Select value={form.role} onValueChange={(v) => update("role", v)}>
-          <SelectTrigger id="role">
+          <SelectTrigger id={`${idPrefix}-role`}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -111,24 +160,26 @@ export function RegisterForm() {
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={compact ? "grid gap-3 sm:grid-cols-2" : "grid gap-4 sm:grid-cols-2"}>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor={`${idPrefix}-password`}>Password</Label>
           <Input
-            id="password"
+            id={`${idPrefix}-password`}
             type="password"
             required
+            autoComplete="new-password"
             placeholder="••••••••"
             value={form.password}
             onChange={(e) => update("password", e.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm</Label>
+          <Label htmlFor={`${idPrefix}-confirmPassword`}>Confirm</Label>
           <Input
-            id="confirmPassword"
+            id={`${idPrefix}-confirmPassword`}
             type="password"
             required
+            autoComplete="new-password"
             placeholder="••••••••"
             value={form.confirmPassword}
             onChange={(e) => update("confirmPassword", e.target.value)}

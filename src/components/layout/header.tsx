@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { NavSearch } from "@/components/search/nav-search";
+import { openAuthDialog } from "@/lib/ui-events";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -196,11 +197,15 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <div className="hidden items-center gap-2 md:flex">
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/login">Sign in</Link>
+              <Button variant="ghost" size="sm" onClick={() => openAuthDialog({ mode: "login" })}>
+                Sign in
               </Button>
-              <Button asChild size="sm" variant="gradient">
-                <Link href="/register">Get started</Link>
+              <Button
+                size="sm"
+                variant="gradient"
+                onClick={() => openAuthDialog({ mode: "register" })}
+              >
+                Get started
               </Button>
             </div>
           )}
@@ -249,11 +254,23 @@ export function Header() {
                 </Button>
                 {!user && (
                   <>
-                    <Button asChild variant="outline" onClick={() => setOpen(false)}>
-                      <Link href="/login">Sign in</Link>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setOpen(false);
+                        openAuthDialog({ mode: "login" });
+                      }}
+                    >
+                      Sign in
                     </Button>
-                    <Button asChild variant="ghost" onClick={() => setOpen(false)}>
-                      <Link href="/register">Create account</Link>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setOpen(false);
+                        openAuthDialog({ mode: "register" });
+                      }}
+                    >
+                      Create account
                     </Button>
                   </>
                 )}
