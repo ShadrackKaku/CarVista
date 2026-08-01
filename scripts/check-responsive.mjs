@@ -51,38 +51,59 @@ let chromium;
 try {
   ({ chromium } = await import("playwright-core"));
 } catch {
-  console.log("· playwright-core not installed — skipping responsive check.");
-  process.exit(0);
+  console.error("✗ playwright-core is not installed, so nothing was checked.");
+  console.error("  Run `npm ci`, or set RESPONSIVE_ALLOW_SKIP=1 to skip.");
+  process.exit(process.env.RESPONSIVE_ALLOW_SKIP === "1" ? 0 : 1);
 }
 
+/** Every place a Chromium or headless-shell binary might live. */
 function findChromium() {
   if (process.env.CHROME_PATH && existsSync(process.env.CHROME_PATH)) {
     return process.env.CHROME_PATH;
   }
-  // playwright-core already honours PLAYWRIGHT_BROWSERS_PATH and its own
-  // default cache, so ask it before guessing at the filesystem.
+  // playwright-core honours PLAYWRIGHT_BROWSERS_PATH and its own cache, but
+  // only for the browser revision *it* was built against — a CLI of a
+  // different version installs a different revision directory, which this
+  // misses. Hence the scan below.
   try {
     const p = chromium.executablePath();
     if (p && existsSync(p)) return p;
   } catch {
-    // Not installed through playwright — fall through to the scan below.
+    // Not installed through playwright — fall through.
   }
-  const root = process.env.PLAYWRIGHT_BROWSERS_PATH;
-  if (!root || !existsSync(root)) return null;
-  for (const dir of readdirSync(root)) {
-    if (!dir.startsWith("chromium") || dir.includes("headless_shell")) continue;
-    const candidate = join(root, dir, "chrome-linux", "chrome");
-    if (existsSync(candidate)) return candidate;
+  const roots = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    join(process.env.HOME ?? "", ".cache", "ms-playwright"),
+  ].filter((r) => r && existsSync(r));
+
+  for (const root of roots) {
+    for (const dir of readdirSync(root)) {
+      if (!dir.startsWith("chromium")) continue;
+      // Full Chromium ships `chrome`; the headless shell ships
+      // `headless_shell`. Either drives the page fine.
+      for (const bin of ["chrome", "headless_shell"]) {
+        const candidate = join(root, dir, "chrome-linux", bin);
+        if (existsSync(candidate)) return candidate;
+      }
+    }
   }
   return null;
 }
 
 const executablePath = findChromium();
 if (!executablePath) {
-  console.log("· No Chromium found — skipping responsive check.");
-  console.log("  Set CHROME_PATH or PLAYWRIGHT_BROWSERS_PATH to enable it.");
-  process.exit(0);
+  // Skipping must be opt-in. A guard that silently reports success when it
+  // cannot run is worse than no guard: CI goes green having checked nothing.
+  if (process.env.RESPONSIVE_ALLOW_SKIP === "1") {
+    console.log("· No Chromium found — skipping (RESPONSIVE_ALLOW_SKIP=1).");
+    process.exit(0);
+  }
+  console.error("✗ No Chromium found, so nothing was checked.");
+  console.error("  Install one with `npx playwright install chromium`, or set CHROME_PATH.");
+  console.error("  Set RESPONSIVE_ALLOW_SKIP=1 to make this a skip instead of a failure.");
+  process.exit(1);
 }
+console.log(`· Driving ${executablePath}`);
 
 const res = await fetch(BASE).catch(() => null);
 if (!res) {

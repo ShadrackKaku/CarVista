@@ -33,7 +33,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U carvista -d carvista"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -74,21 +74,36 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build
-        run: npm run build
-
-      # A page that scrolls sideways is invisible to every step above. This
-      # boots the built app and drives a headless Chromium over the public
-      # routes at five widths. It runs inside the existing job on purpose: the
-      # required status check is this job's name, and a second job would leave
-      # branch protection waiting on a check it does not know about.
+      # Before the build, so prerendering meets a real schema instead of
+      # logging "relation does not exist" for every data-backed page. The row
+      # counts are echoed because a silently-empty database would make the
+      # responsive check below pass against nothing but error boundaries.
       - name: Prepare the database
         run: |
           npm run prisma:deploy
           npm run db:seed
+          node -e "
+            const { PrismaClient } = require('@prisma/client');
+            const p = new PrismaClient();
+            Promise.all([p.vehicle.count(), p.part.count(), p.dealer.count()])
+              .then(([v, pa, d]) => {
+                console.log(\`seeded: \${v} vehicles, \${pa} parts, \${d} dealers\`);
+                if (v === 0) { console.error('✗ seed produced no vehicles'); process.exit(1); }
+              })
+              .finally(() => p.\$disconnect());
+          "
 
+      - name: Build
+        run: npm run build
+
+      # The CLI version must match the installed playwright-core, or it lays
+      # down a browser revision playwright-core does not look for — which is
+      # how the check came up "no Chromium found" and skipped itself.
       - name: Install Chromium
-        run: npx --yes playwright@1.49.1 install --with-deps chromium
+        run: |
+          PW_VERSION=$(node -p "require('playwright-core/package.json').version")
+          echo "Installing Chromium for playwright-core $PW_VERSION"
+          npx --yes "playwright@$PW_VERSION" install --with-deps chromium
 
       # `output: standalone` means `next start` is not the supported entry
       # point; the standalone server needs static assets copied beside it.
