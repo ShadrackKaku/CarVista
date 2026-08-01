@@ -24,6 +24,18 @@ const nextConfig = {
       { protocol: "https", hostname: "i.pravatar.cc" },
     ],
   },
+  async redirects() {
+    return [
+      // The working calculators moved into the authenticated app. Their public
+      // URLs were indexed, so they point at the marketing page that replaced
+      // them; signed-in users are taken on to the tool by the CTA there.
+      { source: "/calculators/import-duty", destination: "/calculators", permanent: true },
+      { source: "/calculators/shipping", destination: "/calculators", permanent: true },
+      { source: "/calculators/financing", destination: "/calculators", permanent: true },
+      { source: "/calculators/taxes", destination: "/calculators", permanent: true },
+    ];
+  },
+
   async headers() {
     return [
       {

@@ -69,17 +69,27 @@ const ADMIN_ONLY: UserRole[] = ["ADMIN"];
 const marketplace: NavSection = {
   id: "marketplace",
   label: "Marketplace",
+  // Everything here lives under /app, inside the authenticated shell. Signed-out
+  // visitors get the public marketing site and its own header instead.
+  requiresAuth: true,
   items: [
     {
       label: "Browse vehicles",
-      href: "/vehicles",
+      href: "/app/marketplace/vehicles",
       icon: Car,
       description: "Every car listed on CarVista",
       keywords: ["cars", "search", "buy", "listings"],
     },
-    { label: "Parts", href: "/parts", icon: Package, description: "Genuine and aftermarket parts" },
-    { label: "Services", href: "/services", icon: Wrench, description: "Garages and specialists" },
-    { label: "Dealers", href: "/dealers", icon: Store, description: "Verified dealers near you" },
+    { label: "Parts", href: "/app/marketplace/parts", icon: Package, description: "Genuine and aftermarket parts" },
+    { label: "Services", href: "/app/marketplace/services", icon: Wrench, description: "Garages and specialists" },
+    { label: "Dealers", href: "/app/marketplace/dealers", icon: Store, description: "Verified dealers near you" },
+    {
+      label: "My listings",
+      href: "/app/marketplace/listings",
+      icon: ClipboardCheck,
+      description: "Vehicles you have on the market",
+      keywords: ["sell", "selling", "inventory"],
+    },
     {
       label: "Import a car",
       href: "/import",
@@ -93,10 +103,11 @@ const marketplace: NavSection = {
 const tools: NavSection = {
   id: "tools",
   label: "Tools",
+  requiresAuth: true,
   items: [
     {
       label: "All tools",
-      href: "/calculators",
+      href: "/app/calculators",
       icon: LayoutDashboard,
       description: "The full workspace",
       exact: true,
@@ -127,8 +138,8 @@ const garage: NavSection = {
       exact: true,
       description: "Your activity at a glance",
     },
-    { label: "Saved vehicles", href: "/dashboard/saved", icon: Heart, keywords: ["wishlist", "favourites"] },
-    { label: "Saved searches", href: "/dashboard/searches", icon: Bookmark, keywords: ["alerts"] },
+    { label: "Saved vehicles", href: "/app/marketplace/saved", icon: Heart, keywords: ["wishlist", "favourites"] },
+    { label: "Saved searches", href: "/app/marketplace/searches", icon: Bookmark, keywords: ["alerts"] },
     { label: "My imports", href: "/dashboard/imports", icon: Ship },
     { label: "My orders", href: "/dashboard/orders", icon: ShoppingBag },
     { label: "Inspections", href: "/dashboard/inspections", icon: ClipboardCheck },
@@ -149,7 +160,6 @@ const business: NavSection = {
       exact: true,
       roles: DEALER_ONLY,
     },
-    { label: "My listings", href: "/dashboard/dealer/listings", icon: Car, roles: DEALER_ONLY },
     { label: "Leads", href: "/dashboard/dealer/leads", icon: MessageSquare, roles: DEALER_ONLY },
     {
       label: "Analytics",

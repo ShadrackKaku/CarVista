@@ -19,9 +19,12 @@ import type { SamplePart } from "@/lib/sample-data";
 export function PartsBrowser({
   parts,
   initialCategory = "",
+  basePath = "/parts",
 }: {
   parts: SamplePart[];
   initialCategory?: string;
+  /** Where result cards link. The Marketplace module keeps them in the shell. */
+  basePath?: string;
 }) {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState(initialCategory);
@@ -163,7 +166,7 @@ export function PartsBrowser({
       ) : (
         <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((p) => (
-            <PartCard key={p.id} part={p} />
+            <PartCard key={p.id} part={p} basePath={basePath} />
           ))}
         </div>
       )}

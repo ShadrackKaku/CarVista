@@ -43,7 +43,7 @@ export default async function AdminPartsPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Button asChild variant="ghost" size="sm">
-                      <Link href={`/parts/${p.slug}`}>View</Link>
+                      <Link href={`/app/marketplace/parts/${p.slug}`}>View</Link>
                     </Button>
                   </td>
                 </tr>

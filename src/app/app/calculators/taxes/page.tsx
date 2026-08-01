@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertCircle, Check, Info } from "lucide-react";
-import { ToolHeader } from "@/components/tools/tool-header";
 import {
   DEFAULT_RATES,
   DEFAULT_FLAT_CHARGES,
@@ -16,7 +15,6 @@ export const metadata: Metadata = {
   title: "Vehicle Taxes & Duties in Ghana",
   description:
     "Every duty, levy and fee charged on a vehicle imported into Ghana — the rate, what it is charged on, and the over-age penalty bands. Updated for the 2026 rules.",
-  alternates: { canonical: "/calculators/taxes" },
 };
 
 const ghs = (n: number) =>
@@ -150,10 +148,6 @@ export default function TaxesPage() {
 
   return (
     <div className="space-y-10">
-      <ToolHeader
-        title="Taxes & duties explained"
-        description="Every charge GRA Customs applies to a vehicle imported into Ghana — the rate, and just as importantly what that rate is charged on. Withdrawn levies are not listed."
-      />
 
       {/* At a glance */}
       <section className="grid gap-4 sm:grid-cols-3">
@@ -364,7 +358,7 @@ export default function TaxesPage() {
         </p>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           Our{" "}
-          <Link href="/calculators/import-duty" className="font-medium text-brand-600 underline">
+          <Link href="/app/calculators/import-duty" className="font-medium text-brand-600 underline">
             landed-cost calculator
           </Link>{" "}
           works the other way round: it starts from what GRA actually billed on cars like yours, and

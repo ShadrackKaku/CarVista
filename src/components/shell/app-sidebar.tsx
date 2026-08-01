@@ -18,6 +18,7 @@ import { Logo } from "@/components/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn, getInitials } from "@/lib/utils";
 import { isNavItemActive, navigationFor, type NavItem } from "@/lib/navigation";
+import { moduleForPath } from "@/lib/modules";
 import { openCommandPalette } from "@/lib/ui-events";
 
 const COLLAPSE_KEY = "carvista:sidebar-collapsed";
@@ -113,7 +114,12 @@ export function AppSidebar({
     });
   }, []);
 
-  const isCollapsed = !isDrawer && collapsed;
+  // Inside a module, the main sidebar folds to its rail so the module's own
+  // navigation can take the space (§10). It is never removed — the rail keeps
+  // every other destination one click away, and the user's own collapse
+  // preference is left untouched for when they leave the module.
+  const insideModule = moduleForPath(pathname) !== null;
+  const isCollapsed = !isDrawer && (collapsed || insideModule);
 
   return (
     <aside
@@ -149,7 +155,9 @@ export function AppSidebar({
         <div className="h-px bg-white/10" />
       </div>
 
-      {!isDrawer && isCollapsed && (
+      {/* Inside a module the fold is not the user's choice, so offering to
+          undo it would be a control that does nothing. */}
+      {!isDrawer && isCollapsed && !insideModule && (
         <button
           type="button"
           onClick={toggle}
@@ -368,6 +376,9 @@ function SidebarLink({
       href={item.href}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
+      // Collapsed, the label is not rendered, so name the link explicitly
+      // rather than leaning on `title` as the accessible name of last resort.
+      aria-label={collapsed ? item.label : undefined}
       title={collapsed ? item.label : undefined}
       className={cn(
         base,

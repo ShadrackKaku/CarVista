@@ -41,5 +41,8 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/checkout/:path*"],
+  // withAuth appends the requested URL as `callbackUrl` on the login redirect,
+  // so an unauthenticated visit to a deep link comes back to that exact page
+  // after signing in rather than dumping them on the dashboard.
+  matcher: ["/app/:path*", "/dashboard/:path*", "/admin/:path*", "/checkout/:path*"],
 };

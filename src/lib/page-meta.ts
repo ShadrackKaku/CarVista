@@ -20,6 +20,29 @@ export interface PageMeta {
  * `/admin/blog/new` — which has its own entry above it.
  */
 const ROUTES: [pattern: string, meta: PageMeta][] = [
+  // ── Marketplace module ─────────────────────────────────────────
+  ["/app/marketplace", { title: "Marketplace", subtitle: "Vehicles, parts, dealers and services in one place." }],
+  ["/app/marketplace/vehicles", { title: "Vehicles", subtitle: "Every car listed on CarVista." }],
+  ["/app/marketplace/vehicles/:id", { title: "Vehicle", subtitle: "Specs, history and landed cost." }],
+  ["/app/marketplace/parts", { title: "Parts", subtitle: "Genuine and aftermarket parts from verified sellers." }],
+  ["/app/marketplace/parts/:id", { title: "Part", subtitle: "Fitment, condition and delivery." }],
+  ["/app/marketplace/dealers", { title: "Dealers", subtitle: "Verified dealerships across Ghana." }],
+  ["/app/marketplace/dealers/:id", { title: "Dealer", subtitle: "Their stock, standing and contact details." }],
+  ["/app/marketplace/services", { title: "Services", subtitle: "Garages, inspectors and specialists near you." }],
+  ["/app/marketplace/services/:id", { title: "Service provider", subtitle: "What they do and how to book." }],
+  ["/app/marketplace/saved", { title: "Saved vehicles", subtitle: "Cars you're keeping an eye on." }],
+  ["/app/marketplace/searches", { title: "Saved searches", subtitle: "We'll alert you when new matches land." }],
+  ["/app/marketplace/listings", { title: "My listings", subtitle: "Every vehicle you have on the market." }],
+  ["/app/marketplace/listings/new", { title: "List a vehicle", subtitle: "Photos, specs and price — it's free to list." }],
+
+  // ── Calculators module ─────────────────────────────────────────
+  ["/app/calculators", { title: "Calculators", subtitle: "Price an import before you commit." }],
+  ["/app/calculators/import-duty", { title: "Landed cost", subtitle: "Duty, levies, shipping and clearing in one number." }],
+  ["/app/calculators/shipping", { title: "Shipping", subtitle: "Freight, insurance and port charges." }],
+  ["/app/calculators/financing", { title: "Financing", subtitle: "Monthly repayments at Ghanaian bank rates." }],
+  ["/app/calculators/taxes", { title: "Taxes & duties", subtitle: "The full GRA levy stack, line by line." }],
+  ["/app/calculators/share-bill", { title: "Share a duty bill", subtitle: "Add a real assessment and sharpen everyone's estimate." }],
+
   // ── Admin ──────────────────────────────────────────────────────
   ["/admin", { title: "Admin overview", subtitle: "Platform-wide metrics and activity." }],
   ["/admin/users", { title: "User management", subtitle: "Manage all platform users, roles and status." }],

@@ -19,7 +19,7 @@ export function ToolRail() {
       {/* Mobile: a horizontal scroller so the rail costs no vertical space. */}
       <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 lg:mx-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0">
         <RailLink
-          href="/calculators"
+          href="/app/calculators"
           label="All tools"
           icon={LayoutGrid}
           active={pathname === "/calculators"}

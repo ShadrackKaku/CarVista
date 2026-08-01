@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AppSidebar } from "@/components/shell/app-sidebar";
+import { ModuleSidebar } from "@/components/shell/module-sidebar";
 import { openCommandPalette } from "@/lib/ui-events";
 
 export interface ShellTopbarProps {
@@ -106,15 +107,26 @@ export function ShellTopbar({
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetContent side="left" className="w-[17rem] border-none p-0 sm:max-w-[17rem]">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <AppSidebar
-            role={role}
-            userName={userName}
-            userEmail={userEmail}
-            userImage={userImage}
-            unreadMessages={unreadMessages}
-            variant="drawer"
-            onNavigate={() => setDrawerOpen(false)}
-          />
+          {/* Both sidebars stack here: on a phone there is no room for a third
+              column, but the module's own nav still has to be reachable. */}
+          <div className="flex h-full flex-col overflow-hidden">
+            <ModuleSidebar
+              role={role}
+              variant="drawer"
+              onNavigate={() => setDrawerOpen(false)}
+            />
+            <div className="min-h-0 flex-1">
+              <AppSidebar
+                role={role}
+                userName={userName}
+                userEmail={userEmail}
+                userImage={userImage}
+                unreadMessages={unreadMessages}
+                variant="drawer"
+                onNavigate={() => setDrawerOpen(false)}
+              />
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
     </header>

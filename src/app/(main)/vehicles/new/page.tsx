@@ -1,24 +1,10 @@
-import type { Metadata } from "next";
-import { PageHeader } from "@/components/page-header";
-import { ListVehicleForm } from "@/components/vehicles/list-vehicle-form";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Sell Your Car — List a Vehicle",
-  description: "List your vehicle for sale on CarVista and reach thousands of buyers across Ghana.",
-  alternates: { canonical: "/vehicles/new" },
-};
-
-export default function NewVehiclePage() {
-  return (
-    <div>
-      <PageHeader
-        eyebrow="Sell your car"
-        title="List a vehicle in minutes"
-        description="Reach thousands of verified buyers across Ghana. Add photos, videos and details — it's free to list."
-      />
-      <div className="container-page py-10">
-        <ListVehicleForm />
-      </div>
-    </div>
-  );
+/**
+ * Moved into the Marketplace module. Kept because the public footer, header and
+ * home page all point here — a signed-out visitor lands on login and comes back
+ * to the form, and a signed-in one goes straight to it inside the shell.
+ */
+export default function MovedPage() {
+  redirect("/app/marketplace/listings/new");
 }

@@ -5,10 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import type { SampleDealer } from "@/lib/sample-data";
 
-export function DealerCard({ dealer }: { dealer: SampleDealer }) {
+export interface DealerCardProps {
+  dealer: SampleDealer;
+  /**
+   * Where the card links. Defaults to the public listing; the Marketplace
+   * module passes its own path so a click stays inside the shell.
+   */
+  basePath?: string;
+}
+
+export function DealerCard({ dealer, basePath = "/dealers" }: DealerCardProps) {
+  const href = `${basePath}/${dealer.slug}`;
   return (
     <Link
-      href={`/dealers/${dealer.slug}`}
+      href={href}
       className="group overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card"
     >
       <div className="relative h-28 overflow-hidden bg-muted">

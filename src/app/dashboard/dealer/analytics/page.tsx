@@ -44,7 +44,7 @@ export default async function DealerAnalyticsPage() {
               {topViewed.map((v) => (
                 <div key={v.id} className="flex items-center justify-between gap-3 text-sm">
                   <Link
-                    href={`/vehicles/${v.slug}`}
+                    href={`/app/marketplace/vehicles/${v.slug}`}
                     className="min-w-0 truncate font-medium hover:text-brand-600"
                   >
                     {v.title}

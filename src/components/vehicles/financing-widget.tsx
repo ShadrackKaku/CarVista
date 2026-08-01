@@ -6,7 +6,14 @@ import { Slider } from "@/components/ui/slider";
 import { calculateFinancing } from "@/lib/financing-calculator";
 import { formatCurrency } from "@/lib/utils";
 
-export function FinancingWidget({ price }: { price: number }) {
+export function FinancingWidget({
+  price,
+  calculatorHref = "/calculators",
+}: {
+  price: number;
+  /** Where "open the full calculator" goes — in-shell callers pass their own. */
+  calculatorHref?: string;
+}) {
   const [downPct, setDownPct] = useState(30);
   const [term, setTerm] = useState(36);
   const [rate] = useState(28);
@@ -68,7 +75,7 @@ export function FinancingWidget({ price }: { price: number }) {
       </div>
 
       <Link
-        href="/calculators/financing"
+        href={calculatorHref}
         className="mt-3 block text-center text-xs font-medium text-brand-600 hover:underline"
       >
         Open full financing calculator →

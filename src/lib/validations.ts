@@ -16,9 +16,10 @@ export const registerSchema = z
       .regex(/[A-Z]/, "Include at least one uppercase letter")
       .regex(/[0-9]/, "Include at least one number"),
     confirmPassword: z.string(),
-    role: z
-      .enum(["CUSTOMER", "DEALER", "PARTS_SELLER", "SERVICE_PROVIDER"])
-      .default("CUSTOMER"),
+    // Deliberately no `role`. Registration creates a plain account and
+    // nothing else; specialised capabilities are applied for and granted by
+    // an admin. Accepting a role here let anyone self-assign DEALER or
+    // PARTS_SELLER simply by posting one.
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",

@@ -5,10 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import type { SampleService } from "@/lib/sample-data";
 
-export function ServiceCard({ service }: { service: SampleService }) {
+export interface ServiceCardProps {
+  service: SampleService;
+  /**
+   * Where the card links. Defaults to the public listing; the Marketplace
+   * module passes its own path so a click stays inside the shell.
+   */
+  basePath?: string;
+}
+
+export function ServiceCard({ service, basePath = "/services" }: ServiceCardProps) {
+  const href = `${basePath}/${service.slug}`;
   return (
     <Link
-      href={`/services/${service.slug}`}
+      href={href}
       className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">

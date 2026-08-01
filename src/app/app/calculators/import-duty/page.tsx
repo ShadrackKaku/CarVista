@@ -3,22 +3,16 @@ import type { Metadata } from "next";
 import { DutyCalculator } from "@/components/calculators/duty-calculator";
 import { SmartLandedCost } from "@/components/calculators/smart-landed-cost";
 import { LiveRates } from "@/components/calculators/live-rates";
-import { ToolHeader } from "@/components/tools/tool-header";
 
 export const metadata: Metadata = {
   title: "Ghana Import Duty Calculator",
   description:
     "Calculate the exact import duty, VAT, NHIL, GETFund and total landed cost of importing a vehicle into Ghana. Free and instant.",
-  alternates: { canonical: "/calculators/import-duty" },
 };
 
 export default function ImportDutyPage() {
   return (
     <div>
-      <ToolHeader
-        title="Landed cost & import duty"
-        description="Know the full cost of your import before you commit. Estimates are built from real ICUMS customs assessments on cars like yours, then repriced at today's exchange rate."
-      />
 
       <div className="grid gap-8 xl:grid-cols-[1fr_18rem]">
         <div className="min-w-0 space-y-8">

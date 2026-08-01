@@ -45,10 +45,13 @@ export function VehicleBrowser({
   vehicles,
   initialFilters,
   initialSort = "relevance",
+  basePath = "/vehicles",
 }: {
   vehicles: SampleVehicle[];
   initialFilters?: Partial<VehicleFilters>;
   initialSort?: VehicleSort;
+  /** Where result cards link. The Marketplace module keeps them in the shell. */
+  basePath?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -356,7 +359,7 @@ export function VehicleBrowser({
         ) : (
           <div className={cn("mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3")}>
             {filtered.map((v) => (
-              <VehicleCard key={v.id} vehicle={v} />
+              <VehicleCard key={v.id} vehicle={v} basePath={basePath} />
             ))}
           </div>
         )}

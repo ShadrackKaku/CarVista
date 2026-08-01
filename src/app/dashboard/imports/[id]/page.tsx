@@ -112,7 +112,7 @@ export default async function CustomerImportDetailPage({ params }: { params: { i
 
           {imp.vehicleSlug && (
             <Link
-              href={`/vehicles/${imp.vehicleSlug}`}
+              href={`/app/marketplace/vehicles/${imp.vehicleSlug}`}
               className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-soft transition-colors hover:bg-accent/40"
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/40">

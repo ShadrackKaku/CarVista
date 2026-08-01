@@ -84,7 +84,7 @@ export function ListVehicleForm({
     e.preventDefault();
     if (status !== "authenticated") {
       toast.info("Please sign in to list a vehicle");
-      router.push("/login?callbackUrl=/vehicles/new");
+      router.push("/login?callbackUrl=/app/marketplace/listings/new");
       return;
     }
     setLoading(true);
@@ -110,7 +110,7 @@ export function ListVehicleForm({
       }
       if (isEdit) {
         toast.success("Listing updated");
-        router.push("/dashboard/dealer/listings");
+        router.push("/app/marketplace/listings");
         router.refresh();
         return;
       }

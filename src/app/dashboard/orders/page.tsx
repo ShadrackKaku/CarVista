@@ -56,7 +56,7 @@ export default async function OrdersPage() {
         <div className="mt-8 rounded-xl border border-dashed p-12 text-center">
           <p className="text-muted-foreground">You have no orders yet.</p>
           <Button asChild variant="gradient" className="mt-4">
-            <Link href="/parts">Shop parts</Link>
+            <Link href="/app/marketplace/parts">Shop parts</Link>
           </Button>
         </div>
       )}

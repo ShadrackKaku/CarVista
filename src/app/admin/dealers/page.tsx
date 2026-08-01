@@ -43,7 +43,7 @@ export default async function AdminDealersPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <Button asChild variant="ghost" size="sm">
-                        <Link href={`/dealers/${d.slug}`}>View</Link>
+                        <Link href={`/app/marketplace/dealers/${d.slug}`}>View</Link>
                       </Button>
                       {d.verified ? (
                         <AdminActionButton

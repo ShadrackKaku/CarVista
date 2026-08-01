@@ -243,7 +243,7 @@ export function DutyCalculator({ exchangeRate = 15.5 }: { exchangeRate?: number 
             <a href="/import">Start this import</a>
           </Button>
           <Button asChild variant="outline">
-            <a href="/calculators/shipping">Shipping calculator</a>
+            <a href="/app/calculators/shipping">Shipping calculator</a>
           </Button>
         </div>
         <p className="mt-3 text-center text-[11px] text-muted-foreground">
