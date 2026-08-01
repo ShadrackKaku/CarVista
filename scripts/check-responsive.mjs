@@ -119,7 +119,9 @@ for (const width of WIDTHS) {
   const page = await context.newPage();
 
   for (const route of ROUTES) {
-    await page.goto(BASE + route, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    // Short per-page budget: a wedged route should fail fast and name itself,
+    // not stall the run for a minute apiece across 65 loads.
+    await page.goto(BASE + route, { waitUntil: "domcontentloaded", timeout: 20_000 });
     // Let images and fonts settle; a late-loading wide element still counts.
     await page.waitForTimeout(900);
 

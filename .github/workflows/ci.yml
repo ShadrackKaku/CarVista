@@ -108,6 +108,10 @@ jobs:
       # `output: standalone` means `next start` is not the supported entry
       # point; the standalone server needs static assets copied beside it.
       - name: Responsive check
+        # 65 page loads should take well under a minute. A budget means a
+        # wedged server surfaces as a timeout instead of holding the job open
+        # until the runner's own limit.
+        timeout-minutes: 8
         run: |
           cp -r .next/static .next/standalone/.next/static
           cp -r public .next/standalone/public
