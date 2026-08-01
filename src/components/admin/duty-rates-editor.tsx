@@ -8,15 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DEFAULT_RATES, type DutyRateSet } from "@/lib/duty-calculator";
 
-const FIELDS: { key: keyof DutyRateSet; label: string }[] = [
-  { key: "importDutyRate", label: "Import Duty (%)" },
-  { key: "vatRate", label: "VAT (%)" },
-  { key: "nhilRate", label: "NHIL (%)" },
-  { key: "getfundRate", label: "GETFund Levy (%)" },
-  { key: "covidLevyRate", label: "COVID-19 Health Levy (%)" },
-  { key: "ecowasLevyRate", label: "ECOWAS Levy (%)" },
-  { key: "examinationFee", label: "Examination Fee (%)" },
-  { key: "networkCharge", label: "Network / Processing (%)" },
+const FIELDS: { key: keyof DutyRateSet; label: string; base: string }[] = [
+  { key: "importDutyRate", label: "Import Duty", base: "CIF" },
+  { key: "vatRate", label: "VAT", base: "CIF + duty" },
+  { key: "nhilRate", label: "NHIL", base: "CIF + duty" },
+  { key: "getfundRate", label: "GETFund Levy", base: "CIF + duty" },
+  { key: "ecowasLevyRate", label: "ECOWAS Levy", base: "CIF" },
+  { key: "auLevyRate", label: "African Union Levy", base: "CIF" },
+  { key: "eximLevyRate", label: "EXIM Levy", base: "CIF" },
+  { key: "specialImportLevyRate", label: "Special Import Levy", base: "CIF" },
+  { key: "examinationFee", label: "Examination Fee", base: "CIF · used only" },
+  { key: "networkCharge", label: "Network Charge", base: "FOB" },
 ];
 
 export function DutyRatesEditor() {
@@ -55,13 +57,14 @@ export function DutyRatesEditor() {
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {FIELDS.map((field) => (
           <div key={field.key} className="space-y-2">
-            <Label className="text-xs">{field.label}</Label>
+            <Label className="text-xs">{field.label} (%)</Label>
             <Input
               type="number"
-              step="0.1"
+              step="0.05"
               value={rates[field.key]}
               onChange={(e) => update(field.key, Number(e.target.value))}
             />
+            <p className="text-[11px] text-muted-foreground">on {field.base}</p>
           </div>
         ))}
       </div>

@@ -4,7 +4,10 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* The page carries a barely-there periwinkle tint so that pure-white
+       cards read as surfaces floating on it. This is what lets us drop the
+       heavy card outlines: elevation does the separating, not a border. */
+    --background: 240 33% 98%;
     --foreground: 240 39% 15%;
 
     --card: 0 0% 100%;
@@ -20,7 +23,7 @@
     --secondary: 240 60% 97%;
     --secondary-foreground: 240 39% 20%;
 
-    --muted: 240 30% 96%;
+    --muted: 240 30% 95%;
     --muted-foreground: 240 8% 46%;
 
     --accent: 240 60% 96%;
@@ -35,8 +38,10 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 240 20% 91%;
-    --input: 240 20% 91%;
+    /* Hairline, not outline. Borders recede so shadow carries the elevation;
+       inputs keep a slightly stronger edge because they must look tappable. */
+    --border: 240 24% 93%;
+    --input: 240 22% 89%;
     --ring: 238 68% 61%;
 
     --radius: 0.75rem;
@@ -94,7 +99,21 @@
 
 @layer utilities {
   .container-page {
-    @apply container mx-auto px-5;
+    @apply container mx-auto px-5 sm:px-6 lg:px-8;
+  }
+  /* Vertical rhythm for a full-width band. One value, used everywhere, so
+     pages breathe consistently instead of each picking its own py-*. */
+  .section {
+    @apply py-14 md:py-20;
+  }
+  /* A card that separates by elevation rather than by outline. Prefer this
+     over `rounded-2xl border bg-card` for new surfaces. */
+  .surface {
+    @apply rounded-2xl bg-card shadow-card;
+  }
+  /* For surfaces that sit on white and so still need a hairline. */
+  .surface-outlined {
+    @apply rounded-2xl border bg-card;
   }
   .text-gradient {
     @apply bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent;

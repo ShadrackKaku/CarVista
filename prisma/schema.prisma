@@ -967,15 +967,19 @@ model DutyRate {
   bodyTypes String[] // applicable body types
   fuelTypes String[]
 
-  // rates (percentages, 0-100)
-  importDutyRate Float @default(20)
-  vatRate        Float @default(15)
-  nhilRate       Float @default(2.5)
-  getfundRate    Float @default(2.5)
-  covidLevyRate  Float @default(1)
-  ecowasLevyRate Float @default(0.5)
-  examinationFee Float @default(0.5)
-  networkCharge  Float @default(0.4)
+  // rates (percentages, 0-100) — see src/lib/duty-calculator.ts for the base
+  // each one is charged on. The COVID-19 Health Recovery Levy was withdrawn
+  // and is deliberately absent.
+  importDutyRate        Float @default(20) // of CIF
+  vatRate               Float @default(15) // of CIF + duty
+  nhilRate              Float @default(2.5) // of CIF + duty
+  getfundRate           Float @default(2.5) // of CIF + duty
+  ecowasLevyRate        Float @default(0.5) // of CIF
+  auLevyRate            Float @default(0.2) // of CIF
+  eximLevyRate          Float @default(0.75) // of CIF
+  specialImportLevyRate Float @default(2) // of CIF
+  examinationFee        Float @default(1) // of CIF, used vehicles only
+  networkCharge         Float @default(0.4) // of FOB
 
   active        Boolean  @default(true)
   effectiveFrom DateTime @default(now())
