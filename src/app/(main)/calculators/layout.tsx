@@ -25,7 +25,10 @@ export default function CalculatorsLayout({ children }: { children: React.ReactN
         </div>
 
         <div className="grid gap-8 py-8 lg:grid-cols-[13.5rem_1fr] lg:gap-12 lg:py-10">
-          <div>
+          {/* min-w-0: below `lg` this is a single-column grid, and a grid item
+              defaults to min-width:auto — so the rail's intrinsic width would
+              size the track and push the whole page sideways. */}
+          <div className="min-w-0">
             <ToolRail />
             <div className="mt-6 hidden rounded-2xl bg-brand-600 p-5 text-white lg:block">
               <h2 className="text-sm font-semibold">Need help importing?</h2>

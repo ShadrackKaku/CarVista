@@ -4,7 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
-import { ArrowRight, LogOut, PanelLeftClose, PanelLeftOpen, Search, Ship } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Ship,
+} from "lucide-react";
 import type { UserRole } from "@prisma/client";
 import { Logo } from "@/components/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +21,7 @@ import { isNavItemActive, navigationFor, type NavItem } from "@/lib/navigation";
 import { openCommandPalette } from "@/lib/ui-events";
 
 const COLLAPSE_KEY = "carvista:sidebar-collapsed";
+const CLOSED_SECTIONS_KEY = "carvista:sidebar-closed-sections";
 
 export interface AppSidebarProps {
   role: UserRole;
@@ -45,15 +54,39 @@ export function AppSidebar({
   const sections = navigationFor(role);
   const isDrawer = variant === "drawer";
   const [collapsed, setCollapsed] = useState(false);
+  const [closedSections, setClosedSections] = useState<string[]>([]);
   const navRef = useRef<HTMLElement>(null);
 
-  // The tree is long enough that Admin and Business sit below the fold. Bring
-  // the current page into view on mount so a user always knows where they are.
+  // Restore which sections the user folded away. Read after mount so the
+  // server and first client render agree.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(CLOSED_SECTIONS_KEY);
+      if (raw) setClosedSections(JSON.parse(raw));
+    } catch {
+      // Corrupt or unavailable storage just means "nothing folded".
+    }
+  }, []);
+
+  const toggleSection = useCallback((id: string) => {
+    setClosedSections((prev) => {
+      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
+      try {
+        window.localStorage.setItem(CLOSED_SECTIONS_KEY, JSON.stringify(next));
+      } catch {
+        // Preference is a nicety; failing to persist it must not break nav.
+      }
+      return next;
+    });
+  }, []);
+
+  // Even with sections folded, an admin's open section can outrun the panel.
+  // Bring the current page into view so a user always knows where they are.
   useEffect(() => {
     navRef.current
       ?.querySelector<HTMLElement>('[aria-current="page"]')
       ?.scrollIntoView({ block: "nearest" });
-  }, [pathname]);
+  }, [pathname, closedSections]);
 
   // Read the stored preference after mount so the server and the first client
   // render agree; otherwise the sidebar snaps width on hydration.
@@ -154,27 +187,47 @@ export function AppSidebar({
           isCollapsed ? "px-3" : "px-4",
         )}
       >
-        {sections.map((section) => (
-          <div key={section.id}>
-            {!isCollapsed && (
-              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/35">
-                {section.label}
-              </p>
-            )}
-            <div className="space-y-1">
-              {section.items.map((item) => (
-                <SidebarLink
-                  key={`${section.id}:${item.href}`}
-                  item={item}
-                  active={isNavItemActive(pathname, item)}
-                  collapsed={isCollapsed}
-                  badgeCount={item.badge === "messages" ? unreadMessages : 0}
-                  onNavigate={onNavigate}
-                />
-              ))}
+        {sections.map((section) => {
+          const holdsCurrentPage = section.items.some((item) => isNavItemActive(pathname, item));
+          // A folded section still opens itself when you are inside it —
+          // otherwise the sidebar would hide where you currently are.
+          const open = isCollapsed || holdsCurrentPage || !closedSections.includes(section.id);
+
+          return (
+            <div key={section.id}>
+              {!isCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.id)}
+                  aria-expanded={open}
+                  className="group flex w-full items-center gap-1.5 rounded-lg px-3 pb-1.5 pt-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/35 transition-colors hover:text-white/70"
+                >
+                  <span className="flex-1 text-left">{section.label}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-3.5 w-3.5 shrink-0 transition-transform",
+                      !open && "-rotate-90",
+                    )}
+                  />
+                </button>
+              )}
+              {open && (
+                <div className="space-y-1">
+                  {section.items.map((item) => (
+                    <SidebarLink
+                      key={`${section.id}:${item.href}`}
+                      item={item}
+                      active={isNavItemActive(pathname, item)}
+                      collapsed={isCollapsed}
+                      badgeCount={item.badge === "messages" ? unreadMessages : 0}
+                      onNavigate={onNavigate}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Promo */}

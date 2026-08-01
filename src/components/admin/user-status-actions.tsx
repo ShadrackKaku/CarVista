@@ -34,10 +34,14 @@ export function UserStatusActions({ userId, status }: { userId: string; status: 
           Approve
         </AdminActionButton>
       )}
+      {/* Quiet until you reach for it. A solid red button on every row of a
+          long table reads as an alarm, not as an available action — the intent
+          is carried by the hover state and the confirm prompt instead. */}
       <AdminActionButton
         endpoint={endpoint}
         body={{ status: "SUSPENDED" }}
-        variant="destructive"
+        variant="ghost"
+        className="text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
         confirmMessage="Suspend this user? They won't be able to sign in."
         successMessage="User suspended"
       >

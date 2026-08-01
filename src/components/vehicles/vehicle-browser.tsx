@@ -299,12 +299,15 @@ export function VehicleBrowser({
         </div>
       </aside>
 
-      <div>
-        <div className="flex items-center justify-between gap-3">
+      {/* min-w-0 so the results column can shrink below its content's
+          intrinsic width — without it the toolbar row sizes the grid track and
+          pushes the page sideways on small screens. */}
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">{filtered.length}</span> vehicles found
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Mobile filter trigger */}
             <Sheet>
               <SheetTrigger asChild>
@@ -328,7 +331,7 @@ export function VehicleBrowser({
               <Bookmark className="h-4 w-4" /> Save search
             </Button>
             <Select value={sort} onValueChange={(v) => setSort(v as VehicleSort)}>
-              <SelectTrigger className="h-9 w-[170px]">
+              <SelectTrigger className="h-9 w-[150px] sm:w-[170px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
