@@ -13,6 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <AppShell
       role={user.role}
       userName={user.name}
+      userEmail={user.email}
       userImage={user.image}
       unreadMessages={unreadMessages}
     >
