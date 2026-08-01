@@ -31,7 +31,7 @@ export default async function AdminImportDetailPage({ params }: { params: { id: 
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">{req.ref}</h1>
+          <h2 className="font-display text-2xl font-bold">{req.ref}</h2>
           <p className="mt-1 text-muted-foreground">
             {req.vehicle} · {req.origin}
           </p>

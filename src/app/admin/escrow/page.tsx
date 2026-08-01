@@ -18,13 +18,8 @@ export default async function AdminEscrowPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="font-display text-2xl font-bold">Escrow</h1>
-      <p className="mt-1 text-muted-foreground">
-        Every milestone payment plan across imports — money collected, outstanding, and refunded.
-      </p>
-
       {/* Summary tiles */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-4">
         <Tile label="Collected" value={formatCurrency(totals.collected)} />
         <Tile label="Outstanding (active)" value={formatCurrency(totals.outstanding)} />
         <Tile label="Refunded" value={formatCurrency(totals.refunded)} />
@@ -32,7 +27,7 @@ export default async function AdminEscrowPage() {
       </div>
 
       {plans.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <ShieldCheck className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No escrow plans yet</p>
           <p className="mt-1 text-sm text-muted-foreground">

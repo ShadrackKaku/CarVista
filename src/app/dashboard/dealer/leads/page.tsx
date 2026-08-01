@@ -12,15 +12,8 @@ export default async function DealerLeadsPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Leads</h1>
-        <p className="mt-1 text-muted-foreground">
-          Buyers who reached out about your listings — newest first.
-        </p>
-      </div>
-
       {leads.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <MessageSquare className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No leads yet</p>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
@@ -28,7 +21,7 @@ export default async function DealerLeadsPage() {
           </p>
         </div>
       ) : (
-        <div className="mt-6 space-y-3">
+        <div className="space-y-3">
           {leads.map((lead) => (
             <Link
               key={lead.id}

@@ -11,10 +11,6 @@ export default async function EditBlogPostPage({ params }: { params: { id: strin
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Edit post</h1>
-        <p className="mt-1 text-muted-foreground">Update the article, then save or publish.</p>
-      </div>
       <BlogPostForm
         postId={post.id}
         initial={{

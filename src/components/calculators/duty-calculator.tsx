@@ -47,7 +47,10 @@ export function DutyCalculator({ exchangeRate = 15.5 }: { exchangeRate?: number 
   );
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr]">
+    // [&>*]:min-w-0 — grid items default to min-width:auto, so a wide input
+    // row inside a card would size the track and push the page sideways on
+    // small screens.
+    <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] [&>*]:min-w-0">
       {/* Inputs */}
       <div className="rounded-2xl border bg-card p-6 shadow-soft">
         <h2 className="flex items-center gap-2 text-lg font-semibold">

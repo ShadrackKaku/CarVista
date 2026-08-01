@@ -26,10 +26,6 @@ export default async function ImportsPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold">My Imports</h1>
-          <p className="mt-1 text-muted-foreground">Track your vehicle imports in real time.</p>
-        </div>
         <Button asChild variant="gradient">
           <Link href="/import">
             <Plus className="h-4 w-4" /> New import
@@ -38,7 +34,7 @@ export default async function ImportsPage() {
       </div>
 
       {imports.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <Ship className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No imports yet</p>
           <p className="mt-1 text-sm text-muted-foreground">

@@ -28,11 +28,6 @@ export default async function AdminOverviewPage() {
   const stats = await getAdminStats();
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Admin Overview</h1>
-        <p className="mt-1 text-muted-foreground">Platform-wide metrics and activity.</p>
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total users" value={formatNumber(stats.users)} icon={Users} />
         <StatCard label="Vehicle listings" value={formatNumber(stats.vehicles)} icon={Car} />

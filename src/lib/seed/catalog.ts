@@ -382,7 +382,11 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
         select: { id: true },
       });
       if (!hasPassport) {
-        const vin = created.vin || `CV-${created.id.slice(0, 12).toUpperCase()}`;
+        // Use the whole cuid, not a prefix: the first 12 characters are the
+        // timestamp block, so vehicles created in the same millisecond — which
+        // is all of them, since these are seeded in parallel batches — produce
+        // the same placeholder VIN and collide on the unique index.
+        const vin = created.vin || `CV-${created.id.toUpperCase()}`;
         const passport = await prisma.vehiclePassport.create({
           data: { vin, vehicleId: created.id, make: v.make, model: v.modelName, year: v.year },
           select: { id: true },

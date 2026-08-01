@@ -74,18 +74,29 @@ const config: Config = {
           950: "#20214a",
         },
       },
+      // Two radii, not five. `--radius` is the control radius (buttons,
+      // inputs, chips); `2xl` is the surface radius (cards, panels, modals).
+      // Everything in between resolves to one of the two so the UI reads as a
+      // single system rather than a pile of components.
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 2px)",
+        lg: "var(--radius)",
+        xl: "var(--radius)",
+        "2xl": "1.125rem",
+        "3xl": "1.125rem",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         display: ["var(--font-display)", "system-ui", "sans-serif"],
       },
+      // One elevation, used everywhere. `soft` and `card` are aliases kept so
+      // existing markup picks the new look up for free; `lift` is its hover
+      // partner, and `glow` stays reserved for brand CTAs.
       boxShadow: {
-        soft: "0 2px 8px -2px rgba(32, 33, 74, 0.08), 0 4px 16px -4px rgba(32, 33, 74, 0.08)",
-        card: "0 1px 3px rgba(32, 33, 74, 0.06), 0 8px 24px -12px rgba(32, 33, 74, 0.12)",
+        soft: "0 1px 2px rgba(32, 33, 74, 0.04), 0 8px 24px -14px rgba(32, 33, 74, 0.14)",
+        card: "0 1px 2px rgba(32, 33, 74, 0.04), 0 8px 24px -14px rgba(32, 33, 74, 0.14)",
+        lift: "0 2px 4px rgba(32, 33, 74, 0.05), 0 16px 40px -18px rgba(32, 33, 74, 0.22)",
         glow: "0 10px 40px -12px rgba(90, 95, 224, 0.45)",
       },
       keyframes: {

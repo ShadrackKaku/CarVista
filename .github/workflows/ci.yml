@@ -19,12 +19,30 @@ jobs:
     name: Typecheck · Lint · Build
     runs-on: ubuntu-latest
 
+    # A throwaway Postgres so the responsive check exercises real pages. Without
+    # it the data-backed routes render the error boundary, and a check that only
+    # ever sees an error page proves nothing. Nothing here is a secret: the
+    # database is created, used and destroyed inside this runner.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: carvista
+          POSTGRES_PASSWORD: carvista
+          POSTGRES_DB: carvista
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U carvista -d carvista"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
-      # Dummy values so `prisma generate` and `next build` don't fail.
-      # No real database is contacted — data pages are dynamic and are not
-      # pre-rendered during the build.
-      DATABASE_URL: "postgresql://user:password@localhost:5432/carvista?schema=public"
+      DATABASE_URL: "postgresql://carvista:carvista@localhost:5432/carvista?schema=public"
+      DIRECT_URL: "postgresql://carvista:carvista@localhost:5432/carvista?schema=public"
       NEXTAUTH_SECRET: "ci-placeholder-secret"
+      NEXTAUTH_URL: "http://localhost:3000"
       NEXT_TELEMETRY_DISABLED: "1"
 
     steps:
@@ -56,5 +74,47 @@ jobs:
       - name: Test
         run: npm test
 
+      # Before the build, so prerendering meets a real schema instead of
+      # logging "relation does not exist" for every data-backed page. The row
+      # counts are echoed because a silently-empty database would make the
+      # responsive check below pass against nothing but error boundaries.
+      - name: Prepare the database
+        run: |
+          npm run prisma:deploy
+          npm run db:seed
+          node -e "
+            const { PrismaClient } = require('@prisma/client');
+            const p = new PrismaClient();
+            Promise.all([p.vehicle.count(), p.part.count(), p.dealer.count()])
+              .then(([v, pa, d]) => {
+                console.log(\`seeded: \${v} vehicles, \${pa} parts, \${d} dealers\`);
+                if (v === 0) { console.error('✗ seed produced no vehicles'); process.exit(1); }
+              })
+              .finally(() => p.\$disconnect());
+          "
+
       - name: Build
         run: npm run build
+
+      # The CLI version must match the installed playwright-core, or it lays
+      # down a browser revision playwright-core does not look for — which is
+      # how the check came up "no Chromium found" and skipped itself.
+      - name: Install Chromium
+        run: |
+          PW_VERSION=$(node -p "require('playwright-core/package.json').version")
+          echo "Installing Chromium for playwright-core $PW_VERSION"
+          npx --yes "playwright@$PW_VERSION" install --with-deps chromium
+
+      # `output: standalone` means `next start` is not the supported entry
+      # point; the standalone server needs static assets copied beside it.
+      - name: Responsive check
+        # 65 page loads should take well under a minute. A budget means a
+        # wedged server surfaces as a timeout instead of holding the job open
+        # until the runner's own limit.
+        timeout-minutes: 8
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+          node .next/standalone/server.js &
+          npx --yes wait-on -t 90000 http://localhost:3000
+          npm run test:responsive

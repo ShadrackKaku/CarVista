@@ -16,12 +16,6 @@ export default async function SellerProductsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Products</h1>
-          <p className="mt-1 text-muted-foreground">
-            {formatNumber(products.length)} product{products.length === 1 ? "" : "s"} in your store.
-          </p>
-        </div>
         <Button asChild variant="gradient">
           <Link href="/dashboard/seller/products/new">
             <Plus className="h-4 w-4" /> Add product

@@ -25,11 +25,6 @@ export default async function DealerAnalyticsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Analytics</h1>
-        <p className="mt-1 text-muted-foreground">How your inventory is performing.</p>
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Active listings" value={stats?.active ?? 0} icon={Car} />
         <StatCard label="Total views" value={formatNumber(stats?.totalViews ?? 0)} icon={Eye} />

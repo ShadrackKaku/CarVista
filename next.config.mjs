@@ -1,3 +1,12 @@
+// Next's dev server compiles modules with eval-based source maps and drives
+// Fast Refresh through eval, so without 'unsafe-eval' the client bundle never
+// executes locally and nothing hydrates — every button is inert. Production
+// keeps the strict policy; this widening applies to `next dev` only.
+const isDev = process.env.NODE_ENV === "development";
+const scriptSrc = isDev
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+  : "script-src 'self' 'unsafe-inline'";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -42,7 +51,7 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' blob: data: https:",
               "font-src 'self' data:",

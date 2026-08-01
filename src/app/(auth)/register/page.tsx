@@ -8,7 +8,11 @@ export const metadata: Metadata = {
   description: "Create your free CarVista account.",
 };
 
-export default function RegisterPage() {
+export default function RegisterPage({
+  searchParams,
+}: {
+  searchParams: { callbackUrl?: string };
+}) {
   return (
     <div>
       <h1 className="font-display text-2xl font-bold">Create your account</h1>
@@ -23,7 +27,7 @@ export default function RegisterPage() {
           <span className="text-xs uppercase text-muted-foreground">or</span>
           <span className="h-px flex-1 bg-border" />
         </div>
-        <RegisterForm />
+        <RegisterForm callbackUrl={searchParams.callbackUrl} />
       </div>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">

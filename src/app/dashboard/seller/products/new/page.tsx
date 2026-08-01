@@ -10,12 +10,6 @@ export default async function NewProductPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">List a product</h1>
-        <p className="mt-1 text-muted-foreground">
-          Add a part to your store. Parts-seller listings go live instantly.
-        </p>
-      </div>
       <ListPartForm />
     </div>
   );

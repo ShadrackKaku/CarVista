@@ -21,10 +21,6 @@ export default async function SellerDashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Seller Dashboard</h1>
-          <p className="mt-1 text-muted-foreground">Manage your store, products and orders.</p>
-        </div>
         <Button asChild variant="gradient">
           <Link href="/dashboard/seller/products">
             <Plus className="h-4 w-4" /> Add product

@@ -18,22 +18,18 @@ export default async function AdminVerificationsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex items-center gap-2">
-        <ShieldCheck className="h-6 w-6 text-brand-600" />
-        <h1 className="font-display text-2xl font-bold">Dealer verifications</h1>
-      </div>
-      <p className="mt-1 text-muted-foreground">
+      <p className="text-muted-foreground">
         {pending} pending review{pending === 1 ? "" : "s"}. Approving turns on the dealer&apos;s trust
         badge.
       </p>
 
       {rows.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <ShieldCheck className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No submissions yet</p>
         </div>
       ) : (
-        <div className="mt-8 space-y-4">
+        <div className="space-y-4">
           {rows.map((v) => (
             <div key={v.id} className="rounded-2xl border bg-card p-5 shadow-soft">
               <div className="flex flex-wrap items-center justify-between gap-3">

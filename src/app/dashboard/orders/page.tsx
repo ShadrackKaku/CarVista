@@ -24,11 +24,8 @@ export default async function OrdersPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="font-display text-2xl font-bold">My Orders</h1>
-      <p className="mt-1 text-muted-foreground">Your parts orders and their status.</p>
-
       {orders.length > 0 ? (
-        <div className="mt-8 space-y-4">
+        <div className="space-y-4">
           {orders.map((order) => (
             <div
               key={order.number}

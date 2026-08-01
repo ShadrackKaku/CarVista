@@ -18,19 +18,15 @@ export default async function AdminInspectionsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex items-center gap-2">
-        <ClipboardCheck className="h-6 w-6 text-brand-600" />
-        <h1 className="font-display text-2xl font-bold">Inspections</h1>
-      </div>
-      <p className="mt-1 text-muted-foreground">Manage inspection bookings and file reports.</p>
+      <p className="text-muted-foreground">Manage inspection bookings and file reports.</p>
 
       {rows.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <ClipboardCheck className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No inspection bookings yet</p>
         </div>
       ) : (
-        <div className="mt-8 overflow-hidden rounded-2xl border bg-card shadow-soft">
+        <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">

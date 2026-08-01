@@ -25,17 +25,13 @@ export default async function InspectionsPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Inspections</h1>
-          <p className="mt-1 text-muted-foreground">Your booked inspections and their reports.</p>
-        </div>
         <Button asChild variant="outline">
           <Link href="/services">Book an inspection</Link>
         </Button>
       </div>
 
       {inspections.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <ClipboardCheck className="h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">No inspections yet</p>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">

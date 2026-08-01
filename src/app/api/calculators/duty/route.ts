@@ -42,8 +42,10 @@ export async function POST(req: Request) {
           vatRate: dutyRate.vatRate,
           nhilRate: dutyRate.nhilRate,
           getfundRate: dutyRate.getfundRate,
-          covidLevyRate: dutyRate.covidLevyRate,
           ecowasLevyRate: dutyRate.ecowasLevyRate,
+          auLevyRate: dutyRate.auLevyRate,
+          eximLevyRate: dutyRate.eximLevyRate,
+          specialImportLevyRate: dutyRate.specialImportLevyRate,
           examinationFee: dutyRate.examinationFee,
           networkCharge: dutyRate.networkCharge,
         };
@@ -81,7 +83,10 @@ export async function POST(req: Request) {
             vat: li("vat"),
             nhil: li("nhil"),
             getfund: li("getfund"),
-            otherLevies: li("covid") + li("ecowas") + li("examination") + li("network"),
+            // Everything that isn't duty or the VAT family on the goods value.
+            otherLevies: result.taxLineItems
+              .filter((x) => !["importDuty", "vat", "nhil", "getfund"].includes(x.key))
+              .reduce((sum, x) => sum + x.amount, 0),
             processingFees: result.logisticsSubtotal,
             totalLandedCost: result.totalLandedCost,
           },

@@ -20,6 +20,7 @@ export function AdminActionButton({
   successMessage,
   variant = "outline",
   size = "sm",
+  className,
 }: {
   endpoint: string;
   method?: "PATCH" | "POST" | "DELETE";
@@ -29,6 +30,7 @@ export function AdminActionButton({
   successMessage?: string;
   variant?: ButtonProps["variant"];
   size?: ButtonProps["size"];
+  className?: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -57,7 +59,7 @@ export function AdminActionButton({
   }
 
   return (
-    <Button variant={variant} size={size} onClick={run} disabled={loading}>
+    <Button variant={variant} size={size} className={className} onClick={run} disabled={loading}>
       {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       {children}
     </Button>

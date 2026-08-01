@@ -39,7 +39,7 @@ export default async function CustomerImportDetailPage({ params }: { params: { i
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">{imp.vehicle}</h1>
+          <h2 className="font-display text-2xl font-bold">{imp.vehicle}</h2>
           <p className="mt-1 text-muted-foreground">
             Ref {imp.ref} · From {imp.origin}
             {imp.estimatedArrival ? ` · ETA ${formatDate(imp.estimatedArrival)}` : ""}

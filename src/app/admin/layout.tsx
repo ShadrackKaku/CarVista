@@ -1,39 +1,24 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Home } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { getInitials } from "@/lib/utils";
+import { getUnreadMessageCount } from "@/lib/queries";
+import { AppShell } from "@/components/shell/app-shell";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login?callbackUrl=/admin");
   if (user.role !== "ADMIN") redirect("/dashboard");
 
+  const unreadMessages = await getUnreadMessageCount(user.id);
+
   return (
-    <div className="flex min-h-screen bg-muted/20">
-      <DashboardSidebar role="ADMIN" />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/85 px-5 backdrop-blur-lg">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-              <Home className="h-4 w-4" /> Back to site
-            </Link>
-            <Badge variant="brand">Admin</Badge>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Avatar className="h-9 w-9 border">
-              <AvatarImage src={user.image ?? undefined} alt={user.name ?? "Admin"} />
-              <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-            </Avatar>
-          </div>
-        </header>
-        <main className="flex-1 p-5 sm:p-8">{children}</main>
-      </div>
-    </div>
+    <AppShell
+      role="ADMIN"
+      userName={user.name}
+      userEmail={user.email}
+      userImage={user.image}
+      unreadMessages={unreadMessages}
+    >
+      {children}
+    </AppShell>
   );
 }

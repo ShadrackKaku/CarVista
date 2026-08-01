@@ -11,10 +11,7 @@ export default async function AdminPartsPage() {
   const parts = await getParts();
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="font-display text-2xl font-bold">Parts</h1>
-      <p className="mt-1 text-muted-foreground">All parts listed on the platform.</p>
-
-      <div className="mt-8 overflow-hidden rounded-2xl border bg-card shadow-soft">
+      <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
