@@ -27,7 +27,7 @@ export function BuyNowButton({
     e.stopPropagation();
     setLoading(true);
     addItem(toCartItem(part), 1);
-    router.push("/checkout");
+    router.push("/app/marketplace/checkout");
   }
 
   return (

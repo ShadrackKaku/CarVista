@@ -34,6 +34,10 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/app/marketplace/searches", { title: "Saved searches", subtitle: "We'll alert you when new matches land." }],
   ["/app/marketplace/listings", { title: "My listings", subtitle: "Every vehicle you have on the market." }],
   ["/app/marketplace/listings/new", { title: "List a vehicle", subtitle: "Photos, specs and price — it's free to list." }],
+  ["/app/marketplace/listings/:id/edit", { title: "Edit listing", subtitle: "Update details, photos and price." }],
+  ["/app/marketplace/cart", { title: "Cart", subtitle: "Parts you're ready to buy." }],
+  ["/app/marketplace/checkout", { title: "Checkout", subtitle: "Delivery details and payment." }],
+  ["/app/marketplace/checkout/verify", { title: "Payment", subtitle: "Confirming your order with Paystack." }],
 
   // ── Calculators module ─────────────────────────────────────────
   ["/app/calculators", { title: "Calculators", subtitle: "Price an import before you commit." }],
