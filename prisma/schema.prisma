@@ -17,11 +17,23 @@ datasource db {
 // ══════════════════════════════════════════════════════════════
 
 enum UserRole {
-  CUSTOMER
+  /// Every new account. Specialised roles are granted by approval, never by
+  /// self-selection at sign-up — see RoleApplication.
+  USER
   DEALER
   PARTS_SELLER
   SERVICE_PROVIDER
+  SUPPLIER
+  IMPORTER
   ADMIN
+  SUPER_ADMIN
+}
+
+enum RoleApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
 }
 
 enum UserStatus {
@@ -38,7 +50,7 @@ model User {
   hashedPassword String?
   image          String?
   phone          String?
-  role           UserRole   @default(CUSTOMER)
+  role           UserRole   @default(USER)
   status         UserStatus @default(ACTIVE)
   city           String?
   region         String?
@@ -75,6 +87,8 @@ model User {
   savedSearches         SavedSearch[]
   dutyAssessments       DutyAssessment[]     @relation("AssessmentSubmitter")
   reviewedAssessments   DutyAssessment[]     @relation("AssessmentReviewer")
+  roleApplications      RoleApplication[]    @relation("RoleApplicant")
+  reviewedApplications  RoleApplication[]    @relation("RoleApplicationReviewer")
 
   @@index([role])
   @@index([email])
@@ -1421,4 +1435,42 @@ model SiteSetting {
   id    String @id @default(cuid())
   key   String @unique
   value String @db.Text
+}
+
+/// A request to be granted a specialised role.
+///
+/// Registration creates a plain USER and nothing else. Becoming a dealer, a
+/// parts seller, a service provider, a supplier or an importer goes through
+/// here: the applicant states their case, an administrator approves or rejects
+/// it, and only an approval writes the new role onto the account. Nothing in
+/// the request body can set `status` or `requestedRole` to an administrative
+/// role — the API rejects both.
+model RoleApplication {
+  id            String                @id @default(cuid())
+  userId        String
+  requestedRole UserRole
+  status        RoleApplicationStatus @default(PENDING)
+
+  /// What the applicant told us. Which of these matter depends on the role, so
+  /// they are all optional here and required per-role by the zod schema.
+  businessName      String?
+  businessRegNumber String?
+  phone             String?
+  city              String?
+  region            String?
+  message           String? @db.Text
+  documentUrls      String[]
+
+  reviewerId String?
+  reviewNote String?   @db.Text
+  reviewedAt DateTime?
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User  @relation("RoleApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("RoleApplicationReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([status, submittedAt])
+  @@index([userId])
 }

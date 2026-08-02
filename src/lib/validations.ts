@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { APPLICABLE_ROLES, ROLE_PROFILES } from "@/lib/roles";
 
 // ── Auth ──────────────────────────────────────────────────────
 export const registerSchema = z
@@ -24,6 +25,55 @@ export const registerSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
+  });
+
+/**
+ * Applying for a specialised role.
+ *
+ * `requestedRole` is checked against APPLICABLE_ROLES rather than against the
+ * whole enum, so ADMIN and SUPER_ADMIN are unreachable through this path no
+ * matter what is posted. `status` is absent on purpose: only a reviewer sets it.
+ *
+ * The per-role required fields live in ROLE_PROFILES; `refine` reads them from
+ * there so the form and the API cannot disagree about what is mandatory.
+ */
+export const roleApplicationSchema = z
+  .object({
+    requestedRole: z.enum(APPLICABLE_ROLES),
+    businessName: z.string().trim().max(120).optional().or(z.literal("")),
+    businessRegNumber: z.string().trim().max(60).optional().or(z.literal("")),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^(\+?233|0)[0-9]{9}$/, "Enter a valid Ghana phone number")
+      .optional()
+      .or(z.literal("")),
+    city: z.string().trim().max(80).optional().or(z.literal("")),
+    region: z.string().trim().max(80).optional().or(z.literal("")),
+    message: z.string().trim().max(2000).optional().or(z.literal("")),
+    documentUrls: z.array(z.string().url("Each document must be a URL")).max(6).optional(),
+  })
+  .superRefine((data, ctx) => {
+    for (const field of ROLE_PROFILES[data.requestedRole].requires) {
+      if (!data[field]) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: "Required for this role",
+        });
+      }
+    }
+  });
+
+/** A reviewer's decision. Approving is what writes the role onto the account. */
+export const roleApplicationReviewSchema = z
+  .object({
+    action: z.enum(["APPROVE", "REJECT"]),
+    reviewNote: z.string().trim().max(2000).optional().or(z.literal("")),
+  })
+  .refine((d) => d.action !== "REJECT" || !!d.reviewNote, {
+    message: "Tell the applicant why, so they can fix it and re-apply",
+    path: ["reviewNote"],
   });
 
 export const loginSchema = z.object({
@@ -459,3 +509,5 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type DutyCalcInput = z.infer<typeof dutyCalcSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
 export type ImportRequestInput = z.infer<typeof importRequestSchema>;
+export type RoleApplicationInput = z.infer<typeof roleApplicationSchema>;
+export type RoleApplicationReviewInput = z.infer<typeof roleApplicationReviewSchema>;

@@ -47,13 +47,13 @@ describe("navigationFor", () => {
 
   it("keeps every signed-in nav target inside the authenticated app", () => {
     const publicPrefixes = ["/vehicles", "/parts", "/dealers", "/services", "/calculators"];
-    for (const href of hrefsFor("CUSTOMER")) {
+    for (const href of hrefsFor("USER")) {
       expect(publicPrefixes.some((p) => href === p || href.startsWith(`${p}/`))).toBe(false);
     }
   });
 
   it("gives a customer their garage but no business or admin section", () => {
-    const ids = sectionIds("CUSTOMER");
+    const ids = sectionIds("USER");
     expect(ids).toContain("garage");
     expect(ids).not.toContain("business");
     expect(ids).not.toContain("admin");
@@ -76,14 +76,14 @@ describe("navigationFor", () => {
     // Selling a car is not a dealer privilege — POST /api/vehicles has always
     // accepted any signed-in seller, and the page behind this link is keyed on
     // sellerId. Dealer-only tooling stays in the Business section.
-    for (const role of ["CUSTOMER", "DEALER", "PARTS_SELLER"] as const) {
+    for (const role of ["USER", "DEALER", "PARTS_SELLER"] as const) {
       expect(hrefsFor(role)).toContain("/app/marketplace/listings");
     }
   });
 
   it("keeps the admin section to admins", () => {
     expect(sectionIds("ADMIN")).toContain("admin");
-    for (const role of ["CUSTOMER", "DEALER", "PARTS_SELLER", "SERVICE_PROVIDER"] as const) {
+    for (const role of ["USER", "DEALER", "PARTS_SELLER", "SERVICE_PROVIDER"] as const) {
       expect(hrefsFor(role)).not.toContain("/admin/users");
     }
   });
@@ -94,7 +94,7 @@ describe("navigationFor", () => {
   });
 
   it("mirrors the tool registry into the Tools section", () => {
-    const tools = navigationFor("CUSTOMER").find((s) => s.id === "tools")!;
+    const tools = navigationFor("USER").find((s) => s.id === "tools")!;
     for (const tool of TOOLS) {
       expect(tools.items.some((item) => item.href === tool.href)).toBe(true);
     }
@@ -107,7 +107,7 @@ describe("navigationFor", () => {
 describe("every navigable href resolves to a real route", () => {
   // A sidebar or rail entry that 404s is invisible in a typecheck and in a
   // build — only a click finds it. This pins them to the file tree instead.
-  const roles = [null, "CUSTOMER", "DEALER", "PARTS_SELLER", "SERVICE_PROVIDER", "ADMIN"] as const;
+  const roles = [null, "USER", "DEALER", "PARTS_SELLER", "SERVICE_PROVIDER", "ADMIN"] as const;
 
   it("finds the app directory (guards the test itself)", () => {
     expect(ROUTES.size).toBeGreaterThan(20);
@@ -152,7 +152,7 @@ describe("homeHrefFor", () => {
     expect(homeHrefFor("ADMIN")).toBe("/admin");
     expect(homeHrefFor("DEALER")).toBe("/dashboard/dealer");
     expect(homeHrefFor("PARTS_SELLER")).toBe("/dashboard/seller");
-    expect(homeHrefFor("CUSTOMER")).toBe("/dashboard");
+    expect(homeHrefFor("USER")).toBe("/dashboard");
     expect(homeHrefFor(null)).toBe("/");
   });
 });

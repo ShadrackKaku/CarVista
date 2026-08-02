@@ -64,7 +64,7 @@ export interface NavSection {
 
 const DEALER_ONLY: UserRole[] = ["DEALER"];
 const SELLER_ONLY: UserRole[] = ["PARTS_SELLER"];
-const ADMIN_ONLY: UserRole[] = ["ADMIN"];
+const ADMIN_ONLY: UserRole[] = ["ADMIN", "SUPER_ADMIN"];
 
 const marketplace: NavSection = {
   id: "marketplace",
@@ -203,6 +203,7 @@ const admin: NavSection = {
     { label: "Parts", href: "/admin/parts", icon: Package },
     { label: "Dealers", href: "/admin/dealers", icon: Store },
     { label: "Verifications", href: "/admin/verifications", icon: BadgeCheck },
+    { label: "Role applications", href: "/admin/role-applications", icon: BadgeCheck },
     { label: "Inspections", href: "/admin/inspections", icon: ClipboardCheck },
     { label: "Orders", href: "/admin/orders", icon: Receipt },
     { label: "Imports", href: "/admin/imports", icon: Ship },
@@ -219,7 +220,16 @@ const account: NavSection = {
   id: "account",
   label: "Account",
   requiresAuth: true,
-  items: [{ label: "Profile & settings", href: "/dashboard/profile", icon: Settings }],
+  items: [
+    { label: "Profile & settings", href: "/dashboard/profile", icon: Settings },
+    {
+      label: "Upgrade my account",
+      href: "/dashboard/upgrade",
+      icon: BadgeCheck,
+      description: "Apply to become a dealer, seller, supplier or importer",
+      keywords: ["dealer", "seller", "supplier", "importer", "role", "apply", "upgrade"],
+    },
+  ],
 };
 
 const ALL_SECTIONS: NavSection[] = [marketplace, tools, garage, business, admin, account];
@@ -255,6 +265,7 @@ export function isNavItemActive(pathname: string, item: NavItem): boolean {
  */
 export function homeHrefFor(role: UserRole | null): string {
   switch (role) {
+    case "SUPER_ADMIN":
     case "ADMIN":
       return "/admin";
     case "DEALER":

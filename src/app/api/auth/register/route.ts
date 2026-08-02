@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         email: normalizedEmail,
         phone: phone || null,
         hashedPassword,
-        role: UserRole.CUSTOMER,
+        role: UserRole.USER,
       },
     });
 

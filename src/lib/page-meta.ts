@@ -54,6 +54,7 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/admin/parts", { title: "Parts", subtitle: "Every part listed by your vendors." }],
   ["/admin/dealers", { title: "Dealers", subtitle: "Dealer accounts and their standing." }],
   ["/admin/verifications", { title: "Dealer verifications", subtitle: "Review documents and approve dealers." }],
+  ["/admin/role-applications", { title: "Role applications", subtitle: "Approve or reject requests for specialised roles." }],
   ["/admin/inspections", { title: "Inspections", subtitle: "Requested and completed vehicle inspections." }],
   ["/admin/orders", { title: "Orders", subtitle: "Parts orders across the marketplace." }],
   ["/admin/imports", { title: "Import requests", subtitle: "Every import CarVista is handling." }],
@@ -93,6 +94,7 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/dashboard/inspections", { title: "Inspections", subtitle: "Independent checks you've requested." }],
   ["/dashboard/messages", { title: "Messages", subtitle: "Conversations with dealers and sellers." }],
   ["/dashboard/profile", { title: "Profile & settings", subtitle: "Your details, password and preferences." }],
+  ["/dashboard/upgrade", { title: "Upgrade my account", subtitle: "Apply for the role that matches what you do." }],
 ];
 
 function matches(pattern: string, pathname: string): boolean {

@@ -24,12 +24,14 @@ import {
   Ship,
   ShoppingBag,
   Store,
+  UserCheck,
   Users,
   Wallet,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@prisma/client";
+import { isAdmin, isDealer, isPartsSeller } from "@/lib/roles";
 
 /**
  * Application modules.
@@ -169,6 +171,12 @@ const garage: AppModule = {
     { label: "Inspections", href: "/dashboard/inspections", icon: ClipboardCheck },
     { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
     { label: "Profile & settings", href: "/dashboard/profile", icon: Settings },
+    {
+      label: "Upgrade my account",
+      href: "/dashboard/upgrade",
+      icon: BadgeCheck,
+      description: "Apply to become a dealer, seller, supplier or importer",
+    },
   ],
 };
 
@@ -229,6 +237,7 @@ const admin: AppModule = {
     { label: "Parts", href: "/admin/parts", icon: Package },
     { label: "Dealers", href: "/admin/dealers", icon: Store },
     { label: "Verifications", href: "/admin/verifications", icon: BadgeCheck },
+    { label: "Role applications", href: "/admin/role-applications", icon: UserCheck },
     { label: "Inspections", href: "/admin/inspections", icon: ClipboardCheck },
     { label: "Orders", href: "/admin/orders", icon: Receipt },
     { label: "Imports", href: "/admin/imports", icon: Ship },
@@ -283,9 +292,9 @@ export function moduleForPath(pathname: string): AppModule | null {
 export function modulesFor(role: UserRole | null): AppModule[] {
   if (!role) return [];
   return MODULES.filter((m) => {
-    if (m.id === "admin") return role === "ADMIN";
-    if (m.id === "dealer") return role === "DEALER" || role === "ADMIN";
-    if (m.id === "seller") return role === "PARTS_SELLER" || role === "ADMIN";
+    if (m.id === "admin") return isAdmin(role);
+    if (m.id === "dealer") return isDealer(role);
+    if (m.id === "seller") return isPartsSeller(role);
     return true;
   });
 }

@@ -1,6 +1,7 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import { shellTwinFor, SHELL_MIRROR_PREFIXES } from "@/lib/shell-mirrors";
+import { isAdmin, isDealer, isPartsSeller } from "@/lib/roles";
 
 /**
  * Two jobs.
@@ -33,21 +34,17 @@ export default withAuth(
     }
 
     // Admin area is admins-only.
-    if (pathname.startsWith("/admin") && role !== "ADMIN") {
+    if (pathname.startsWith("/admin") && !isAdmin(role)) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
     // Dealer area.
-    if (pathname.startsWith("/dashboard/dealer") && role !== "DEALER" && role !== "ADMIN") {
+    if (pathname.startsWith("/dashboard/dealer") && !isDealer(role)) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
     // Seller area.
-    if (
-      pathname.startsWith("/dashboard/seller") &&
-      role !== "PARTS_SELLER" &&
-      role !== "ADMIN"
-    ) {
+    if (pathname.startsWith("/dashboard/seller") && !isPartsSeller(role)) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 

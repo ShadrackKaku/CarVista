@@ -8,11 +8,14 @@ import { getInitials, formatDate } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 const roleVariant: Record<string, "brand" | "muted" | "secondary"> = {
+  SUPER_ADMIN: "brand",
   ADMIN: "brand",
   DEALER: "secondary",
   PARTS_SELLER: "secondary",
   SERVICE_PROVIDER: "secondary",
-  CUSTOMER: "muted",
+  SUPPLIER: "secondary",
+  IMPORTER: "secondary",
+  USER: "muted",
 };
 const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
   ACTIVE: "success",
