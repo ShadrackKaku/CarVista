@@ -151,6 +151,36 @@ const calculators: AppModule = {
   ],
 };
 
+const imports: AppModule = {
+  id: "imports",
+  label: "Imports",
+  short: "Imports",
+  icon: Ship,
+  basePath: "/app/imports",
+  blurb: "Source it, ship it, clear it — and know the cost before you commit.",
+  items: [
+    {
+      label: "Start an import",
+      href: "/app/imports/new",
+      icon: Plus,
+      description: "Tell us what you want and we'll quote it",
+    },
+    { label: "My imports", href: "/app/imports/mine", icon: Ship },
+    {
+      label: "Track a shipment",
+      href: "/app/imports/track",
+      icon: FileSearch,
+      description: "Look one up by its reference",
+    },
+    {
+      label: "Share a duty bill",
+      href: "/app/imports/duty-check",
+      icon: Landmark,
+      description: "Add a real ICUMS assessment",
+    },
+  ],
+};
+
 const garage: AppModule = {
   id: "garage",
   label: "My Garage",
@@ -166,7 +196,6 @@ const garage: AppModule = {
       exact: true,
       description: "What's happening with your account",
     },
-    { label: "My imports", href: "/dashboard/imports", icon: Ship },
     { label: "My orders", href: "/dashboard/orders", icon: ShoppingBag },
     { label: "Inspections", href: "/dashboard/inspections", icon: ClipboardCheck },
     { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
@@ -258,13 +287,13 @@ const admin: AppModule = {
  * grouping, not a directory, so bringing an existing area under one costs a
  * registry entry and moves no pages.
  *
- * Imports is the next to land here. It stays a Garage item until its own routes
- * exist — a module is only listed once it has somewhere to go, so the registry
- * never advertises navigation that dead-ends.
+ * A module is only listed once its routes exist, so the registry never
+ * advertises navigation that dead-ends.
  */
 export const MODULES: AppModule[] = [
   marketplace,
   calculators,
+  imports,
   dealerConsole,
   sellerConsole,
   garage,

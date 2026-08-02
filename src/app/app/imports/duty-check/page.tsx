@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Calculator, FileCheck2, ShieldCheck, TrendingUp } from "lucide-react";
-import { PageHeader } from "@/components/page-header";
 import { DutyAssessmentForm } from "@/components/import/duty-assessment-form";
 import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = {
-  title: "Duty Check — Share Your ICUMS Tax Bill",
-  description:
-    "Cleared a car through Tema or Takoradi? Share your ICUMS tax bill and help make Ghana's vehicle import duties transparent for every importer.",
-  alternates: { canonical: "/import/duty-check" },
-};
+export const metadata: Metadata = { title: "Share a duty bill" };
 
 const POINTS = [
   {
@@ -33,11 +27,6 @@ const POINTS = [
 export default function DutyCheckPage() {
   return (
     <div>
-      <PageHeader
-        eyebrow="Import"
-        title="Share your duty bill — make importing fairer"
-        description="Cleared a vehicle recently? Enter what ICUMS actually charged. Together we're building Ghana's most accurate picture of real import duties."
-      />
       <div className="container-page py-10">
         <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
           <div>
@@ -58,7 +47,7 @@ export default function DutyCheckPage() {
                 Estimate duties and total landed cost before you buy.
               </p>
               <Button asChild size="sm" variant="outline" className="mt-3">
-                <Link href="/calculators/import-duty">Open the duty calculator</Link>
+                <Link href="/app/calculators/import-duty">Open the duty calculator</Link>
               </Button>
             </div>
           </aside>

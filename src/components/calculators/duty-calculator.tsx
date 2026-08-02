@@ -240,7 +240,7 @@ export function DutyCalculator({ exchangeRate = 15.5 }: { exchangeRate?: number 
 
         <div className="mt-4 flex gap-2">
           <Button asChild variant="gradient" className="flex-1">
-            <a href="/import">Start this import</a>
+            <a href="/app/imports/new">Start this import</a>
           </Button>
           <Button asChild variant="outline">
             <a href="/app/calculators/shipping">Shipping calculator</a>

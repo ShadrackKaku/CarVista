@@ -76,7 +76,7 @@ function VerifyInner() {
             <a href={`/dashboard/imports/${state.importRequestId}`}>View my import</a>
           </Button>
           <Button asChild variant="outline">
-            <a href="/dashboard/imports">All imports</a>
+            <a href="/app/imports/mine">All imports</a>
           </Button>
         </div>
       </div>

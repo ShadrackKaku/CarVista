@@ -39,6 +39,17 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/app/marketplace/checkout", { title: "Checkout", subtitle: "Delivery details and payment." }],
   ["/app/marketplace/checkout/verify", { title: "Payment", subtitle: "Confirming your order with Paystack." }],
 
+  // ── Imports module ─────────────────────────────────────────────
+  ["/app/imports/new", { title: "Start an import", subtitle: "Tell us what you want and we'll quote the landed cost." }],
+  ["/app/imports/mine", { title: "My imports", subtitle: "Every car you're bringing in, and where it is." }],
+  ["/app/imports/track", { title: "Track a shipment", subtitle: "Look up an import by its reference." }],
+  ["/app/imports/duty-check", { title: "Share a duty bill", subtitle: "Add a real ICUMS assessment and sharpen everyone's estimate." }],
+  ["/app/imports/escrow/verify", { title: "Payment", subtitle: "Confirming your escrow deposit." }],
+  ["/app/imports/:id", { title: "Import", subtitle: "Timeline, documents and landed cost." }],
+
+  // ── Search ─────────────────────────────────────────────────────
+  ["/app/search", { title: "Search", subtitle: "Cars, parts, services and dealers." }],
+
   // ── Calculators module ─────────────────────────────────────────
   ["/app/calculators", { title: "Calculators", subtitle: "Price an import before you commit." }],
   ["/app/calculators/import-duty", { title: "Landed cost", subtitle: "Duty, levies, shipping and clearing in one number." }],
@@ -88,8 +99,6 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/dashboard", { title: "Overview", subtitle: "What's happening with your account." }],
   ["/dashboard/saved", { title: "Saved vehicles", subtitle: "Cars you're keeping an eye on." }],
   ["/dashboard/searches", { title: "Saved searches", subtitle: "We'll alert you when new matches land." }],
-  ["/dashboard/imports", { title: "My imports", subtitle: "Track every car you're bringing in." }],
-  ["/dashboard/imports/:id", { title: "Import", subtitle: "Timeline, documents and landed cost." }],
   ["/dashboard/orders", { title: "My orders", subtitle: "Parts you've bought and their status." }],
   ["/dashboard/inspections", { title: "Inspections", subtitle: "Independent checks you've requested." }],
   ["/dashboard/messages", { title: "Messages", subtitle: "Conversations with dealers and sellers." }],

@@ -93,7 +93,7 @@ export function CommandPalette() {
   const go = useCallback(
     (index: number) => {
       if (index === searchRowIndex) {
-        router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+        router.push(`/app/search?q=${encodeURIComponent(trimmed)}`);
       } else {
         const entry = results[index];
         if (!entry) return;

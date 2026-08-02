@@ -26,8 +26,6 @@ const footerNav = [
     links: [
       { label: "Import a Car", href: "/import" },
       { label: "Calculators", href: "/calculators" },
-      { label: "Track My Import", href: "/import/track" },
-      { label: "Share Your Duty Bill", href: "/import/duty-check" },
     ],
   },
   {

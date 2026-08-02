@@ -27,7 +27,7 @@ export default async function ImportsPage() {
     <div className="mx-auto max-w-4xl">
       <div className="flex items-center justify-between">
         <Button asChild variant="gradient">
-          <Link href="/import">
+          <Link href="/app/imports/new">
             <Plus className="h-4 w-4" /> New import
           </Link>
         </Button>
@@ -41,7 +41,7 @@ export default async function ImportsPage() {
             Request a vehicle import and we'll source, ship and clear it for you.
           </p>
           <Button asChild variant="gradient" className="mt-5">
-            <Link href="/import">Start an import</Link>
+            <Link href="/app/imports/new">Start an import</Link>
           </Button>
         </div>
       ) : (

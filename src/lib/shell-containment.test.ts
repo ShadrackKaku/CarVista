@@ -29,17 +29,33 @@ const AUTHENTICATED_TREES = [
   "app/app",
   "app/dashboard",
   "app/admin",
+  "components/account",
+  "components/admin",
   "components/calculators",
   "components/dealer",
+  "components/import",
   "components/search",
+  "components/shell",
   "components/tools",
 ];
 
 /**
- * Public roots whose content now has an in-shell equivalent. `/import` is
- * absent on purpose — it is still a marketing page with no module behind it.
+ * Public roots whose content now has an in-shell equivalent.
+ *
+ * `/blog` is absent on purpose: reading an article is not authenticated work,
+ * so it has no in-shell twin and linking to it from the app is correct.
  */
-const PUBLIC_ROOTS = ["/vehicles", "/parts", "/dealers", "/services", "/calculators"];
+const PUBLIC_ROOTS = [
+  "/vehicles",
+  "/parts",
+  "/dealers",
+  "/services",
+  "/calculators",
+  "/import",
+  "/search",
+  "/cart",
+  "/checkout",
+];
 
 /** `href="/x"` and ``href={`/x/${id}`}`` — the two forms in this codebase. */
 const HREF = /href=(?:"([^"]*)"|\{`([^`]*)`)/g;

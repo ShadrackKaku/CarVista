@@ -142,13 +142,19 @@ describe("searchSite", () => {
     // The car matches 'toyota camry'; the part (Brake Pads) does not.
     const results = searchSite("toyota camry", data());
     expect(results.every((r) => r.type === "vehicle")).toBe(true);
-    expect(results[0].href).toBe("/vehicles/2018-toyota-camry");
+    expect(results[0].href).toBe("/app/marketplace/vehicles/2018-toyota-camry");
   });
 
-  it("points each result at its own detail page", () => {
-    expect(searchSite("brake", data())[0].href).toBe("/parts/toyota-brake-pads");
-    expect(searchSite("mechanic", data())[0].href).toBe("/services/accra-auto-care");
-    expect(searchSite("kumasi", data())[0].href).toBe("/dealers/prime-motors");
+  it("points each result at its in-shell detail page", () => {
+    // Search itself only exists inside the shell now, so a result that linked
+    // to the public copy would drop the user straight back out of it.
+    expect(searchSite("brake", data())[0].href).toBe("/app/marketplace/parts/toyota-brake-pads");
+    expect(searchSite("mechanic", data())[0].href).toBe(
+      "/app/marketplace/services/accra-auto-care",
+    );
+    expect(searchSite("kumasi", data())[0].href).toBe("/app/marketplace/dealers/prime-motors");
+    // The blog is the exception: reading an article is not authenticated work,
+    // so it stays on the public site where it is indexable.
     expect(searchSite("importing", data())[0].href).toBe("/blog/importing-cars-to-ghana");
   });
 

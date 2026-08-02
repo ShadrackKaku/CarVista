@@ -19,6 +19,11 @@
 /** Longest patterns first — `/vehicles/new` must win over `/vehicles/:slug`. */
 const EXACT: Record<string, string> = {
   "/vehicles/new": "/app/marketplace/listings/new",
+  "/import": "/app/imports",
+  "/import/track": "/app/imports/track",
+  "/import/duty-check": "/app/imports/duty-check",
+  "/import/escrow/verify": "/app/imports/escrow/verify",
+  "/search": "/app/search",
   "/cart": "/app/marketplace/cart",
   "/checkout": "/app/marketplace/checkout",
   "/checkout/verify": "/app/marketplace/checkout/verify",
@@ -41,6 +46,10 @@ export const SHELL_MIRROR_PREFIXES: string[] = [
   ...PREFIXES.map(([pub]) => pub),
   "/cart",
   "/checkout",
+  // `/import` keeps a public marketing page of its own; only a signed-in
+  // visitor is moved on to the module.
+  "/import",
+  "/search",
 ];
 
 /**

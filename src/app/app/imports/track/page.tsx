@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Loader2, PackageSearch, Search } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -52,11 +51,6 @@ export default function TrackImportPage() {
 
   return (
     <div>
-      <PageHeader
-        eyebrow="Vehicle Import"
-        title="Track your import"
-        description="Enter your import reference number to see the latest status of your vehicle."
-      />
       <div className="container-page py-10">
         <form onSubmit={onTrack} className="mx-auto flex max-w-xl gap-2">
           <Input
@@ -108,7 +102,7 @@ export default function TrackImportPage() {
             <div className="rounded-2xl border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
               Your reference number was sent to you when your import request was confirmed. Logged
               in?{" "}
-              <Link href="/dashboard/imports" className="font-medium text-brand-600 hover:underline">
+              <Link href="/app/imports/mine" className="font-medium text-brand-600 hover:underline">
                 View all your imports
               </Link>
               .

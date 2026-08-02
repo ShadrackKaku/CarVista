@@ -89,5 +89,8 @@ export const config = {
     "/calculators/:path*",
     "/cart",
     "/checkout/:path*",
+    "/import/:path*",
+    "/import",
+    "/search",
   ],
 };

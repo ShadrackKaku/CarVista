@@ -90,13 +90,6 @@ const marketplace: NavSection = {
       description: "Vehicles you have on the market",
       keywords: ["sell", "selling", "inventory"],
     },
-    {
-      label: "Import a car",
-      href: "/import",
-      icon: Ship,
-      description: "Source, ship, clear and deliver",
-      keywords: ["importing", "auction", "shipping"],
-    },
   ],
 };
 
@@ -140,7 +133,20 @@ const garage: NavSection = {
     },
     { label: "Saved vehicles", href: "/app/marketplace/saved", icon: Heart, keywords: ["wishlist", "favourites"] },
     { label: "Saved searches", href: "/app/marketplace/searches", icon: Bookmark, keywords: ["alerts"] },
-    { label: "My imports", href: "/dashboard/imports", icon: Ship },
+    { label: "My imports", href: "/app/imports/mine", icon: Ship },
+    {
+      label: "Start an import",
+      href: "/app/imports/new",
+      icon: Ship,
+      description: "Source, ship, clear and deliver",
+      keywords: ["importing", "auction", "shipping"],
+    },
+    {
+      label: "Track a shipment",
+      href: "/app/imports/track",
+      icon: Ship,
+      keywords: ["tracking", "reference", "where is my car"],
+    },
     { label: "My orders", href: "/dashboard/orders", icon: ShoppingBag },
     { label: "Inspections", href: "/dashboard/inspections", icon: ClipboardCheck },
     { label: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: "messages" },

@@ -23,7 +23,6 @@ export function generateMetadata({ searchParams }: { searchParams: { q?: string 
     // Search pages are per-query and near-infinite, so keep them out of the index.
     title: q ? `Search results for “${q}”` : "Search",
     description: "Search cars, parts, services and dealers across CarVista.",
-    alternates: { canonical: "/search" },
     robots: { index: false, follow: true },
   };
 }
@@ -75,7 +74,7 @@ export default async function SearchPage({
   const visibleTypes = activeType ? [activeType] : RESULT_TYPE_ORDER;
 
   return (
-    <div className="container-page py-10">
+    <div>
       <h1 className="font-display text-3xl font-bold tracking-tight">Search</h1>
 
       {/* On-page search bar — a plain GET form, so it works without JavaScript. */}
@@ -118,14 +117,14 @@ export default async function SearchPage({
           {total > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               <TypeChip
-                href={`/search?q=${encodeURIComponent(q)}`}
+                href={`/app/search?q=${encodeURIComponent(q)}`}
                 active={!activeType}
                 label={`All (${total})`}
               />
               {RESULT_TYPE_ORDER.filter((t) => groups[t].length > 0).map((t) => (
                 <TypeChip
                   key={t}
-                  href={`/search?q=${encodeURIComponent(q)}&type=${t}`}
+                  href={`/app/search?q=${encodeURIComponent(q)}&type=${t}`}
                   active={activeType === t}
                   label={`${RESULT_TYPE_LABELS_PLURAL[t]} (${groups[t].length})`}
                 />
@@ -150,7 +149,7 @@ export default async function SearchPage({
                       </h2>
                       {!activeType && items.length > PER_GROUP_CAP && (
                         <Link
-                          href={`/search?q=${encodeURIComponent(q)}&type=${t}`}
+                          href={`/app/search?q=${encodeURIComponent(q)}&type=${t}`}
                           className="text-sm font-medium text-brand-600 hover:underline"
                         >
                           See all {items.length}
@@ -176,13 +175,13 @@ export default async function SearchPage({
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/vehicles">Browse cars</Link>
+                  <Link href="/app/marketplace/vehicles">Browse cars</Link>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/parts">Browse parts</Link>
+                  <Link href="/app/marketplace/parts">Browse parts</Link>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/services">Browse services</Link>
+                  <Link href="/app/marketplace/services">Browse services</Link>
                 </Button>
               </div>
             </div>
