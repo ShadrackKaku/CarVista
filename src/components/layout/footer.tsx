@@ -25,9 +25,7 @@ const footerNav = [
     title: "Import",
     links: [
       { label: "Import a Car", href: "/import" },
-      { label: "Import Duty Calculator", href: "/calculators/import-duty" },
-      { label: "Shipping Calculator", href: "/calculators/shipping" },
-      { label: "Financing Calculator", href: "/calculators/financing" },
+      { label: "Calculators", href: "/calculators" },
       { label: "Track My Import", href: "/import/track" },
       { label: "Share Your Duty Bill", href: "/import/duty-check" },
     ],
@@ -36,6 +34,9 @@ const footerNav = [
     title: "Company",
     links: [
       { label: "About Us", href: "/about" },
+      { label: "Features", href: "/features" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Resources", href: "/resources" },
       { label: "Blog", href: "/blog" },
       { label: "Testimonials", href: "/testimonials" },
       { label: "FAQ", href: "/faq" },

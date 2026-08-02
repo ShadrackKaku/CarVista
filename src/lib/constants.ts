@@ -154,12 +154,19 @@ export const SERVICE_TYPES = [
   { value: "TYRE_SERVICE", label: "Tyre Services", icon: "CircleDot" },
 ] as const;
 
+/**
+ * The public site's own navigation.
+ *
+ * Signed-in visitors never see this — the middleware moves them into the shell,
+ * which has its own. So these are the pages that explain the product, plus the
+ * catalogue a visitor can browse before deciding to join.
+ */
 export const NAV_LINKS = [
   { label: "Buy a Car", href: "/vehicles" },
   { label: "Import a Car", href: "/import" },
   { label: "Car Parts", href: "/parts" },
-  { label: "Dealers", href: "/dealers" },
-  { label: "Services", href: "/services" },
-  { label: "Calculators", href: "/calculators/import-duty" },
-  { label: "Blog", href: "/blog" },
+  { label: "Features", href: "/features" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Calculators", href: "/calculators" },
+  { label: "Resources", href: "/resources" },
 ];
