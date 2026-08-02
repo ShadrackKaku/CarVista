@@ -1,7 +1,7 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import { shellTwinFor, SHELL_MIRROR_PREFIXES } from "@/lib/shell-mirrors";
-import { isAdmin, isDealer, isPartsSeller } from "@/lib/roles";
+import { isAdmin, isDealer, isPartsSeller, isSupplier } from "@/lib/roles";
 
 /**
  * Two jobs.
@@ -48,6 +48,11 @@ export default withAuth(
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
+    // Supplier area.
+    if (pathname.startsWith("/dashboard/supplier") && !isSupplier(role)) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+
     return NextResponse.next();
   },
   {
@@ -85,6 +90,7 @@ export const config = {
     "/vehicles/:path*",
     "/parts/:path*",
     "/dealers/:path*",
+    "/suppliers/:path*",
     "/services/:path*",
     "/calculators/:path*",
     "/cart",

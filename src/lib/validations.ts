@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { APPLICABLE_ROLES, ROLE_PROFILES } from "@/lib/roles";
+import { SUPPLIER_CATEGORIES } from "@/lib/suppliers";
 
 // ── Auth ──────────────────────────────────────────────────────
 export const registerSchema = z
@@ -75,6 +76,51 @@ export const roleApplicationReviewSchema = z
     message: "Tell the applicant why, so they can fix it and re-apply",
     path: ["reviewNote"],
   });
+
+/**
+ * A wholesale enquiry.
+ *
+ * `status` and `response` are absent: the buyer opens the conversation, the
+ * supplier answers it, and neither is settable from the other's request body.
+ */
+export const supplierEnquirySchema = z.object({
+  supplierId: z.string().min(1, "Missing supplier"),
+  item: z.string().trim().min(3, "Tell them what you need").max(200),
+  quantity: z.string().trim().max(80).optional().or(z.literal("")),
+  category: z.enum(SUPPLIER_CATEGORIES).optional().or(z.literal("")),
+  message: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
+/** The supplier's side: answer, or close it. */
+export const supplierEnquiryReplySchema = z
+  .object({
+    status: z.enum(["QUOTED", "CLOSED", "DECLINED"]),
+    response: z.string().trim().max(2000).optional().or(z.literal("")),
+  })
+  .refine((d) => d.status !== "QUOTED" || !!d.response, {
+    message: "A quote needs the actual quote in it",
+    path: ["response"],
+  });
+
+/** Editing your own supplier profile. */
+export const supplierProfileSchema = z.object({
+  businessName: z.string().trim().min(2, "Name your business").max(120),
+  description: z.string().trim().max(2000).optional().or(z.literal("")),
+  categories: z.array(z.enum(SUPPLIER_CATEGORIES)).max(6),
+  minimumOrder: z.string().trim().max(80).optional().or(z.literal("")),
+  servesRegions: z.array(z.string().trim().max(80)).max(20).optional(),
+  leadTimeDays: z.coerce.number().int().min(0).max(365).optional(),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^(\+?233|0)[0-9]{9}$/, "Enter a valid Ghana phone number")
+    .optional()
+    .or(z.literal("")),
+  whatsapp: z.string().trim().max(20).optional().or(z.literal("")),
+  website: z.string().trim().url("Enter a full URL").optional().or(z.literal("")),
+  city: z.string().trim().max(80).optional().or(z.literal("")),
+  region: z.string().trim().max(80).optional().or(z.literal("")),
+});
 
 export const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -511,3 +557,5 @@ export type ContactInput = z.infer<typeof contactSchema>;
 export type ImportRequestInput = z.infer<typeof importRequestSchema>;
 export type RoleApplicationInput = z.infer<typeof roleApplicationSchema>;
 export type RoleApplicationReviewInput = z.infer<typeof roleApplicationReviewSchema>;
+export type SupplierEnquiryInput = z.infer<typeof supplierEnquirySchema>;
+export type SupplierProfileInput = z.infer<typeof supplierProfileSchema>;

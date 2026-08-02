@@ -54,6 +54,11 @@ export function isPartsSeller(role: UserRole | null | undefined): boolean {
   return role === "PARTS_SELLER" || isAdmin(role);
 }
 
+/** Whether a role may run a wholesale supply business. */
+export function isSupplier(role: UserRole | null | undefined): boolean {
+  return role === "SUPPLIER" || isAdmin(role);
+}
+
 export interface RoleProfile {
   role: ApplicableRole;
   label: string;

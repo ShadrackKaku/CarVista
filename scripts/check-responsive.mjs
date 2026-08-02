@@ -39,6 +39,7 @@ const ROUTES = [
   "/vehicles",
   "/parts",
   "/dealers",
+  "/suppliers",
   "/services",
   "/calculators",
   "/features",
