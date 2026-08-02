@@ -29,6 +29,22 @@ enum UserRole {
   SUPER_ADMIN
 }
 
+enum SupplierCategory {
+  VEHICLES
+  PARTS
+  TYRES
+  LUBRICANTS
+  ACCESSORIES
+  EQUIPMENT
+}
+
+enum EnquiryStatus {
+  OPEN
+  QUOTED
+  CLOSED
+  DECLINED
+}
+
 enum RoleApplicationStatus {
   PENDING
   APPROVED
@@ -89,6 +105,8 @@ model User {
   reviewedAssessments   DutyAssessment[]     @relation("AssessmentReviewer")
   roleApplications      RoleApplication[]    @relation("RoleApplicant")
   reviewedApplications  RoleApplication[]    @relation("RoleApplicationReviewer")
+  supplier              Supplier?
+  supplierEnquiries     SupplierEnquiry[]    @relation("EnquiryBuyer")
 
   @@index([role])
   @@index([email])
@@ -1458,7 +1476,7 @@ model RoleApplication {
   phone             String?
   city              String?
   region            String?
-  message           String? @db.Text
+  message           String?  @db.Text
   documentUrls      String[]
 
   reviewerId String?
@@ -1473,4 +1491,72 @@ model RoleApplication {
 
   @@index([status, submittedAt])
   @@index([userId])
+}
+
+/// A wholesale supplier: sells to dealers and stores rather than to drivers.
+///
+/// Deliberately shaped like Dealer and PartsStore — same profile fields, same
+/// slug-and-verify pattern — because the marketplace renders all three through
+/// the same components and a fourth shape would mean a fourth set of them.
+model Supplier {
+  id            String             @id @default(cuid())
+  userId        String             @unique
+  businessName  String
+  slug          String             @unique
+  description   String?            @db.Text
+  logo          String?
+  coverImage    String?
+  phone         String?
+  whatsapp      String?
+  email         String?
+  website       String?
+  address       String?
+  city          String?
+  region        String?
+  categories    SupplierCategory[]
+  /// Free text: "20 units", "1 container", "GH¢50,000" — it varies by trade.
+  minimumOrder  String?
+  /// Regions they deliver to. Empty means nationwide.
+  servesRegions String[]
+  leadTimeDays  Int?
+  verified      Boolean            @default(false)
+  featured      Boolean            @default(false)
+  rating        Float              @default(0)
+  reviewCount   Int                @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enquiries SupplierEnquiry[]
+
+  @@index([verified, featured])
+  @@index([city])
+}
+
+/// A buyer asking a supplier to quote. The wholesale equivalent of an order:
+/// quantity and terms are negotiated, so this carries a conversation rather
+/// than a price.
+model SupplierEnquiry {
+  id          String            @id @default(cuid())
+  supplierId  String
+  buyerId     String
+  category    SupplierCategory?
+  /// What they want, in their own words.
+  item        String
+  quantity    String?
+  message     String?           @db.Text
+  status      EnquiryStatus     @default(OPEN)
+  /// The supplier's reply, once they have one.
+  response    String?           @db.Text
+  respondedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  buyer    User     @relation("EnquiryBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId, status])
+  @@index([buyerId])
 }

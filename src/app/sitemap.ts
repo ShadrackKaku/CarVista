@@ -23,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/parts",
     "/import",
     "/dealers",
+    "/suppliers",
     "/services",
     // The individual calculators moved into the authenticated app and their
     // old public URLs now 301 here, so only the marketing page is listed —

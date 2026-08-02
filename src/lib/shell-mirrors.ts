@@ -37,6 +37,7 @@ const PREFIXES: [publicPrefix: string, shellPrefix: string][] = [
   ["/vehicles", "/app/marketplace/vehicles"],
   ["/parts", "/app/marketplace/parts"],
   ["/dealers", "/app/marketplace/dealers"],
+  ["/suppliers", "/app/marketplace/suppliers"],
   ["/services", "/app/marketplace/services"],
   ["/calculators", "/app/calculators"],
 ];

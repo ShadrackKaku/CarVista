@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-guard";
 import { roleApplicationReviewSchema } from "@/lib/validations";
 import { isApplicableRole } from "@/lib/roles";
+import { provisionRoleProfile } from "@/lib/provision-role";
 
 /**
  * PATCH /api/admin/role-applications/[id] — approve or reject an application.
@@ -64,6 +65,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           where: { id: application.userId },
           data: { role: application.requestedRole },
         });
+        // The role and the thing it operates are one decision. Granting DEALER
+        // without a Dealer row leaves the console it unlocks with nothing to
+        // read and no way to create one.
+        await provisionRoleProfile(tx, application.userId, application.requestedRole, application);
       }
     });
 

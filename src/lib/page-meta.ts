@@ -28,6 +28,8 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/app/marketplace/parts/:id", { title: "Part", subtitle: "Fitment, condition and delivery." }],
   ["/app/marketplace/dealers", { title: "Dealers", subtitle: "Verified dealerships across Ghana." }],
   ["/app/marketplace/dealers/:id", { title: "Dealer", subtitle: "Their stock, standing and contact details." }],
+  ["/app/marketplace/suppliers", { title: "Suppliers", subtitle: "Wholesalers dealers and stores buy from." }],
+  ["/app/marketplace/suppliers/:id", { title: "Supplier", subtitle: "What they stock, their terms, and how to get a quote." }],
   ["/app/marketplace/services", { title: "Services", subtitle: "Garages, inspectors and specialists near you." }],
   ["/app/marketplace/services/:id", { title: "Service provider", subtitle: "What they do and how to book." }],
   ["/app/marketplace/saved", { title: "Saved vehicles", subtitle: "Cars you're keeping an eye on." }],
@@ -94,6 +96,11 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/dashboard/seller/products/:id/edit", { title: "Edit product" }],
   ["/dashboard/seller/orders", { title: "Orders", subtitle: "Orders placed with your store." }],
   ["/dashboard/seller/analytics", { title: "Analytics", subtitle: "Sales, views and stock movement." }],
+
+  // ── Supplier console ───────────────────────────────────────────
+  ["/dashboard/supplier", { title: "Supplier overview", subtitle: "Enquiries waiting on you." }],
+  ["/dashboard/supplier/enquiries", { title: "Enquiries", subtitle: "Buyers asking you to quote." }],
+  ["/dashboard/supplier/profile", { title: "My supplier profile", subtitle: "What buyers see, and how they filter to you." }],
 
   // ── My Garage ──────────────────────────────────────────────────
   ["/dashboard", { title: "Overview", subtitle: "What's happening with your account." }],

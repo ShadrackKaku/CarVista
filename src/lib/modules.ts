@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bookmark,
   Boxes,
+  Building2,
   Calculator,
   Car,
   ClipboardCheck,
@@ -31,7 +32,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@prisma/client";
-import { isAdmin, isDealer, isPartsSeller } from "@/lib/roles";
+import { isAdmin, isDealer, isPartsSeller, isSupplier } from "@/lib/roles";
 
 /**
  * Application modules.
@@ -93,6 +94,7 @@ const marketplace: AppModule = {
     { label: "Vehicles", href: "/app/marketplace/vehicles", icon: Car },
     { label: "Parts", href: "/app/marketplace/parts", icon: Package },
     { label: "Dealers", href: "/app/marketplace/dealers", icon: Store },
+    { label: "Suppliers", href: "/app/marketplace/suppliers", icon: Building2 },
     { label: "Services", href: "/app/marketplace/services", icon: Wrench },
     { label: "Saved vehicles", href: "/app/marketplace/saved", icon: Heart },
     { label: "Saved searches", href: "/app/marketplace/searches", icon: Bookmark },
@@ -252,6 +254,26 @@ const sellerConsole: AppModule = {
   ],
 };
 
+const supplierConsole: AppModule = {
+  id: "supplier",
+  label: "Supplier console",
+  short: "Supply",
+  icon: Building2,
+  basePath: "/dashboard/supplier",
+  blurb: "Your wholesale profile and the enquiries buyers send you.",
+  items: [
+    {
+      label: "Overview",
+      href: "/dashboard/supplier",
+      icon: LayoutGrid,
+      exact: true,
+      description: "Enquiries at a glance",
+    },
+    { label: "Enquiries", href: "/dashboard/supplier/enquiries", icon: MessageSquare },
+    { label: "My profile", href: "/dashboard/supplier/profile", icon: Settings },
+  ],
+};
+
 const admin: AppModule = {
   id: "admin",
   label: "Admin",
@@ -296,6 +318,7 @@ export const MODULES: AppModule[] = [
   imports,
   dealerConsole,
   sellerConsole,
+  supplierConsole,
   garage,
   admin,
 ];
@@ -324,6 +347,7 @@ export function modulesFor(role: UserRole | null): AppModule[] {
     if (m.id === "admin") return isAdmin(role);
     if (m.id === "dealer") return isDealer(role);
     if (m.id === "seller") return isPartsSeller(role);
+    if (m.id === "supplier") return isSupplier(role);
     return true;
   });
 }
@@ -337,4 +361,21 @@ export function moduleItemsFor(module: AppModule, role: UserRole | null): Module
 export function isModuleItemActive(pathname: string, item: ModuleNavItem): boolean {
   if (item.exact) return pathname === item.href;
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
+/**
+ * Paths that fold the main sidebar to its rail without belonging to a module.
+ *
+ * Search is the only one today. Its results span vehicles, parts, dealers,
+ * services and the blog, so claiming it for any single module would light up
+ * the wrong sidebar — but leaving it as the one page in the app with a
+ * different sidebar width is its own kind of wrong. It gets the rail and no
+ * module sidebar: the layout stays put, and nothing lies about where you are.
+ */
+const RAIL_ONLY_PATHS = ["/app/search"];
+
+/** Whether the main sidebar should be folded, module or not. */
+export function usesRail(pathname: string): boolean {
+  if (moduleForPath(pathname) !== null) return true;
+  return RAIL_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

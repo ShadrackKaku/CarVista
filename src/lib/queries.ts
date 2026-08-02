@@ -9,6 +9,7 @@
  * As real dealers/sellers add listings, those records take over automatically.
  */
 import { cache } from "react";
+import type { SupplierCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { formatNumber } from "@/lib/utils";
@@ -2082,6 +2083,94 @@ export async function getSitemapEntries(): Promise<SitemapEntries | null> {
       vehicles.length + parts.length + dealers.length + services.length + posts.length;
     if (total === 0) return null;
     return { vehicles, parts, dealers, services, posts };
+  } catch {
+    return null;
+  }
+}
+
+// ── Suppliers ─────────────────────────────────────────────────
+export interface SupplierRow {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  logo: string;
+  cover: string;
+  city: string;
+  region: string;
+  categories: string[];
+  minimumOrder: string | null;
+  servesRegions: string[];
+  leadTimeDays: number | null;
+  verified: boolean;
+  rating: number;
+  reviewCount: number;
+  phone: string | null;
+  whatsapp: string | null;
+  website: string | null;
+}
+
+const SUPPLIER_PLACEHOLDER_LOGO = "/placeholder-dealer.jpg";
+const SUPPLIER_PLACEHOLDER_COVER = "/placeholder-car.jpg";
+
+function mapSupplier(s: Prisma.SupplierGetPayload<object>): SupplierRow {
+  return {
+    id: s.id,
+    slug: s.slug,
+    name: s.businessName,
+    description: s.description ?? "",
+    logo: s.logo ?? SUPPLIER_PLACEHOLDER_LOGO,
+    cover: s.coverImage ?? SUPPLIER_PLACEHOLDER_COVER,
+    city: s.city ?? "",
+    region: s.region ?? "",
+    categories: s.categories,
+    minimumOrder: s.minimumOrder,
+    servesRegions: s.servesRegions,
+    leadTimeDays: s.leadTimeDays,
+    verified: s.verified,
+    rating: s.rating,
+    reviewCount: s.reviewCount,
+    phone: s.phone,
+    whatsapp: s.whatsapp,
+    website: s.website,
+  };
+}
+
+/**
+ * Suppliers, verified first.
+ *
+ * Unlike vehicles and parts there is no sample catalogue to fall back on: a
+ * wholesale directory with invented businesses in it would put buyers in touch
+ * with companies that do not exist. An empty list is the honest answer, and the
+ * page says so.
+ */
+export async function getSuppliers(category?: SupplierCategory): Promise<SupplierRow[]> {
+  try {
+    const rows = await prisma.supplier.findMany({
+      where: category ? { categories: { has: category } } : undefined,
+      orderBy: [{ verified: "desc" }, { featured: "desc" }, { rating: "desc" }],
+      take: 60,
+    });
+    return rows.map(mapSupplier);
+  } catch {
+    return [];
+  }
+}
+
+export const getSupplierBySlug = cache(async (slug: string): Promise<SupplierRow | null> => {
+  try {
+    const row = await prisma.supplier.findUnique({ where: { slug } });
+    return row ? mapSupplier(row) : null;
+  } catch {
+    return null;
+  }
+});
+
+/** The signed-in user's own supplier profile, for the console. */
+export async function getSupplierForUser(userId: string): Promise<SupplierRow | null> {
+  try {
+    const row = await prisma.supplier.findUnique({ where: { userId } });
+    return row ? mapSupplier(row) : null;
   } catch {
     return null;
   }

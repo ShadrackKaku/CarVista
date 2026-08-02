@@ -9,7 +9,7 @@ import type { UserRole } from "@prisma/client";
 import { Logo } from "@/components/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn, getInitials } from "@/lib/utils";
-import { moduleForPath, modulesFor, type AppModule } from "@/lib/modules";
+import { moduleForPath, modulesFor, usesRail, type AppModule } from "@/lib/modules";
 import { openCommandPalette } from "@/lib/ui-events";
 
 const COLLAPSE_KEY = "carvista:sidebar-collapsed";
@@ -74,8 +74,10 @@ export function AppSidebar({
   // can take the space (§10). It is never removed — every other module stays
   // one click away — and the user's own collapse preference is left untouched
   // for when they leave.
-  const insideModule = current !== null;
-  const isCollapsed = !isDrawer && (collapsed || insideModule);
+  // `usesRail` rather than `current !== null`: search folds the sidebar too,
+  // without claiming a module it does not belong to.
+  const folded = usesRail(pathname);
+  const isCollapsed = !isDrawer && (collapsed || folded);
 
   return (
     <aside
@@ -113,7 +115,7 @@ export function AppSidebar({
 
       {/* Inside a module the fold is not the user's choice, so offering to undo
           it would be a control that does nothing. */}
-      {!isDrawer && isCollapsed && !insideModule && (
+      {!isDrawer && isCollapsed && !folded && (
         <button
           type="button"
           onClick={toggle}
