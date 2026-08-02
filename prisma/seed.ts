@@ -37,7 +37,7 @@ async function main() {
       name: "Kwame Mensah",
       email: "customer@carvista.com.gh",
       hashedPassword: password,
-      role: UserRole.CUSTOMER,
+      role: UserRole.USER,
       emailVerified: new Date(),
     },
   });

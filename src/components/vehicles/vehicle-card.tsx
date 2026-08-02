@@ -20,10 +20,21 @@ const CONDITION_LABELS: Record<string, string> = {
   SALVAGE: "Salvage",
 };
 
-export function VehicleCard({ vehicle }: { vehicle: SampleVehicle }) {
+export interface VehicleCardProps {
+  vehicle: SampleVehicle;
+  /**
+   * Where the card links. Defaults to the public listing; the Marketplace
+   * module passes its own path so a click stays inside the shell instead of
+   * dropping the user back onto the marketing site.
+   */
+  basePath?: string;
+}
+
+export function VehicleCard({ vehicle, basePath = "/vehicles" }: VehicleCardProps) {
+  const href = `${basePath}/${vehicle.slug}`;
   return (
     <div className="group relative overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card">
-      <Link href={`/vehicles/${vehicle.slug}`} className="block">
+      <Link href={href} className="block">
         <div className="relative aspect-[16/11] overflow-hidden bg-muted">
           <Image
             src={vehicle.images[0]}
@@ -48,7 +59,7 @@ export function VehicleCard({ vehicle }: { vehicle: SampleVehicle }) {
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
-          <Link href={`/vehicles/${vehicle.slug}`} className="min-w-0">
+          <Link href={href} className="min-w-0">
             <h3 className="truncate font-semibold leading-tight transition-colors group-hover:text-brand-600">
               {vehicle.title}
             </h3>

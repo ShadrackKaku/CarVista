@@ -62,7 +62,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as { role?: UserRole }).role ?? UserRole.CUSTOMER;
+        token.role = (user as { role?: UserRole }).role ?? UserRole.USER;
       }
       // SECURITY: never trust a client-supplied role. On an explicit session
       // update, or when the role is missing (e.g. OAuth first sign-in), re-read

@@ -27,7 +27,13 @@ const BASE =
   process.env.RESPONSIVE_BASE_URL ??
   "http://localhost:3000";
 
-/** Public routes only — the signed-in shell needs a database and a session. */
+/**
+ * Public routes only — the signed-in shell needs a database and a session.
+ *
+ * The four deep calculator URLs used to be listed here. They now 301 to
+ * `/calculators` (the tools themselves moved into the authenticated app), so
+ * measuring them would just measure that one page five more times.
+ */
 const ROUTES = [
   "/",
   "/vehicles",
@@ -35,11 +41,15 @@ const ROUTES = [
   "/dealers",
   "/services",
   "/calculators",
-  "/calculators/import-duty",
-  "/calculators/taxes",
-  "/calculators/shipping",
-  "/calculators/financing",
+  "/features",
+  "/pricing",
+  "/resources",
   "/import",
+  "/import/duty-check",
+  "/about",
+  "/contact",
+  "/faq",
+  "/blog",
   "/login",
   "/register",
 ];

@@ -20,6 +20,44 @@ export interface PageMeta {
  * `/admin/blog/new` — which has its own entry above it.
  */
 const ROUTES: [pattern: string, meta: PageMeta][] = [
+  // ── Marketplace module ─────────────────────────────────────────
+  ["/app/marketplace", { title: "Marketplace", subtitle: "Vehicles, parts, dealers and services in one place." }],
+  ["/app/marketplace/vehicles", { title: "Vehicles", subtitle: "Every car listed on CarVista." }],
+  ["/app/marketplace/vehicles/:id", { title: "Vehicle", subtitle: "Specs, history and landed cost." }],
+  ["/app/marketplace/parts", { title: "Parts", subtitle: "Genuine and aftermarket parts from verified sellers." }],
+  ["/app/marketplace/parts/:id", { title: "Part", subtitle: "Fitment, condition and delivery." }],
+  ["/app/marketplace/dealers", { title: "Dealers", subtitle: "Verified dealerships across Ghana." }],
+  ["/app/marketplace/dealers/:id", { title: "Dealer", subtitle: "Their stock, standing and contact details." }],
+  ["/app/marketplace/services", { title: "Services", subtitle: "Garages, inspectors and specialists near you." }],
+  ["/app/marketplace/services/:id", { title: "Service provider", subtitle: "What they do and how to book." }],
+  ["/app/marketplace/saved", { title: "Saved vehicles", subtitle: "Cars you're keeping an eye on." }],
+  ["/app/marketplace/searches", { title: "Saved searches", subtitle: "We'll alert you when new matches land." }],
+  ["/app/marketplace/listings", { title: "My listings", subtitle: "Every vehicle you have on the market." }],
+  ["/app/marketplace/listings/new", { title: "List a vehicle", subtitle: "Photos, specs and price — it's free to list." }],
+  ["/app/marketplace/listings/:id/edit", { title: "Edit listing", subtitle: "Update details, photos and price." }],
+  ["/app/marketplace/cart", { title: "Cart", subtitle: "Parts you're ready to buy." }],
+  ["/app/marketplace/checkout", { title: "Checkout", subtitle: "Delivery details and payment." }],
+  ["/app/marketplace/checkout/verify", { title: "Payment", subtitle: "Confirming your order with Paystack." }],
+
+  // ── Imports module ─────────────────────────────────────────────
+  ["/app/imports/new", { title: "Start an import", subtitle: "Tell us what you want and we'll quote the landed cost." }],
+  ["/app/imports/mine", { title: "My imports", subtitle: "Every car you're bringing in, and where it is." }],
+  ["/app/imports/track", { title: "Track a shipment", subtitle: "Look up an import by its reference." }],
+  ["/app/imports/duty-check", { title: "Share a duty bill", subtitle: "Add a real ICUMS assessment and sharpen everyone's estimate." }],
+  ["/app/imports/escrow/verify", { title: "Payment", subtitle: "Confirming your escrow deposit." }],
+  ["/app/imports/:id", { title: "Import", subtitle: "Timeline, documents and landed cost." }],
+
+  // ── Search ─────────────────────────────────────────────────────
+  ["/app/search", { title: "Search", subtitle: "Cars, parts, services and dealers." }],
+
+  // ── Calculators module ─────────────────────────────────────────
+  ["/app/calculators", { title: "Calculators", subtitle: "Price an import before you commit." }],
+  ["/app/calculators/import-duty", { title: "Landed cost", subtitle: "Duty, levies, shipping and clearing in one number." }],
+  ["/app/calculators/shipping", { title: "Shipping", subtitle: "Freight, insurance and port charges." }],
+  ["/app/calculators/financing", { title: "Financing", subtitle: "Monthly repayments at Ghanaian bank rates." }],
+  ["/app/calculators/taxes", { title: "Taxes & duties", subtitle: "The full GRA levy stack, line by line." }],
+  ["/app/calculators/share-bill", { title: "Share a duty bill", subtitle: "Add a real assessment and sharpen everyone's estimate." }],
+
   // ── Admin ──────────────────────────────────────────────────────
   ["/admin", { title: "Admin overview", subtitle: "Platform-wide metrics and activity." }],
   ["/admin/users", { title: "User management", subtitle: "Manage all platform users, roles and status." }],
@@ -27,6 +65,7 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/admin/parts", { title: "Parts", subtitle: "Every part listed by your vendors." }],
   ["/admin/dealers", { title: "Dealers", subtitle: "Dealer accounts and their standing." }],
   ["/admin/verifications", { title: "Dealer verifications", subtitle: "Review documents and approve dealers." }],
+  ["/admin/role-applications", { title: "Role applications", subtitle: "Approve or reject requests for specialised roles." }],
   ["/admin/inspections", { title: "Inspections", subtitle: "Requested and completed vehicle inspections." }],
   ["/admin/orders", { title: "Orders", subtitle: "Parts orders across the marketplace." }],
   ["/admin/imports", { title: "Import requests", subtitle: "Every import CarVista is handling." }],
@@ -60,12 +99,11 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/dashboard", { title: "Overview", subtitle: "What's happening with your account." }],
   ["/dashboard/saved", { title: "Saved vehicles", subtitle: "Cars you're keeping an eye on." }],
   ["/dashboard/searches", { title: "Saved searches", subtitle: "We'll alert you when new matches land." }],
-  ["/dashboard/imports", { title: "My imports", subtitle: "Track every car you're bringing in." }],
-  ["/dashboard/imports/:id", { title: "Import", subtitle: "Timeline, documents and landed cost." }],
   ["/dashboard/orders", { title: "My orders", subtitle: "Parts you've bought and their status." }],
   ["/dashboard/inspections", { title: "Inspections", subtitle: "Independent checks you've requested." }],
   ["/dashboard/messages", { title: "Messages", subtitle: "Conversations with dealers and sellers." }],
   ["/dashboard/profile", { title: "Profile & settings", subtitle: "Your details, password and preferences." }],
+  ["/dashboard/upgrade", { title: "Upgrade my account", subtitle: "Apply for the role that matches what you do." }],
 ];
 
 function matches(pattern: string, pathname: string): boolean {

@@ -9,20 +9,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-const ROLES = [
-  { value: "CUSTOMER", label: "Buyer / Customer" },
-  { value: "DEALER", label: "Car Dealer" },
-  { value: "PARTS_SELLER", label: "Parts Seller" },
-  { value: "SERVICE_PROVIDER", label: "Service Provider" },
-];
 
 export interface RegisterFormProps {
   /** Where to land once the new account is signed in. */
@@ -52,7 +38,6 @@ export function RegisterForm({
     phone: "",
     password: "",
     confirmPassword: "",
-    role: "CUSTOMER",
   });
 
   function update(key: string, value: string) {
@@ -144,21 +129,6 @@ export function RegisterForm({
             onChange={(e) => update("phone", e.target.value)}
           />
         </div>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-role`}>I want to</Label>
-        <Select value={form.role} onValueChange={(v) => update("role", v)}>
-          <SelectTrigger id={`${idPrefix}-role`}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ROLES.map((r) => (
-              <SelectItem key={r.value} value={r.value}>
-                {r.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
       <div className={compact ? "grid gap-3 sm:grid-cols-2" : "grid gap-4 sm:grid-cols-2"}>
         <div className="space-y-2">

@@ -26,7 +26,7 @@ export default async function InspectionsPage() {
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button asChild variant="outline">
-          <Link href="/services">Book an inspection</Link>
+          <Link href="/app/marketplace/services">Book an inspection</Link>
         </Button>
       </div>
 

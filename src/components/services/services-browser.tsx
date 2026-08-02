@@ -5,7 +5,14 @@ import { ServiceCard } from "@/components/services/service-card";
 import { SERVICE_TYPES } from "@/lib/constants";
 import type { SampleService } from "@/lib/sample-data";
 
-export function ServicesBrowser({ services }: { services: SampleService[] }) {
+export function ServicesBrowser({
+  services,
+  basePath = "/services",
+}: {
+  services: SampleService[];
+  /** Where result cards link. The Marketplace module keeps them in the shell. */
+  basePath?: string;
+}) {
   const [type, setType] = useState("");
 
   const filtered = type ? services.filter((s) => s.type === type) : services;
@@ -37,7 +44,7 @@ export function ServicesBrowser({ services }: { services: SampleService[] }) {
       {filtered.length > 0 ? (
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((s) => (
-            <ServiceCard key={s.id} service={s} />
+            <ServiceCard key={s.id} service={s} basePath={basePath} />
           ))}
         </div>
       ) : (

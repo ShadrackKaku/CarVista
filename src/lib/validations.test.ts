@@ -18,10 +18,19 @@ describe("registerSchema", () => {
     confirmPassword: "Password1",
   };
 
-  it("accepts a valid registration and defaults the role to CUSTOMER", () => {
-    const parsed = registerSchema.safeParse(valid);
-    expect(parsed.success).toBe(true);
-    if (parsed.success) expect(parsed.data.role).toBe("CUSTOMER");
+  it("accepts a valid registration", () => {
+    expect(registerSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("never lets a caller choose their own role", () => {
+    // Registration used to take `role` straight from the request body, so
+    // anyone could POST {role:"DEALER"} and be a dealer instantly. The schema
+    // must now strip it, and the route pins USER regardless.
+    for (const role of ["DEALER", "PARTS_SELLER", "SERVICE_PROVIDER", "ADMIN"]) {
+      const parsed = registerSchema.safeParse({ ...valid, role });
+      expect(parsed.success).toBe(true);
+      expect(parsed.success && "role" in parsed.data).toBe(false);
+    }
   });
 
   it("rejects mismatched passwords", () => {

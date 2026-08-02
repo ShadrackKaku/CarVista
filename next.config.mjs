@@ -24,6 +24,44 @@ const nextConfig = {
       { protocol: "https", hostname: "i.pravatar.cc" },
     ],
   },
+  async redirects() {
+    return [
+      // The working calculators moved into the authenticated app. Their public
+      // URLs were indexed, so they point at the marketing page that replaced
+      // them; signed-in users are taken on to the tool by the CTA there.
+      { source: "/calculators/import-duty", destination: "/calculators", permanent: true },
+      { source: "/calculators/shipping", destination: "/calculators", permanent: true },
+      { source: "/calculators/financing", destination: "/calculators", permanent: true },
+      { source: "/calculators/taxes", destination: "/calculators", permanent: true },
+
+      // Pages that moved into the shell and left no public version behind.
+      //
+      // These were redirect *pages* until they weren't: a `redirect()` in a
+      // statically prerenderable route compiles to a client-side redirect, so
+      // the URL answered 200 with an empty document — fine in a browser, wrong
+      // for a crawler, a link preview, or anything without JavaScript. A rule
+      // here is a real 308 before any rendering happens.
+      //
+      // Destinations mirror `src/lib/shell-mirrors.ts`, and a test asserts the
+      // two agree. That file still owns the URLs that kept a public page
+      // (`/vehicles`, `/calculators`, `/import`); these have none.
+      { source: "/cart", destination: "/app/marketplace/cart", permanent: true },
+      { source: "/checkout", destination: "/app/marketplace/checkout", permanent: true },
+      { source: "/checkout/verify", destination: "/app/marketplace/checkout/verify", permanent: true },
+      { source: "/search", destination: "/app/search", permanent: true },
+      { source: "/vehicles/new", destination: "/app/marketplace/listings/new", permanent: true },
+      { source: "/vehicles/:slug/edit", destination: "/app/marketplace/listings/:slug/edit", permanent: true },
+      { source: "/import/track", destination: "/app/imports/track", permanent: true },
+      { source: "/import/duty-check", destination: "/app/imports/duty-check", permanent: true },
+      { source: "/import/escrow/verify", destination: "/app/imports/escrow/verify", permanent: true },
+      { source: "/dashboard/saved", destination: "/app/marketplace/saved", permanent: true },
+      { source: "/dashboard/searches", destination: "/app/marketplace/searches", permanent: true },
+      { source: "/dashboard/dealer/listings", destination: "/app/marketplace/listings", permanent: true },
+      { source: "/dashboard/imports", destination: "/app/imports/mine", permanent: true },
+      { source: "/dashboard/imports/:id", destination: "/app/imports/:id", permanent: true },
+    ];
+  },
+
   async headers() {
     return [
       {

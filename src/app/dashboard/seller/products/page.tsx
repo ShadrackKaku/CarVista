@@ -56,7 +56,7 @@ export default async function SellerProductsPage() {
                         <div className="relative h-11 w-11 overflow-hidden rounded-lg bg-muted">
                           <Image src={p.image} alt={p.name} fill sizes="44px" className="object-cover" />
                         </div>
-                        <Link href={`/parts/${p.slug}`} className="font-medium hover:text-brand-600">
+                        <Link href={`/app/marketplace/parts/${p.slug}`} className="font-medium hover:text-brand-600">
                           {p.name}
                         </Link>
                       </div>
@@ -72,7 +72,7 @@ export default async function SellerProductsPage() {
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
                         <Button asChild variant="ghost" size="sm">
-                          <Link href={`/parts/${p.slug}`}>View</Link>
+                          <Link href={`/app/marketplace/parts/${p.slug}`}>View</Link>
                         </Button>
                         <Button asChild variant="ghost" size="sm">
                           <Link href={`/dashboard/seller/products/${p.id}/edit`}>Edit</Link>

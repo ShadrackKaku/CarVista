@@ -156,7 +156,7 @@ export function ShippingCalculator({ exchangeRate = 15.5 }: { exchangeRate?: num
         </dl>
 
         <a
-          href="/calculators/import-duty"
+          href="/app/calculators/import-duty"
           className="mt-6 block rounded-xl bg-brand-600 p-4 text-center text-sm font-semibold text-white hover:bg-brand-700"
         >
           Add duties → see total import estimate

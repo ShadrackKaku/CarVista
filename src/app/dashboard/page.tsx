@@ -82,7 +82,7 @@ export default async function DashboardPage() {
           ) : (
             <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
               No saved vehicles yet.{" "}
-              <Link href="/vehicles" className="font-medium text-brand-600 hover:underline">
+              <Link href="/app/marketplace/vehicles" className="font-medium text-brand-600 hover:underline">
                 Browse the marketplace
               </Link>
               .
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
               No active imports.{" "}
-              <Link href="/import" className="font-medium text-brand-600 hover:underline">
+              <Link href="/app/imports/new" className="font-medium text-brand-600 hover:underline">
                 Start one
               </Link>
               .

@@ -58,7 +58,7 @@ export default async function AdminImportDetailPage({ params }: { params: { id: 
                 <dt className="text-muted-foreground">Listing</dt>
                 <dd>
                   <Link
-                    href={`/vehicles/${req.vehicleSlug}`}
+                    href={`/app/marketplace/vehicles/${req.vehicleSlug}`}
                     className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline"
                   >
                     View <ExternalLink className="h-3.5 w-3.5" />

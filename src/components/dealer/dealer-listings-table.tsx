@@ -113,7 +113,7 @@ export function DealerListingsTable({ listings }: { listings: DealerListingRow[]
                         <Image src={v.image} alt={v.title} fill sizes="64px" className="object-cover" />
                       </div>
                       <div className="min-w-0">
-                        <Link href={`/vehicles/${v.slug}`} className="font-medium hover:text-brand-600">
+                        <Link href={`/app/marketplace/vehicles/${v.slug}`} className="font-medium hover:text-brand-600">
                           {v.title}
                         </Link>
                         <p className="text-xs text-muted-foreground">
@@ -134,10 +134,10 @@ export function DealerListingsTable({ listings }: { listings: DealerListingRow[]
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <Button asChild variant="ghost" size="sm">
-                        <Link href={`/vehicles/${v.slug}`}>View</Link>
+                        <Link href={`/app/marketplace/vehicles/${v.slug}`}>View</Link>
                       </Button>
                       <Button asChild variant="ghost" size="sm">
-                        <Link href={`/vehicles/${v.slug}/edit`}>Edit</Link>
+                        <Link href={`/app/marketplace/listings/${v.slug}/edit`}>Edit</Link>
                       </Button>
                     </div>
                   </td>

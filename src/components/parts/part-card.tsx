@@ -7,11 +7,21 @@ import { AddToCartButton } from "@/components/parts/add-to-cart-button";
 import { formatCurrency } from "@/lib/utils";
 import type { SamplePart } from "@/lib/sample-data";
 
-export function PartCard({ part }: { part: SamplePart }) {
+export interface PartCardProps {
+  part: SamplePart;
+  /**
+   * Where the card links. Defaults to the public listing; the Marketplace
+   * module passes its own path so a click stays inside the shell.
+   */
+  basePath?: string;
+}
+
+export function PartCard({ part, basePath = "/parts" }: PartCardProps) {
+  const href = `${basePath}/${part.slug}`;
   const hasDiscount = part.discountPrice && part.discountPrice < part.price;
   return (
     <div className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card">
-      <Link href={`/parts/${part.slug}`} className="relative aspect-square overflow-hidden bg-muted">
+      <Link href={href} className="relative aspect-square overflow-hidden bg-muted">
         <Image
           src={part.image}
           alt={part.name}
@@ -33,7 +43,7 @@ export function PartCard({ part }: { part: SamplePart }) {
 
       <div className="flex flex-1 flex-col p-4">
         <span className="text-xs font-medium text-brand-600">{part.brand}</span>
-        <Link href={`/parts/${part.slug}`}>
+        <Link href={href}>
           <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-brand-600">
             {part.name}
           </h3>

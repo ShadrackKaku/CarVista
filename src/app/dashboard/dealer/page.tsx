@@ -20,7 +20,7 @@ export default async function DealerDashboardPage() {
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between">
         <Button asChild variant="gradient">
-          <Link href="/vehicles/new">
+          <Link href="/app/marketplace/listings/new">
             <Plus className="h-4 w-4" /> Add vehicle
           </Link>
         </Button>
@@ -47,7 +47,7 @@ export default async function DealerDashboardPage() {
             <p className="mt-3 font-semibold">No listings yet</p>
             <p className="mt-1 text-sm text-muted-foreground">Add your first vehicle to start selling.</p>
             <Button asChild variant="gradient" className="mt-5">
-              <Link href="/vehicles/new">
+              <Link href="/app/marketplace/listings/new">
                 <Plus className="h-4 w-4" /> Add vehicle
               </Link>
             </Button>
@@ -85,7 +85,7 @@ export default async function DealerDashboardPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Button asChild variant="ghost" size="sm">
-                          <Link href={`/vehicles/${v.slug}/edit`}>Edit</Link>
+                          <Link href={`/app/marketplace/listings/${v.slug}/edit`}>Edit</Link>
                         </Button>
                       </td>
                     </tr>

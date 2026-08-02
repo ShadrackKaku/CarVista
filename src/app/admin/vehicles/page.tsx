@@ -61,7 +61,7 @@ export default async function AdminVehiclesPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <Button asChild variant="ghost" size="sm">
-                        <Link href={`/vehicles/${v.slug}`}>View</Link>
+                        <Link href={`/app/marketplace/vehicles/${v.slug}`}>View</Link>
                       </Button>
                       {v.status !== "ACTIVE" && (
                         <AdminActionButton

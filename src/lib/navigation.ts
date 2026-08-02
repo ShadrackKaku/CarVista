@@ -64,28 +64,31 @@ export interface NavSection {
 
 const DEALER_ONLY: UserRole[] = ["DEALER"];
 const SELLER_ONLY: UserRole[] = ["PARTS_SELLER"];
-const ADMIN_ONLY: UserRole[] = ["ADMIN"];
+const ADMIN_ONLY: UserRole[] = ["ADMIN", "SUPER_ADMIN"];
 
 const marketplace: NavSection = {
   id: "marketplace",
   label: "Marketplace",
+  // Everything here lives under /app, inside the authenticated shell. Signed-out
+  // visitors get the public marketing site and its own header instead.
+  requiresAuth: true,
   items: [
     {
       label: "Browse vehicles",
-      href: "/vehicles",
+      href: "/app/marketplace/vehicles",
       icon: Car,
       description: "Every car listed on CarVista",
       keywords: ["cars", "search", "buy", "listings"],
     },
-    { label: "Parts", href: "/parts", icon: Package, description: "Genuine and aftermarket parts" },
-    { label: "Services", href: "/services", icon: Wrench, description: "Garages and specialists" },
-    { label: "Dealers", href: "/dealers", icon: Store, description: "Verified dealers near you" },
+    { label: "Parts", href: "/app/marketplace/parts", icon: Package, description: "Genuine and aftermarket parts" },
+    { label: "Services", href: "/app/marketplace/services", icon: Wrench, description: "Garages and specialists" },
+    { label: "Dealers", href: "/app/marketplace/dealers", icon: Store, description: "Verified dealers near you" },
     {
-      label: "Import a car",
-      href: "/import",
-      icon: Ship,
-      description: "Source, ship, clear and deliver",
-      keywords: ["importing", "auction", "shipping"],
+      label: "My listings",
+      href: "/app/marketplace/listings",
+      icon: ClipboardCheck,
+      description: "Vehicles you have on the market",
+      keywords: ["sell", "selling", "inventory"],
     },
   ],
 };
@@ -93,10 +96,11 @@ const marketplace: NavSection = {
 const tools: NavSection = {
   id: "tools",
   label: "Tools",
+  requiresAuth: true,
   items: [
     {
       label: "All tools",
-      href: "/calculators",
+      href: "/app/calculators",
       icon: LayoutDashboard,
       description: "The full workspace",
       exact: true,
@@ -127,9 +131,22 @@ const garage: NavSection = {
       exact: true,
       description: "Your activity at a glance",
     },
-    { label: "Saved vehicles", href: "/dashboard/saved", icon: Heart, keywords: ["wishlist", "favourites"] },
-    { label: "Saved searches", href: "/dashboard/searches", icon: Bookmark, keywords: ["alerts"] },
-    { label: "My imports", href: "/dashboard/imports", icon: Ship },
+    { label: "Saved vehicles", href: "/app/marketplace/saved", icon: Heart, keywords: ["wishlist", "favourites"] },
+    { label: "Saved searches", href: "/app/marketplace/searches", icon: Bookmark, keywords: ["alerts"] },
+    { label: "My imports", href: "/app/imports/mine", icon: Ship },
+    {
+      label: "Start an import",
+      href: "/app/imports/new",
+      icon: Ship,
+      description: "Source, ship, clear and deliver",
+      keywords: ["importing", "auction", "shipping"],
+    },
+    {
+      label: "Track a shipment",
+      href: "/app/imports/track",
+      icon: Ship,
+      keywords: ["tracking", "reference", "where is my car"],
+    },
     { label: "My orders", href: "/dashboard/orders", icon: ShoppingBag },
     { label: "Inspections", href: "/dashboard/inspections", icon: ClipboardCheck },
     { label: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: "messages" },
@@ -149,7 +166,6 @@ const business: NavSection = {
       exact: true,
       roles: DEALER_ONLY,
     },
-    { label: "My listings", href: "/dashboard/dealer/listings", icon: Car, roles: DEALER_ONLY },
     { label: "Leads", href: "/dashboard/dealer/leads", icon: MessageSquare, roles: DEALER_ONLY },
     {
       label: "Analytics",
@@ -193,6 +209,7 @@ const admin: NavSection = {
     { label: "Parts", href: "/admin/parts", icon: Package },
     { label: "Dealers", href: "/admin/dealers", icon: Store },
     { label: "Verifications", href: "/admin/verifications", icon: BadgeCheck },
+    { label: "Role applications", href: "/admin/role-applications", icon: BadgeCheck },
     { label: "Inspections", href: "/admin/inspections", icon: ClipboardCheck },
     { label: "Orders", href: "/admin/orders", icon: Receipt },
     { label: "Imports", href: "/admin/imports", icon: Ship },
@@ -209,7 +226,16 @@ const account: NavSection = {
   id: "account",
   label: "Account",
   requiresAuth: true,
-  items: [{ label: "Profile & settings", href: "/dashboard/profile", icon: Settings }],
+  items: [
+    { label: "Profile & settings", href: "/dashboard/profile", icon: Settings },
+    {
+      label: "Upgrade my account",
+      href: "/dashboard/upgrade",
+      icon: BadgeCheck,
+      description: "Apply to become a dealer, seller, supplier or importer",
+      keywords: ["dealer", "seller", "supplier", "importer", "role", "apply", "upgrade"],
+    },
+  ],
 };
 
 const ALL_SECTIONS: NavSection[] = [marketplace, tools, garage, business, admin, account];
@@ -245,6 +271,7 @@ export function isNavItemActive(pathname: string, item: NavItem): boolean {
  */
 export function homeHrefFor(role: UserRole | null): string {
   switch (role) {
+    case "SUPER_ADMIN":
     case "ADMIN":
       return "/admin";
     case "DEALER":

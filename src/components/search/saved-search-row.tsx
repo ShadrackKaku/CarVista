@@ -49,7 +49,7 @@ export function SavedSearchRow({
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <Button asChild size="sm" variant="gradient">
-          <Link href={`/vehicles${query ? `?${query}` : ""}`}>
+          <Link href={`/app/marketplace/vehicles${query ? `?${query}` : ""}`}>
             <Search className="h-4 w-4" /> Run
           </Link>
         </Button>
