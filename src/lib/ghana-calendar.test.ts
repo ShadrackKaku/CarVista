@@ -6,8 +6,8 @@ import {
   easterSunday,
   ghanaPublicHolidays,
   isGhanaWorkingDay,
-  lunarHolidayYears,
-  lunarHolidaysNeedAttention,
+  eidHolidays,
+  eidPrecision,
 } from "./ghana-calendar";
 
 const at = (iso: string) => new Date(`${iso}T00:00:00Z`);
@@ -147,13 +147,12 @@ describe("addGhanaWorkingDays", () => {
     }
   });
 
-  it("grants a grace day when an unconfirmed lunar holiday is in the way", () => {
-    // Eid al-Fitr 2026 sits in the table as an estimate. A window running into
-    // it must widen rather than risk expiring a paid reservation early.
+  it("widens through the uncertainty band around a computed Eid", () => {
+    // Eid al-Fitr 2026 computes to Friday 20 March. Its ±1 band covers Thu 19
+    // and Sat 21, so a window opened on Wed 18 skips Thu, Fri and the weekend.
     const result = addGhanaWorkingDays(at("2026-03-18"), 2);
     expect(result.graceApplied).toBe(true);
-    expect(result.skipped.some((h) => h.name.startsWith("Eid"))).toBe(true);
-    // Three working days' worth of calendar, not two.
+    expect(result.skipped.some((h) => h.name.startsWith("Eid al-Fitr"))).toBe(true);
     expect(dayKey(result.date)).toBe("2026-03-24");
   });
 
@@ -167,22 +166,76 @@ describe("addGhanaWorkingDays", () => {
   });
 });
 
-describe("the lunar holiday table", () => {
-  it("is well formed", () => {
-    for (const year of lunarHolidayYears()) {
-      for (const h of ghanaPublicHolidays(year).filter((x) => x.name.startsWith("Eid"))) {
-        expect(h.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-        expect(Number.isNaN(at(h.date).getTime())).toBe(false);
+describe("computed Eid dates", () => {
+  /**
+   * Ghana's observed dates. The tabular calendar approximates a calendar
+   * settled by moon sighting, so these assert the computed date lands inside
+   * its declared ±1 band — not that it matches exactly, which would be a
+   * promise the arithmetic cannot keep.
+   */
+  const OBSERVED: Record<number, Record<string, string>> = {
+    2023: { "Eid al-Fitr": "2023-04-21", "Eid al-Adha": "2023-06-28" },
+    2024: { "Eid al-Fitr": "2024-04-10", "Eid al-Adha": "2024-06-16" },
+    2025: { "Eid al-Fitr": "2025-03-30", "Eid al-Adha": "2025-06-06" },
+    2026: { "Eid al-Fitr": "2026-03-20", "Eid al-Adha": "2026-05-27" },
+    2027: { "Eid al-Fitr": "2027-03-09", "Eid al-Adha": "2027-05-16" },
+  };
+
+  it("lands within one day of every Eid Ghana actually observed", () => {
+    for (const [year, expected] of Object.entries(OBSERVED)) {
+      for (const [name, observedDate] of Object.entries(expected)) {
+        const computed = eidHolidays(Number(year)).find((h) => h.name === name);
+        expect(computed, `${name} ${year}`).toBeDefined();
+        const drift =
+          (at(computed!.date).getTime() - at(observedDate).getTime()) / 86_400_000;
+        expect(Math.abs(drift), `${name} ${year} drifted ${drift}d`).toBeLessThanOrEqual(
+          computed!.uncertaintyDays,
+        );
       }
     }
   });
 
-  it("reports when a year needs a maintainer", () => {
-    // Every entry currently ships unconfirmed — nobody has checked the gazette
-    // yet — so the grace day is doing the work. Confirming them turns it off.
-    expect(lunarHolidaysNeedAttention(2026)).toBe(true);
-    // A year with no entries at all is also flagged, rather than silently
-    // treating Eid as an ordinary working day.
-    expect(lunarHolidaysNeedAttention(2099)).toBe(true);
+  it("needs no maintenance — every year computes", () => {
+    // The failure this replaces: a hand-kept table that runs out silently, in
+    // the year reservations start expiring on a public holiday.
+    for (const year of [2028, 2035, 2050, 2100]) {
+      const eids = eidHolidays(year);
+      expect(eids.length, `${year}`).toBeGreaterThanOrEqual(2);
+      for (const h of eids) {
+        expect(h.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(at(h.date).getUTCFullYear()).toBe(year);
+      }
+    }
+  });
+
+  it("finds both Eids in every year for the next century", () => {
+    // The bug this pins: the Hijri-year scan window was too narrow, and
+    // Eid al-Adha vanished from 2033 through 2036 — four years where a
+    // reservation could expire on a public holiday, with nothing to notice.
+    for (let year = 2024; year <= 2124; year += 1) {
+      const found = eidHolidays(year).map((h) => h.name);
+      expect(found, `${year} is missing Eid al-Fitr`).toContain("Eid al-Fitr");
+      expect(found, `${year} is missing Eid al-Adha`).toContain("Eid al-Adha");
+    }
+  });
+
+  it("copes with a year holding two of the same Eid", () => {
+    // The Hijri year is ~11 days shorter, so occasionally one Gregorian year
+    // catches both ends of the drift: 2033 has Eid al-Fitr in January and
+    // again in December.
+    const fitr2033 = eidHolidays(2033).filter((h) => h.name === "Eid al-Fitr");
+    expect(fitr2033).toHaveLength(2);
+    expect(fitr2033.map((h) => h.date)).toEqual(["2033-01-03", "2033-12-23"]);
+  });
+
+  it("carries a band while computed, and none once gazetted", () => {
+    expect(eidPrecision(2026)).toBe("computed");
+    for (const h of eidHolidays(2026)) expect(h.uncertaintyDays).toBe(1);
+  });
+
+  it("puts the band either side of the computed day", () => {
+    const names = ghanaPublicHolidays(2026).map((h) => h.name);
+    expect(names).toContain("Eid al-Fitr");
+    expect(names.filter((n) => n.startsWith("Eid al-Fitr (±1 day)")).length).toBe(2);
   });
 });
