@@ -9,7 +9,6 @@ import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FilterLayout } from "@/components/shell/filter-dock";
+import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
 import { Pagination } from "@/components/ui/pagination";
 import { usePagedList } from "@/lib/use-paged-list";
 import { POPULAR_BRANDS, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, GHANA_REGIONS } from "@/lib/constants";
@@ -28,6 +27,7 @@ import {
   EMPTY_FILTERS,
   filtersToQuery,
   activeFilterCount,
+  matchesFilters,
 } from "@/lib/vehicle-search";
 
 const CONDITIONS = [
@@ -93,21 +93,7 @@ export function VehicleBrowser({
   }
 
   const filtered = useMemo(() => {
-    let result = vehicles.filter((v) => {
-      if (filters.q && !`${v.title} ${v.brand} ${v.model}`.toLowerCase().includes(filters.q.toLowerCase()))
-        return false;
-      if (filters.brand && v.brand !== filters.brand) return false;
-      if (filters.bodyType && v.bodyType !== filters.bodyType) return false;
-      if (filters.fuelType && v.fuelType !== filters.fuelType) return false;
-      if (filters.transmission && v.transmission !== filters.transmission) return false;
-      if (filters.condition && v.condition !== filters.condition) return false;
-      if (filters.region && v.region !== filters.region) return false;
-      if (filters.minPrice && v.price < Number(filters.minPrice)) return false;
-      if (filters.maxPrice && v.price > Number(filters.maxPrice)) return false;
-      if (filters.minYear && v.year < Number(filters.minYear)) return false;
-      if (filters.maxYear && v.year > Number(filters.maxYear)) return false;
-      return true;
-    });
+    let result = vehicles.filter((v) => matchesFilters(v, filters));
     switch (sort) {
       case "price-asc":
         result = [...result].sort((a, b) => a.price - b.price);
@@ -124,6 +110,16 @@ export function VehicleBrowser({
     }
     return result;
   }, [vehicles, filters, sort]);
+
+  // What each condition would leave, honouring every other active filter. The
+  // count beside an option has to answer "how many if I pick this" — measured
+  // against the unfiltered list it would promise cars that aren't there.
+  const conditionCounts = useMemo(() => {
+    const pool = vehicles.filter((v) => matchesFilters(v, filters, "condition"));
+    const counts: Record<string, number> = { any: pool.length };
+    for (const c of CONDITIONS) counts[c.value] = pool.filter((v) => v.condition === c.value).length;
+    return counts;
+  }, [vehicles, filters]);
 
   const activeCount = activeFilterCount(filters);
   // The query string already changes on exactly the events that change the
@@ -213,17 +209,25 @@ export function VehicleBrowser({
       </div>
       <div className="space-y-2">
         <Label>Condition</Label>
-        <div className="space-y-2">
+        <FilterOptionList>
+          <FilterOption
+            name="condition"
+            label="Any condition"
+            checked={filters.condition === ""}
+            onSelect={() => set("condition", "")}
+            count={conditionCounts.any}
+          />
           {CONDITIONS.map((c) => (
-            <label key={c.value} className="flex cursor-pointer items-center gap-2.5 text-sm">
-              <Checkbox
-                checked={filters.condition === c.value}
-                onCheckedChange={(checked) => set("condition", checked ? c.value : "")}
-              />
-              {c.label}
-            </label>
+            <FilterOption
+              key={c.value}
+              name="condition"
+              label={c.label}
+              checked={filters.condition === c.value}
+              onSelect={() => set("condition", c.value)}
+              count={conditionCounts[c.value] ?? 0}
+            />
           ))}
-        </div>
+        </FilterOptionList>
       </div>
       <div className="space-y-2">
         <Label>Fuel type</Label>
@@ -323,7 +327,7 @@ export function VehicleBrowser({
         </div>
       ) : (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {paged.items.map((v) => (
               <VehicleCard key={v.id} vehicle={v} basePath={basePath} />
             ))}

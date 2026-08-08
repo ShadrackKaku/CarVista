@@ -68,7 +68,9 @@ export function FilterDock() {
     <aside
       className={cn(
         "hidden h-full shrink-0 flex-col bg-card lg:flex",
-        filled ? "w-72 border-r" : "w-0 overflow-hidden border-0",
+        // Narrower at lg, where three cards have to fit in what is left, and
+        // wider from xl where there is room for both.
+        filled ? "w-64 border-r xl:w-72" : "w-0 overflow-hidden border-0",
       )}
       // A collapsed dock is not just narrow, it is absent: leaving the heading
       // reachable would announce a filter panel that has no filters.
@@ -163,6 +165,65 @@ export function FilterLayout({
       </div>
     </div>
   );
+}
+
+/**
+ * One row of a filter's options: control on the left, label beside it, count on
+ * the right, everything flush to the same left edge.
+ *
+ * A dropdown hides its options until you open it, which is the right trade when
+ * a list is long (sixteen regions, forty brands) and the wrong one when it is
+ * short. Condition has three values — putting them behind a click meant you had
+ * to open a menu to learn what the choices even were.
+ *
+ * Single-select by default, because that is what these facets are. They were
+ * checkboxes that behaved like radios, which tells the user they can pick two
+ * and then silently refuses.
+ */
+export function FilterOption({
+  name,
+  checked,
+  onSelect,
+  label,
+  count,
+  multiple = false,
+}: {
+  /** Groups the radios, so the browser enforces one-of-many for us. */
+  name: string;
+  checked: boolean;
+  onSelect: () => void;
+  label: string;
+  /** How many results this option would leave. Omit when it isn't known. */
+  count?: number;
+  multiple?: boolean;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex cursor-pointer items-center gap-2.5 rounded-lg px-1.5 py-2 text-sm transition-colors",
+        checked
+          ? "font-medium text-foreground"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+      )}
+    >
+      <input
+        type={multiple ? "checkbox" : "radio"}
+        name={name}
+        checked={checked}
+        onChange={onSelect}
+        className="h-4 w-4 shrink-0 accent-brand-600"
+      />
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {count !== undefined && (
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span>
+      )}
+    </label>
+  );
+}
+
+/** The rows pulled back to the panel's edge, so controls line up with labels. */
+export function FilterOptionList({ children }: { children: React.ReactNode }) {
+  return <div className="-mx-1.5 flex flex-col">{children}</div>;
 }
 
 /** Below `lg` there is no room for a column, so the same panel opens in a sheet. */

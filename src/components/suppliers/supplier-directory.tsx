@@ -5,12 +5,11 @@ import { Building2, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FilterLayout } from "@/components/shell/filter-dock";
+import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
 import { Pagination } from "@/components/ui/pagination";
 import { SupplierCard } from "@/components/suppliers/supplier-card";
 import { SUPPLIER_CATEGORIES, SUPPLIER_CATEGORY_LABELS } from "@/lib/suppliers";
 import { usePagedList } from "@/lib/use-paged-list";
-import { cn } from "@/lib/utils";
 import type { SupplierRow } from "@/lib/queries";
 
 /**
@@ -51,6 +50,18 @@ export function SupplierDirectory({
     setCategory(null);
   }
 
+  // Respect the search box, so a category's number matches what picking it
+  // actually shows.
+  const byText = suppliers.filter((s) => {
+    const term = q.trim().toLowerCase();
+    if (!term) return true;
+    return (
+      s.name.toLowerCase().includes(term) ||
+      s.city.toLowerCase().includes(term) ||
+      s.description.toLowerCase().includes(term)
+    );
+  });
+
   if (suppliers.length === 0) {
     return (
       <div className="flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
@@ -82,20 +93,25 @@ export function SupplierDirectory({
 
       <div className="space-y-2">
         <Label>Category</Label>
-        <div className="flex flex-wrap gap-2">
-          <CategoryChip active={category === null} onClick={() => setCategory(null)}>
-            All
-          </CategoryChip>
+        <FilterOptionList>
+          <FilterOption
+            name="supplierCategory"
+            label="All"
+            checked={category === null}
+            onSelect={() => setCategory(null)}
+            count={byText.length}
+          />
           {SUPPLIER_CATEGORIES.map((c) => (
-            <CategoryChip
+            <FilterOption
               key={c}
-              active={category === c}
-              onClick={() => setCategory(category === c ? null : c)}
-            >
-              {SUPPLIER_CATEGORY_LABELS[c]}
-            </CategoryChip>
+              name="supplierCategory"
+              label={SUPPLIER_CATEGORY_LABELS[c]}
+              checked={category === c}
+              onSelect={() => setCategory(c)}
+              count={byText.filter((s) => s.categories.includes(c as never)).length}
+            />
           ))}
-        </div>
+        </FilterOptionList>
       </div>
 
       {(q || category) && (
@@ -117,7 +133,7 @@ export function SupplierDirectory({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {paged.items.map((s) => (
               <SupplierCard key={s.id} supplier={s} basePath={basePath} />
             ))}
@@ -138,31 +154,5 @@ export function SupplierDirectory({
         </p>
       )}
     </FilterLayout>
-  );
-}
-
-function CategoryChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
-        active
-          ? "border-brand-600 bg-brand-600 text-white"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground",
-      )}
-    >
-      {children}
-    </button>
   );
 }

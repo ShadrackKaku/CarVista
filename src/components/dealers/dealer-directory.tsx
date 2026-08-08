@@ -3,9 +3,8 @@
 import { useMemo, useState } from "react";
 import { Search, ShieldCheck, X } from "lucide-react";
 import { DealerCard } from "@/components/dealers/dealer-card";
-import { FilterLayout } from "@/components/shell/filter-dock";
+import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
@@ -94,13 +93,19 @@ export function DealerDirectory({
         </Select>
       </div>
 
-      <label className="flex cursor-pointer items-center gap-2.5 text-sm">
-        <Checkbox
-          checked={verifiedOnly}
-          onCheckedChange={(checked) => setVerifiedOnly(checked === true)}
-        />
-        Verified dealers only
-      </label>
+      <div className="space-y-2">
+        <Label>Verification</Label>
+        <FilterOptionList>
+          <FilterOption
+            name="verified"
+            label="Verified dealers only"
+            multiple
+            checked={verifiedOnly}
+            onSelect={() => setVerifiedOnly(!verifiedOnly)}
+            count={dealers.filter((d) => d.verified).length}
+          />
+        </FilterOptionList>
+      </div>
 
       {activeCount > 0 && (
         <Button variant="outline" className="w-full" onClick={reset}>
@@ -128,7 +133,7 @@ export function DealerDirectory({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {paged.items.map((dealer) => (
               <DealerCard key={dealer.id} dealer={dealer} basePath={basePath} />
             ))}

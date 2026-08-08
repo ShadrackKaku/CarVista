@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { ServiceCard } from "@/components/services/service-card";
-import { FilterLayout } from "@/components/shell/filter-dock";
+import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
 import { SERVICE_TYPES } from "@/lib/constants";
 import { usePagedList } from "@/lib/use-paged-list";
-import { cn } from "@/lib/utils";
 import type { SampleService } from "@/lib/sample-data";
 
 export function ServicesBrowser({
@@ -25,6 +24,13 @@ export function ServicesBrowser({
   const filtered = type ? services.filter((s) => s.type === type) : services;
   const paged = usePagedList(filtered, type);
 
+  // Counts come off the unfiltered list because type is the only facet here —
+  // there is no other filter for them to have to respect.
+  const counts = services.reduce<Record<string, number>>((acc, s) => {
+    acc[s.type] = (acc[s.type] ?? 0) + 1;
+    return acc;
+  }, {});
+
   const FilterPanel = (
     <div className="space-y-5">
       <div className="space-y-2">
@@ -32,16 +38,25 @@ export function ServicesBrowser({
         {/* A column rather than the horizontal chip strip this used to be: in a
             fixed-width panel the list reads top to bottom without scrolling
             sideways past the options you cannot see. */}
-        <div className="flex flex-col gap-1">
-          <TypeOption active={type === ""} onClick={() => setType("")}>
-            All services
-          </TypeOption>
+        <FilterOptionList>
+          <FilterOption
+            name="serviceType"
+            label="All services"
+            checked={type === ""}
+            onSelect={() => setType("")}
+            count={services.length}
+          />
           {SERVICE_TYPES.map((t) => (
-            <TypeOption key={t.value} active={type === t.value} onClick={() => setType(t.value)}>
-              {t.label}
-            </TypeOption>
+            <FilterOption
+              key={t.value}
+              name="serviceType"
+              label={t.label}
+              checked={type === t.value}
+              onSelect={() => setType(t.value)}
+              count={counts[t.value] ?? 0}
+            />
           ))}
-        </div>
+        </FilterOptionList>
       </div>
 
       {type && (
@@ -63,7 +78,7 @@ export function ServicesBrowser({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {paged.items.map((s) => (
               <ServiceCard key={s.id} service={s} basePath={basePath} />
             ))}
@@ -84,31 +99,5 @@ export function ServicesBrowser({
         </p>
       )}
     </FilterLayout>
-  );
-}
-
-function TypeOption({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
-        active
-          ? "bg-brand-600/10 text-brand-700 dark:bg-brand-500/15 dark:text-brand-200"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground",
-      )}
-    >
-      {children}
-    </button>
   );
 }
