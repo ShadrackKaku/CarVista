@@ -1674,6 +1674,14 @@ model ImportListing {
   fobAmount     Decimal  @db.Decimal(14, 2)
   /// ISO 4217 — JPY, USD, GBP, AED.
   fobCurrency   String
+  /// Cedis per one unit of `fobCurrency`, as the importer quotes it.
+  ///
+  /// Carried on the listing rather than looked up, because the only rate we
+  /// hold is USD/GHS — observed from real ICUMS assessments — and most
+  /// Japanese stock is priced in yen. The importer takes the FX risk and knows
+  /// the rate they can actually buy at, so it is theirs to state; `updatedAt`
+  /// dates it and the buyer is shown what it converted at.
+  fxRateToGhs   Decimal? @db.Decimal(14, 6)
   /// The importer's own fee, in cedis. Shown to the buyer as a separate line
   /// rather than buried in the FOB, so they can compare importers on it.
   serviceFeeGhs Decimal? @db.Decimal(12, 2)
