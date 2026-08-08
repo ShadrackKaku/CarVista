@@ -100,3 +100,51 @@ export function describeQuery(query: string): string {
   }
   return parts.length ? parts.join(" · ") : "All vehicles";
 }
+
+/** The shape `matchesFilters` needs. Keeps this file free of the card type. */
+export interface FilterableVehicle {
+  title: string;
+  brand: string;
+  model: string;
+  bodyType: string;
+  fuelType: string;
+  transmission: string;
+  condition: string;
+  /** Optional on the card type: a listing may not say where it is. Such a
+   *  vehicle correctly fails a region filter rather than matching every one. */
+  region?: string;
+  price: number;
+  year: number;
+}
+
+/**
+ * Whether a vehicle survives the active filters.
+ *
+ * `ignore` drops one facet from the test, which is what makes per-option counts
+ * honest: the number beside "Ghana Used" has to mean "how many results if I
+ * pick this", so it must respect every *other* filter while ignoring the
+ * condition already chosen. Counting against the unfiltered list instead would
+ * promise 22 cars and deliver 3.
+ */
+export function matchesFilters(
+  v: FilterableVehicle,
+  filters: VehicleFilters,
+  ignore?: keyof VehicleFilters,
+): boolean {
+  const on = <K extends keyof VehicleFilters>(key: K) =>
+    ignore === key ? "" : filters[key];
+
+  const q = on("q");
+  if (q && !`${v.title} ${v.brand} ${v.model}`.toLowerCase().includes(q.toLowerCase())) return false;
+  if (on("brand") && v.brand !== filters.brand) return false;
+  if (on("bodyType") && v.bodyType !== filters.bodyType) return false;
+  if (on("fuelType") && v.fuelType !== filters.fuelType) return false;
+  if (on("transmission") && v.transmission !== filters.transmission) return false;
+  if (on("condition") && v.condition !== filters.condition) return false;
+  if (on("region") && v.region !== filters.region) return false;
+  if (on("minPrice") && v.price < Number(filters.minPrice)) return false;
+  if (on("maxPrice") && v.price > Number(filters.maxPrice)) return false;
+  if (on("minYear") && v.year < Number(filters.minYear)) return false;
+  if (on("maxYear") && v.year > Number(filters.maxYear)) return false;
+  return true;
+}

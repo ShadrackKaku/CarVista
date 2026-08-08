@@ -5,6 +5,8 @@ import {
   queryToFilters,
   activeFilterCount,
   describeQuery,
+  matchesFilters,
+  type FilterableVehicle,
   type VehicleFilters,
 } from "@/lib/vehicle-search";
 
@@ -57,5 +59,56 @@ describe("describeQuery", () => {
       "Toyota · SUV · ≤ GHS 200000",
     );
     expect(describeQuery("")).toBe("All vehicles");
+  });
+});
+
+describe("matchesFilters", () => {
+  const car = (over: Partial<FilterableVehicle> = {}): FilterableVehicle => ({
+    title: "2019 Toyota Corolla",
+    brand: "Toyota",
+    model: "Corolla",
+    bodyType: "SEDAN",
+    fuelType: "PETROL",
+    transmission: "AUTOMATIC",
+    condition: "GHANA_USED",
+    region: "Greater Accra",
+    price: 200_000,
+    year: 2019,
+    ...over,
+  });
+
+  it("keeps a vehicle that satisfies every active filter", () => {
+    expect(matchesFilters(car(), { ...EMPTY_FILTERS, brand: "Toyota", minYear: "2015" })).toBe(true);
+  });
+
+  it("drops one that fails any of them", () => {
+    expect(matchesFilters(car(), { ...EMPTY_FILTERS, brand: "Honda" })).toBe(false);
+    expect(matchesFilters(car(), { ...EMPTY_FILTERS, maxPrice: "150000" })).toBe(false);
+    expect(matchesFilters(car(), { ...EMPTY_FILTERS, minYear: "2020" })).toBe(false);
+  });
+
+  it("ignores exactly the one facet it is told to", () => {
+    // This is what makes an option's count mean "how many if I pick this".
+    const filters = { ...EMPTY_FILTERS, condition: "NEW", brand: "Toyota" };
+    expect(matchesFilters(car(), filters)).toBe(false);
+    expect(matchesFilters(car(), filters, "condition")).toBe(true);
+    // Ignoring condition must not quietly relax anything else.
+    expect(matchesFilters(car({ brand: "Kia" }), filters, "condition")).toBe(false);
+  });
+
+  it("fails a region filter for a listing that states no region", () => {
+    // Not "matches every region" — a car with no location cannot be claimed as
+    // being in the one you asked for.
+    expect(matchesFilters(car({ region: undefined }), { ...EMPTY_FILTERS, region: "Ashanti" })).toBe(
+      false,
+    );
+    expect(matchesFilters(car({ region: undefined }), EMPTY_FILTERS)).toBe(true);
+  });
+
+  it("matches the keyword across title, brand and model", () => {
+    for (const q of ["corolla", "TOYOTA", "2019"]) {
+      expect(matchesFilters(car(), { ...EMPTY_FILTERS, q })).toBe(true);
+    }
+    expect(matchesFilters(car(), { ...EMPTY_FILTERS, q: "hilux" })).toBe(false);
   });
 });

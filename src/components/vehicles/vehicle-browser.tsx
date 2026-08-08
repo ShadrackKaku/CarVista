@@ -4,12 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Bookmark, SlidersHorizontal, X } from "lucide-react";
+import { Bookmark, X } from "lucide-react";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,15 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
+import { Pagination } from "@/components/ui/pagination";
+import { usePagedList } from "@/lib/use-paged-list";
 import { POPULAR_BRANDS, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, GHANA_REGIONS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import type { SampleVehicle } from "@/lib/sample-data";
 import {
   type VehicleFilters,
@@ -33,6 +27,7 @@ import {
   EMPTY_FILTERS,
   filtersToQuery,
   activeFilterCount,
+  matchesFilters,
 } from "@/lib/vehicle-search";
 
 const CONDITIONS = [
@@ -98,21 +93,7 @@ export function VehicleBrowser({
   }
 
   const filtered = useMemo(() => {
-    let result = vehicles.filter((v) => {
-      if (filters.q && !`${v.title} ${v.brand} ${v.model}`.toLowerCase().includes(filters.q.toLowerCase()))
-        return false;
-      if (filters.brand && v.brand !== filters.brand) return false;
-      if (filters.bodyType && v.bodyType !== filters.bodyType) return false;
-      if (filters.fuelType && v.fuelType !== filters.fuelType) return false;
-      if (filters.transmission && v.transmission !== filters.transmission) return false;
-      if (filters.condition && v.condition !== filters.condition) return false;
-      if (filters.region && v.region !== filters.region) return false;
-      if (filters.minPrice && v.price < Number(filters.minPrice)) return false;
-      if (filters.maxPrice && v.price > Number(filters.maxPrice)) return false;
-      if (filters.minYear && v.year < Number(filters.minYear)) return false;
-      if (filters.maxYear && v.year > Number(filters.maxYear)) return false;
-      return true;
-    });
+    let result = vehicles.filter((v) => matchesFilters(v, filters));
     switch (sort) {
       case "price-asc":
         result = [...result].sort((a, b) => a.price - b.price);
@@ -130,7 +111,20 @@ export function VehicleBrowser({
     return result;
   }, [vehicles, filters, sort]);
 
+  // What each condition would leave, honouring every other active filter. The
+  // count beside an option has to answer "how many if I pick this" — measured
+  // against the unfiltered list it would promise cars that aren't there.
+  const conditionCounts = useMemo(() => {
+    const pool = vehicles.filter((v) => matchesFilters(v, filters, "condition"));
+    const counts: Record<string, number> = { any: pool.length };
+    for (const c of CONDITIONS) counts[c.value] = pool.filter((v) => v.condition === c.value).length;
+    return counts;
+  }, [vehicles, filters]);
+
   const activeCount = activeFilterCount(filters);
+  // The query string already changes on exactly the events that change the
+  // result set, so it doubles as the signal to go back to page 1.
+  const paged = usePagedList(filtered, query);
 
   const FilterPanel = (
     <div className="space-y-5">
@@ -215,17 +209,25 @@ export function VehicleBrowser({
       </div>
       <div className="space-y-2">
         <Label>Condition</Label>
-        <div className="space-y-2">
+        <FilterOptionList>
+          <FilterOption
+            name="condition"
+            label="Any condition"
+            checked={filters.condition === ""}
+            onSelect={() => set("condition", "")}
+            count={conditionCounts.any}
+          />
           {CONDITIONS.map((c) => (
-            <label key={c.value} className="flex cursor-pointer items-center gap-2.5 text-sm">
-              <Checkbox
-                checked={filters.condition === c.value}
-                onCheckedChange={(checked) => set("condition", checked ? c.value : "")}
-              />
-              {c.label}
-            </label>
+            <FilterOption
+              key={c.value}
+              name="condition"
+              label={c.label}
+              checked={filters.condition === c.value}
+              onSelect={() => set("condition", c.value)}
+              count={conditionCounts[c.value] ?? 0}
+            />
           ))}
-        </div>
+        </FilterOptionList>
       </div>
       <div className="space-y-2">
         <Label>Fuel type</Label>
@@ -291,79 +293,56 @@ export function VehicleBrowser({
   );
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-      {/* Desktop filters */}
-      <aside className="hidden lg:block">
-        <div className="sticky top-24 rounded-xl border bg-card p-5 shadow-soft">
-          <h2 className="mb-4 flex items-center gap-2 font-semibold">
-            <SlidersHorizontal className="h-4 w-4" /> Filters
-          </h2>
-          {FilterPanel}
+    <FilterLayout filters={FilterPanel} activeCount={activeCount}>
+      <div ref={paged.anchorRef} className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">{filtered.length}</span> vehicles found
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={saveSearch}>
+            <Bookmark className="h-4 w-4" /> Save search
+          </Button>
+          <Select value={sort} onValueChange={(v) => setSort(v as VehicleSort)}>
+            <SelectTrigger className="h-9 w-[150px] sm:w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="relevance">Most relevant</SelectItem>
+              <SelectItem value="price-asc">Price: Low to High</SelectItem>
+              <SelectItem value="price-desc">Price: High to Low</SelectItem>
+              <SelectItem value="year-desc">Newest year</SelectItem>
+              <SelectItem value="mileage-asc">Lowest mileage</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      </aside>
+      </div>
 
-      {/* min-w-0 so the results column can shrink below its content's
-          intrinsic width — without it the toolbar row sizes the grid track and
-          pushes the page sideways on small screens. */}
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">{filtered.length}</span> vehicles found
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Mobile filter trigger */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="lg:hidden">
-                  <SlidersHorizontal className="h-4 w-4" /> Filters
-                  {activeCount > 0 && (
-                    <span className="ml-1 rounded-full bg-brand-600 px-1.5 text-[10px] text-white">
-                      {activeCount}
-                    </span>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[85%] overflow-y-auto sm:max-w-sm">
-                <SheetHeader>
-                  <SheetTitle>Filters</SheetTitle>
-                </SheetHeader>
-                <div className="mt-6">{FilterPanel}</div>
-              </SheetContent>
-            </Sheet>
-            <Button variant="outline" size="sm" onClick={saveSearch}>
-              <Bookmark className="h-4 w-4" /> Save search
-            </Button>
-            <Select value={sort} onValueChange={(v) => setSort(v as VehicleSort)}>
-              <SelectTrigger className="h-9 w-[150px] sm:w-[170px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Most relevant</SelectItem>
-                <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                <SelectItem value="year-desc">Newest year</SelectItem>
-                <SelectItem value="mileage-asc">Lowest mileage</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {filtered.length === 0 ? (
+        <div className="mt-16 flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
+          <p className="font-semibold">No vehicles match your filters</p>
+          <p className="mt-1 text-sm text-muted-foreground">Try widening your search.</p>
+          <Button variant="outline" className="mt-4" onClick={reset}>
+            Clear filters
+          </Button>
         </div>
-
-        {filtered.length === 0 ? (
-          <div className="mt-16 flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
-            <p className="font-semibold">No vehicles match your filters</p>
-            <p className="mt-1 text-sm text-muted-foreground">Try widening your search.</p>
-            <Button variant="outline" className="mt-4" onClick={reset}>
-              Clear filters
-            </Button>
-          </div>
-        ) : (
-          <div className={cn("mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3")}>
-            {filtered.map((v) => (
+      ) : (
+        <>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {paged.items.map((v) => (
               <VehicleCard key={v.id} vehicle={v} basePath={basePath} />
             ))}
           </div>
-        )}
-      </div>
-    </div>
+          <Pagination
+            page={paged.page}
+            pageCount={paged.pageCount}
+            onPageChange={paged.goToPage}
+            itemNoun="vehicle"
+            from={paged.from}
+            to={paged.to}
+            total={paged.total}
+          />
+        </>
+      )}
+    </FilterLayout>
   );
 }

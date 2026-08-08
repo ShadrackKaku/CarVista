@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 import { LogOut, MessageSquare, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import type { UserRole } from "@prisma/client";
 import { Logo } from "@/components/logo";
+import { ModuleSidebar } from "@/components/shell/module-sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn, getInitials } from "@/lib/utils";
 import { moduleForPath, modulesFor, usesRail, type AppModule } from "@/lib/modules";
@@ -39,6 +40,16 @@ export interface AppSidebarProps {
  * part of the app am I in? Six rows at most, so it never scrolls, nothing folds,
  * and the collapsed rail is legible because each icon stands for a place rather
  * than for one link among thirty.
+ *
+ * That module sidebar is no longer a column of its own. Hovering a row here
+ * floats it out over the content instead, which buys back roughly 16rem of
+ * width and — more to the point — hands the fixed column beside the rail to the
+ * filter panel, the one thing on a browse page you operate *while* reading the
+ * results rather than on the way to them.
+ *
+ * Peeking is per-row, not per-page: hover Imports while you are in Marketplace
+ * and you get the Imports nav, so the rail is a switcher you can read before
+ * committing to, rather than a set of eight one-way doors.
  */
 export function AppSidebar({
   role,
@@ -79,13 +90,35 @@ export function AppSidebar({
   const folded = usesRail(pathname);
   const isCollapsed = !isDrawer && (collapsed || folded);
 
-  return (
+  // The module whose nav is currently floating out. Null is closed.
+  const [peek, setPeek] = useState<AppModule | null>(null);
+  const closePeek = useCallback(() => setPeek(null), []);
+
+  // Withdraw on navigation: the flyout has done its job the moment the route
+  // changes, and leaving it up would cover the page it just opened.
+  useEffect(() => {
+    setPeek(null);
+  }, [pathname]);
+
+  // Escape listens on the document, not on the panel. The flyout is usually
+  // opened by hover, which leaves focus on `<body>` — a handler bound to the
+  // sidebar would never receive the key that is supposed to dismiss it.
+  useEffect(() => {
+    if (!peek) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPeek(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [peek]);
+
+  const rail = (
     <aside
       className={cn(
         // The brand panel. Deep periwinkle in both themes — it is a branded
         // surface, not a themed one.
         "flex h-full flex-col bg-brand-900 text-white",
-        isDrawer ? "w-full" : "hidden shrink-0 transition-[width] duration-200 lg:flex",
+        isDrawer ? "w-full" : "shrink-0 transition-[width] duration-200",
         !isDrawer && (isCollapsed ? "w-[5.5rem]" : "w-[17rem]"),
       )}
     >
@@ -170,6 +203,7 @@ export function AppSidebar({
             collapsed={isCollapsed}
             badgeCount={mod.id === "garage" ? unreadMessages : 0}
             onNavigate={onNavigate}
+            onPeek={isDrawer ? undefined : () => setPeek(mod)}
           />
         ))}
       </nav>
@@ -215,6 +249,36 @@ export function AppSidebar({
       </div>
     </aside>
   );
+
+  // In the drawer the module nav is already stacked above this one, so there is
+  // nothing to float and no pointer to float it with.
+  if (isDrawer) return rail;
+
+  return (
+    <div
+      className="relative hidden lg:flex"
+      // The flyout is a child of this wrapper and sits flush against the rail's
+      // right edge, so moving the pointer from a row into the panel never
+      // crosses a gap and never leaves this element — no close timer needed.
+      onPointerLeave={closePeek}
+      // Keyboard equivalent of leaving: focus landing anywhere outside closes.
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) closePeek();
+      }}
+    >
+      {rail}
+      {peek && (
+        <div className="absolute left-full top-0 z-50 h-full">
+          <ModuleSidebar
+            role={role}
+            module={peek}
+            variant="flyout"
+            onNavigate={closePeek}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ModuleLink({
@@ -223,12 +287,15 @@ function ModuleLink({
   collapsed,
   badgeCount,
   onNavigate,
+  onPeek,
 }: {
   module: AppModule;
   active: boolean;
   collapsed: boolean;
   badgeCount: number;
   onNavigate?: () => void;
+  /** Float this module's nav out. Absent in the drawer, which has no flyout. */
+  onPeek?: () => void;
 }) {
   const Icon = mod.icon;
 
@@ -236,6 +303,12 @@ function ModuleLink({
     <Link
       href={mod.basePath}
       onClick={onNavigate}
+      // A tap is not a hover: on a touch screen opening the panel would cover
+      // the page the same tap is navigating to.
+      onPointerEnter={(e) => {
+        if (e.pointerType !== "touch") onPeek?.();
+      }}
+      onFocus={() => onPeek?.()}
       aria-current={active ? "page" : undefined}
       // Collapsed, the label is not rendered, so name the link explicitly
       // rather than leaning on `title` as the accessible name of last resort.

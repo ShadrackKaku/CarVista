@@ -17,6 +17,17 @@ const config: Config = {
       },
     },
     extend: {
+      spacing: {
+        // Tailwind's default scale has 0.5, 1.5, 2.5 and 3.5 but stops there,
+        // so `h-4.5` and `w-4.5` compiled to nothing at all — no error, no
+        // warning, just an element with no size. That is what shrank every
+        // checkbox in the app to an invisible sliver: `Checkbox` is `shrink-0`
+        // with no content, so a missing width collapsed it to zero.
+        //
+        // Ten call sites already assume this step exists and clearly mean
+        // 18px, so define it rather than rewrite them all to 4.
+        4.5: "1.125rem",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

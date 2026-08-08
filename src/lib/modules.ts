@@ -379,3 +379,28 @@ export function usesRail(pathname: string): boolean {
   if (moduleForPath(pathname) !== null) return true;
   return RAIL_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
+
+/**
+ * Routes whose page hands a filter panel to the shell's docked column.
+ *
+ * Matched exactly, never by prefix: `/app/marketplace/vehicles` browses and so
+ * needs filters, while `/app/marketplace/vehicles/corolla-2019` is one car and
+ * would get an empty column pinned beside it.
+ *
+ * Both ends read this list — the shell to decide whether to render the column
+ * at all, and the page to decide whether to portal its filters into it or fall
+ * back to its own inline sidebar. One source, so the two can never disagree and
+ * leave filters rendered nowhere.
+ */
+export const FILTER_DOCK_PATHS = [
+  "/app/marketplace/vehicles",
+  "/app/marketplace/parts",
+  "/app/marketplace/dealers",
+  "/app/marketplace/suppliers",
+  "/app/marketplace/services",
+];
+
+/** Whether this route's filters belong in the shell's fixed filter column. */
+export function usesFilterDock(pathname: string): boolean {
+  return FILTER_DOCK_PATHS.includes(pathname);
+}
