@@ -59,6 +59,10 @@ export function isSupplier(role: UserRole | null | undefined): boolean {
   return role === "SUPPLIER" || isAdmin(role);
 }
 
+export function isImporter(role: UserRole | null | undefined): boolean {
+  return role === "IMPORTER" || isAdmin(role);
+}
+
 export interface RoleProfile {
   role: ApplicableRole;
   label: string;

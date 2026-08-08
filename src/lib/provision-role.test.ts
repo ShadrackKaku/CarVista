@@ -9,7 +9,7 @@ import { provisionRoleProfile } from "./provision-role";
  * and there was no path to create one. These tests pin the two halves together.
  */
 
-type Model = "dealer" | "partsStore" | "serviceProvider" | "supplier";
+type Model = "dealer" | "partsStore" | "serviceProvider" | "supplier" | "importer";
 
 /**
  * A transaction client with just the calls this module makes. `existingUser`
@@ -38,6 +38,7 @@ function fakeTx(opts: { existingFor?: Model; takenSlugs?: string[] } = {}) {
       partsStore: model("partsStore"),
       serviceProvider: model("serviceProvider"),
       supplier: model("supplier"),
+      importer: model("importer"),
     },
     created,
   };
@@ -57,6 +58,7 @@ describe("provisionRoleProfile", () => {
     ["PARTS_SELLER", "partsStore", "storeName"],
     ["SERVICE_PROVIDER", "serviceProvider", "businessName"],
     ["SUPPLIER", "supplier", "businessName"],
+    ["IMPORTER", "importer", "businessName"],
   ] as const)("creates the %s profile", async (role, model, nameField) => {
     const { tx, created } = fakeTx();
     const result = await provisionRoleProfile(tx as never, "user-1", role, DETAILS);
@@ -73,11 +75,12 @@ describe("provisionRoleProfile", () => {
     expect(created[0].description).toBe("Trading since 2015.");
   });
 
-  it("creates nothing for IMPORTER — it has no profile of its own", async () => {
+  it("gives a new importer empty source markets, not undefined", async () => {
+    // Prisma rejects `undefined` for a required list field, and the console
+    // reads `.length` on it without guarding.
     const { tx, created } = fakeTx();
-    const result = await provisionRoleProfile(tx as never, "user-1", "IMPORTER", DETAILS);
-    expect(result.created).toBeNull();
-    expect(created).toHaveLength(0);
+    await provisionRoleProfile(tx as never, "user-1", "IMPORTER", DETAILS);
+    expect(created[0].sourceMarkets).toEqual([]);
   });
 
   it("is idempotent — a second grant leaves the existing profile alone", async () => {
