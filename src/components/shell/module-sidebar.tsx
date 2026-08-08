@@ -9,32 +9,44 @@ import {
   isModuleItemActive,
   moduleForPath,
   moduleItemsFor,
+  type AppModule,
   type ModuleNavItem,
 } from "@/lib/modules";
 
 /**
- * The second sidebar — a module's own navigation, sitting between the folded
- * main rail and the content.
+ * A module's own navigation.
  *
- * It scrolls independently of both (§11): a long module nav must never make
- * the page scroll, and must never push the content column around.
+ * On the desktop this is the flyout that opens off the main rail; on a phone it
+ * is the top half of the navigation drawer. Both render the same list, so a
+ * module gains a destination in the registry and nowhere else.
+ *
+ * It scrolls independently of whatever it sits in (§11): a long module nav must
+ * never make the page scroll, and must never push the content column around.
  */
 export function ModuleSidebar({
   role,
   onNavigate,
   variant = "column",
+  module: explicitModule,
 }: {
   role: UserRole | null;
   onNavigate?: () => void;
   /**
-   * `column` is the desktop sidebar. `drawer` is the same nav stacked above the
-   * main one on small screens, where there is no room for a third column — it
-   * caps its own height so the main nav below it stays reachable.
+   * `column` is a plain full-height panel. `drawer` stacks above the main nav on
+   * small screens, where there is no room for a second column — it caps its own
+   * height so the main nav below it stays reachable. `flyout` is the desktop
+   * overlay: it floats over the content, so it carries its own elevation.
    */
-  variant?: "column" | "drawer";
+  variant?: "column" | "drawer" | "flyout";
+  /**
+   * Show this module rather than the one the URL is in. The rail passes the
+   * module being hovered, which is how you can peek into Imports without
+   * leaving Marketplace.
+   */
+  module?: AppModule;
 }) {
   const pathname = usePathname();
-  const activeModule = moduleForPath(pathname);
+  const activeModule = explicitModule ?? moduleForPath(pathname);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -51,7 +63,9 @@ export function ModuleSidebar({
     <aside
       className={cn(
         "flex w-full shrink-0 flex-col bg-card",
-        variant === "drawer" ? "max-h-[55%] border-b" : "h-full border-r lg:w-64",
+        variant === "drawer" && "max-h-[55%] border-b",
+        variant === "column" && "h-full border-r lg:w-64",
+        variant === "flyout" && "h-full w-64 border-r shadow-2xl",
       )}
     >
       <div className="shrink-0 px-5 pb-4 pt-5">

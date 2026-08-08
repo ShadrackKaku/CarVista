@@ -1,6 +1,6 @@
 import type { UserRole } from "@prisma/client";
 import { AppSidebar } from "@/components/shell/app-sidebar";
-import { ModuleSidebar } from "@/components/shell/module-sidebar";
+import { FilterDock } from "@/components/shell/filter-dock";
 import { ShellTopbar } from "@/components/shell/shell-topbar";
 
 export interface AppShellProps {
@@ -18,12 +18,16 @@ export interface AppShellProps {
  *
  * The outer element is pinned to the viewport and never scrolls, so the
  * sidebars stay put no matter how long the page is. Scrolling belongs to the
- * content column and to each sidebar's own nav list — three independent scroll
- * regions, so a long module nav never drags the page or the content with it.
+ * content column and to each panel's own list — independent scroll regions, so
+ * a long filter panel never drags the page or the results beside it.
  *
- * The module column appears only when the current route belongs to a module;
- * `ModuleSidebar` decides that from the pathname, which is why adding a module
- * touches the registry and nothing here.
+ * Two fixed columns at most, and only one of them is navigation. The rail is
+ * always there; the second column belongs to the current page's filters and
+ * appears only where a page has any. The module nav floats out of the rail on
+ * hover instead of holding a column of its own — see `AppSidebar`.
+ *
+ * Both columns decide themselves from the pathname, which is why adding a
+ * module or a filtered route touches a registry and nothing here.
  */
 export function AppShell({
   role,
@@ -43,11 +47,9 @@ export function AppShell({
         unreadMessages={unreadMessages}
       />
 
-      {/* Module navigation — hidden on small screens, where it folds into the
-          topbar drawer alongside the main nav. */}
-      <div className="hidden lg:block">
-        <ModuleSidebar role={role} />
-      </div>
+      {/* Filters for the routes that browse. Renders nothing anywhere else, and
+          nothing below `lg`, where the same panel opens in a sheet instead. */}
+      <FilterDock />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <ShellTopbar
