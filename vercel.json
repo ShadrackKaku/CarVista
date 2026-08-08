@@ -3,5 +3,14 @@
   "framework": "nextjs",
   "buildCommand": "prisma generate && node scripts/migrate-deploy.mjs && next build",
   "installCommand": "npm install",
-  "crons": [{ "path": "/api/cron/alerts", "schedule": "0 8 * * *" }]
+  "crons": [
+    {
+      "path": "/api/cron/alerts",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/reservations",
+      "schedule": "0 * * * *"
+    }
+  ]
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { confirmReservationFee } from "@/lib/reserve-fee";
 import { verifyWebhookSignature, settledAsExpected, isPaystackConfigured } from "@/lib/paystack";
 import { confirmPaidPayment, settleOrderRefund } from "@/lib/fulfill-order";
 import { confirmMilestonePayment, settleMilestoneRefund } from "@/lib/escrow";
@@ -75,6 +76,22 @@ export async function POST(req: Request) {
             await confirmMilestonePayment(milestone.id, ref);
           } else {
             console.error("[paystack:webhook] escrow amount mismatch", { ref });
+          }
+        } else {
+          // "RSV-" — a reservation fee on import stock. This is where a hold
+          // actually begins: the row exists from checkout, but it holds no unit
+          // and has no deadline until the money is in, so an abandoned checkout
+          // can never lock a car.
+          const reservation = await prisma.importReservation.findUnique({
+            where: { reference: ref },
+            select: { id: true, feeGhs: true, status: true },
+          });
+          if (reservation) {
+            if (settledAsExpected(settled, Number(reservation.feeGhs), "GHS")) {
+              await confirmReservationFee(reservation.id, ref);
+            } else {
+              console.error("[paystack:webhook] reservation amount mismatch", { ref });
+            }
           }
         }
       }
