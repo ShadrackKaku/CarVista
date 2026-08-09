@@ -34,6 +34,10 @@ const VEHICLE_EDIT = /^\/vehicles\/([^/]+)\/edit$/;
 
 /** Everything else maps by prefix. */
 const PREFIXES: [publicPrefix: string, shellPrefix: string][] = [
+  // Stock is the one part of /import with crawlable per-car URLs, so it needs
+  // a prefix rather than an exact entry — /import itself stays a marketing
+  // page and keeps its own mapping above.
+  ["/import/stock", "/app/imports/stock"],
   ["/vehicles", "/app/marketplace/vehicles"],
   ["/parts", "/app/marketplace/parts"],
   ["/dealers", "/app/marketplace/dealers"],

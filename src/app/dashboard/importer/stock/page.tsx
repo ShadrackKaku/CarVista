@@ -5,6 +5,7 @@ import { getImporterForUser, getImporterStock } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatSourceAmount } from "@/lib/import-stock";
+import { ListingStatusAction } from "@/components/import-stock/listing-status-action";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export default async function ImporterStockPage() {
                 <th className="p-3 font-medium">FOB</th>
                 <th className="p-3 font-medium">Units</th>
                 <th className="p-3 font-medium">Status</th>
+                <th className="p-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -77,6 +79,14 @@ export default async function ImporterStockPage() {
                     <Badge variant={STATUS_VARIANT[l.status as keyof typeof STATUS_VARIANT]}>
                       {l.status.replace("_", " ").toLowerCase()}
                     </Badge>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/dashboard/importer/stock/${l.id}/edit`}>Edit</Link>
+                      </Button>
+                      <ListingStatusAction listingId={l.id} status={l.status} />
+                    </div>
                   </td>
                 </tr>
               ))}

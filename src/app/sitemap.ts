@@ -7,6 +7,7 @@ import {
   getDealers,
   getServices,
   getBlogPosts,
+  getImportStock,
 } from "@/lib/queries";
 
 // Rebuild the sitemap at most hourly so newly listed vehicles/parts get indexed
@@ -22,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/vehicles",
     "/parts",
     "/import",
+    "/import/stock",
     "/dealers",
     "/suppliers",
     "/services",
@@ -130,8 +132,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
   }
 
+  // Import stock is listed straight from the live table rather than through
+  // getSitemapEntries: it is a small set, it turns over quickly, and a car that
+  // sold last week should drop out of the sitemap on the next hourly rebuild.
+  const stockRoutes: MetadataRoute.Sitemap = (await getImportStock().catch(() => [])).map(
+    (l) => ({
+      url: `${base}/import/stock/${l.slug}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.8,
+    }),
+  );
+
   return [
     ...staticRoutes,
+    ...stockRoutes,
     ...vehicleRoutes,
     ...partRoutes,
     ...dealerRoutes,

@@ -37,6 +37,16 @@ describe("shellTwinFor", () => {
     expect(shellTwinFor("/import/escrow/verify")).toBe("/app/imports/escrow/verify");
   });
 
+  it("maps the public stock pages, which exist to be crawled", () => {
+    // These are the only /import URLs with a per-car public page. A signed-in
+    // visitor arriving from a search result must land in the shell, not on the
+    // logged-out copy with a sign-in prompt where the reserve button should be.
+    expect(shellTwinFor("/import/stock")).toBe("/app/imports/stock");
+    expect(shellTwinFor("/import/stock/2019-toyota-harrier")).toBe(
+      "/app/imports/stock/2019-toyota-harrier",
+    );
+  });
+
   it("maps global search", () => {
     expect(shellTwinFor("/search")).toBe("/app/search");
   });

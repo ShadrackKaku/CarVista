@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { isImporter } from "@/lib/roles";
 import { importListingSchema, importListingStatusSchema } from "@/lib/validations";
+import { holdingWhere } from "@/lib/reservations";
 
 /**
  * PATCH — edit a listing, or publish/archive it.
@@ -37,6 +38,24 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // Status-only change: publish or archive.
   const statusOnly = importListingStatusSchema.safeParse(body);
   if (statusOnly.success && Object.keys(body).length === 1) {
+    // Taking a car off the market while somebody is holding a unit of it would
+    // strand a buyer who has paid GH₵500 and is in the middle of arranging the
+    // FOB transfer. Their hold runs out on its own within two working days;
+    // until then the importer has to honour it.
+    if (statusOnly.data.status !== "ACTIVE") {
+      const holding = await prisma.importReservation.count({
+        where: { listingId: listing.id, ...holdingWhere() },
+      });
+      if (holding > 0) {
+        return NextResponse.json(
+          {
+            error: `${holding} buyer${holding === 1 ? " is" : "s are"} holding a unit of this listing. You can archive it once their hold runs out.`,
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     await prisma.importListing.update({
       where: { id: listing.id },
       data: { status: statusOnly.data.status },
@@ -53,8 +72,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
   const input = parsed.data;
 
+  // Counted through the shared predicate so a hold that has already lapsed —
+  // but which no sweep has flipped yet — does not block the importer from
+  // correcting the quantity.
   const held = await prisma.importReservation.count({
-    where: { listingId: listing.id, status: "ACTIVE" },
+    where: { listingId: listing.id, ...holdingWhere() },
   });
   if (input.quantity < held) {
     return NextResponse.json(
