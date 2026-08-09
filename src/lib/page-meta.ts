@@ -42,6 +42,8 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/app/marketplace/checkout/verify", { title: "Payment", subtitle: "Confirming your order with Paystack." }],
 
   // ── Imports module ─────────────────────────────────────────────
+  ["/app/imports/stock", { title: "Cars ready to import", subtitle: "Stock importers already have access to, priced landed in Tema." }],
+  ["/app/imports/stock/:slug", { title: "Import stock", subtitle: "FOB, shipping and our duty estimate, itemised." }],
   ["/app/imports/new", { title: "Start an import", subtitle: "Tell us what you want and we'll quote the landed cost." }],
   ["/app/imports/mine", { title: "My imports", subtitle: "Every car you're bringing in, and where it is." }],
   ["/app/imports/track", { title: "Track a shipment", subtitle: "Look up an import by its reference." }],
@@ -98,6 +100,11 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/dashboard/seller/analytics", { title: "Analytics", subtitle: "Sales, views and stock movement." }],
 
   // ── Supplier console ───────────────────────────────────────────
+  ["/dashboard/importer", { title: "Importer overview", subtitle: "Your stock, and who is holding it." }],
+  ["/dashboard/importer/stock", { title: "My stock", subtitle: "Cars you have published for reservation." }],
+  ["/dashboard/importer/stock/new", { title: "List a car", subtitle: "Saved as a draft until the pricing is set." }],
+  ["/dashboard/importer/reservations", { title: "Reservations", subtitle: "Who is holding what, and until when." }],
+  ["/dashboard/importer/profile", { title: "My importer profile", subtitle: "What buyers see when they browse your stock." }],
   ["/dashboard/supplier", { title: "Supplier overview", subtitle: "Enquiries waiting on you." }],
   ["/dashboard/supplier/enquiries", { title: "Enquiries", subtitle: "Buyers asking you to quote." }],
   ["/dashboard/supplier/profile", { title: "My supplier profile", subtitle: "What buyers see, and how they filter to you." }],

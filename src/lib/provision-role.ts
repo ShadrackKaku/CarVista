@@ -33,7 +33,7 @@ async function uniqueSlug(
 
 export interface ProvisionResult {
   /** Which profile was created, or null when the role needs none. */
-  created: "dealer" | "partsStore" | "serviceProvider" | "supplier" | null;
+  created: "dealer" | "partsStore" | "serviceProvider" | "supplier" | "importer" | null;
   /** True when a profile already existed and was left untouched. */
   alreadyExisted: boolean;
 }
@@ -114,9 +114,28 @@ export async function provisionRoleProfile(
       return { created: "supplier", alreadyExisted: false };
     }
 
-    // IMPORTER works through ImportRequest, which is keyed on the user; there
-    // is no separate profile to create. USER, ADMIN and SUPER_ADMIN never
-    // reach here — the application schema will not accept them.
+    case "IMPORTER": {
+      // This branch used to fall through to `default`, on the reasoning that
+      // an importer "works through ImportRequest, which is keyed on the user".
+      // That was wrong in a way nobody saw, because the role application screen
+      // promises importers three things — requests routed to them, clearing
+      // tools, and landed-cost quoting — and none of them had anywhere to live.
+      // An approved importer got a badge and the abilities of an ordinary user.
+      // Stock is published by an Importer, so the row has to exist.
+      if (await tx.importer.findUnique({ where: { userId }, select: { id: true } })) {
+        return { created: null, alreadyExisted: true };
+      }
+      const slug = await uniqueSlug(tx, name, async (s) =>
+        Boolean(await tx.importer.findUnique({ where: { slug: s }, select: { id: true } })),
+      );
+      await tx.importer.create({
+        data: { ...common, businessName: name, slug, sourceMarkets: [] },
+      });
+      return { created: "importer", alreadyExisted: false };
+    }
+
+    // USER, ADMIN and SUPER_ADMIN never reach here — the application schema
+    // will not accept them.
     default:
       return { created: null, alreadyExisted: false };
   }

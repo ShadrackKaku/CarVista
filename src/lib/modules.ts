@@ -32,7 +32,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@prisma/client";
-import { isAdmin, isDealer, isPartsSeller, isSupplier } from "@/lib/roles";
+import { isAdmin, isDealer, isImporter, isPartsSeller, isSupplier } from "@/lib/roles";
 
 /**
  * Application modules.
@@ -162,6 +162,12 @@ const imports: AppModule = {
   blurb: "Source it, ship it, clear it — and know the cost before you commit.",
   items: [
     {
+      label: "Cars ready to import",
+      href: "/app/imports/stock",
+      icon: Car,
+      description: "Stock importers already have access to",
+    },
+    {
       label: "Start an import",
       href: "/app/imports/new",
       icon: Plus,
@@ -274,6 +280,38 @@ const supplierConsole: AppModule = {
   ],
 };
 
+const importerConsole: AppModule = {
+  id: "importer",
+  label: "Importer console",
+  short: "Stock",
+  icon: Ship,
+  basePath: "/dashboard/importer",
+  blurb: "The stock you have on offer and the buyers holding units of it.",
+  items: [
+    {
+      label: "Overview",
+      href: "/dashboard/importer",
+      icon: LayoutGrid,
+      exact: true,
+      description: "Stock and holds at a glance",
+    },
+    { label: "My stock", href: "/dashboard/importer/stock", icon: Car },
+    {
+      label: "List a car",
+      href: "/dashboard/importer/stock/new",
+      icon: Plus,
+      description: "Publish a unit buyers can reserve",
+    },
+    {
+      label: "Reservations",
+      href: "/dashboard/importer/reservations",
+      icon: ClipboardCheck,
+      description: "Who is holding what, and until when",
+    },
+    { label: "My profile", href: "/dashboard/importer/profile", icon: Settings },
+  ],
+};
+
 const admin: AppModule = {
   id: "admin",
   label: "Admin",
@@ -319,6 +357,7 @@ export const MODULES: AppModule[] = [
   dealerConsole,
   sellerConsole,
   supplierConsole,
+  importerConsole,
   garage,
   admin,
 ];
@@ -348,6 +387,7 @@ export function modulesFor(role: UserRole | null): AppModule[] {
     if (m.id === "dealer") return isDealer(role);
     if (m.id === "seller") return isPartsSeller(role);
     if (m.id === "supplier") return isSupplier(role);
+    if (m.id === "importer") return isImporter(role);
     return true;
   });
 }
@@ -398,6 +438,7 @@ export const FILTER_DOCK_PATHS = [
   "/app/marketplace/dealers",
   "/app/marketplace/suppliers",
   "/app/marketplace/services",
+  "/app/imports/stock",
 ];
 
 /** Whether this route's filters belong in the shell's fixed filter column. */

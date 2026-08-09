@@ -106,6 +106,8 @@ model User {
   roleApplications      RoleApplication[]    @relation("RoleApplicant")
   reviewedApplications  RoleApplication[]    @relation("RoleApplicationReviewer")
   supplier              Supplier?
+  importer              Importer?
+  reservations          ImportReservation[]
   supplierEnquiries     SupplierEnquiry[]    @relation("EnquiryBuyer")
 
   @@index([role])
@@ -840,6 +842,7 @@ model ImportRequest {
   requestNumber String  @unique
   userId        String
   vehicleId     String?
+  listingId     String?
 
   // request details
   countryOfOrigin String
@@ -869,8 +872,12 @@ model ImportRequest {
 
   user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicle        Vehicle?              @relation(fields: [vehicleId], references: [id])
+  /// Set when the request began as a reservation on published stock rather
+  /// than a buyer describing a car from scratch.
+  listing        ImportListing?        @relation(fields: [listingId], references: [id])
   trackingEvents ImportTrackingEvent[]
   escrowPlan     EscrowPlan?
+  reservation    ImportReservation?
 
   @@index([userId])
   @@index([stage])
@@ -1559,4 +1566,229 @@ model SupplierEnquiry {
 
   @@index([supplierId, status])
   @@index([buyerId])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  IMPORT STOCK  (importers list cars buyers can reserve)
+//
+//  The demand side already existed: ImportRequest is a buyer describing a car
+//  they want sourced. This is the supply side — an importer publishing what
+//  they already have access to, the way SBT or BE FORWARD do.
+//
+//  Deliberately NOT the Vehicle model. Foreign stock is priced FOB in yen or
+//  dollars, sits in Nagoya or Dubai, and is identified by chassis number and
+//  auction grade rather than a Ghana registration. Putting ¥450,000 in
+//  Vehicle.price — a GHS column — would rank it above a GH¢466,000 Highlander
+//  and quietly break price sort and price filters for the whole marketplace.
+//
+//  Vehicle.importStatus = AVAILABLE_FOR_IMPORT stays as it was. It means
+//  something weaker and different: a car listed for sale in Ghana that can
+//  also be sourced to order.
+// ══════════════════════════════════════════════════════════════
+
+/// The profile behind the IMPORTER role.
+///
+/// The role has been grantable since the role-application flow shipped, and
+/// the application screen promises "import requests routed to you", "clearing
+/// and shipment tracking tools" and "landed-cost quoting for customers" — but
+/// approval provisioned nothing, so an approved importer got a badge and no
+/// tools. This is the row those promises need.
+model Importer {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  businessName  String
+  slug          String   @unique
+  description   String?  @db.Text
+  logo          String?
+  coverImage    String?
+  phone         String?
+  whatsapp      String?
+  email         String?
+  website       String?
+  city          String?
+  region        String?
+  /// Source markets they buy from — "Japan", "United Kingdom", "Dubai".
+  sourceMarkets String[]
+  /// Typical door-to-Tema time they quote, in days.
+  leadTimeDays  Int?
+  verified      Boolean  @default(false)
+  featured      Boolean  @default(false)
+  rating        Float    @default(0)
+  reviewCount   Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings ImportListing[]
+
+  @@index([verified, featured])
+}
+
+enum ImportListingStatus {
+  DRAFT
+  ACTIVE
+  /// Every unit is spoken for. Reappears as ACTIVE when a reservation lapses.
+  FULLY_RESERVED
+  SOLD_OUT
+  ARCHIVED
+}
+
+/// One spec of foreign stock, with a quantity of interchangeable units.
+///
+/// "Stocks of the same car" is the normal case — five identical Harriers from
+/// the same auction run. Each unit is reserved separately, so `quantity` is
+/// what a reservation consumes. Units that genuinely differ (another chassis,
+/// different mileage or auction grade) are separate listings, because a buyer
+/// choosing between them is choosing between different cars.
+model ImportListing {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  importerId   String
+  title        String
+  make         String
+  model        String
+  /// Free text — the HDV lookup gets much tighter when this is populated.
+  trim         String?
+  year         Int
+  mileage      Int?
+  fuelType     FuelType
+  transmission Transmission
+  bodyType     BodyType
+  engineSize   Float?
+  color        String?
+  drivetrain   String?
+  description  String?      @db.Text
+  features     String[]
+
+  // ── where it actually is ──
+  countryOfOrigin String
+  portOfLoading   String?
+  auctionSource   String?
+  /// Japanese auction sheet grade — "4.5", "R", "3.5".
+  auctionGrade    String?
+  chassisNumber   String?
+
+  // ── money ──
+  /// Free On Board, in the source market's currency. Never GHS.
+  fobAmount     Decimal  @db.Decimal(14, 2)
+  /// ISO 4217 — JPY, USD, GBP, AED.
+  fobCurrency   String
+  /// Cedis per one unit of `fobCurrency`, as the importer quotes it.
+  ///
+  /// Carried on the listing rather than looked up, because the only rate we
+  /// hold is USD/GHS — observed from real ICUMS assessments — and most
+  /// Japanese stock is priced in yen. The importer takes the FX risk and knows
+  /// the rate they can actually buy at, so it is theirs to state; `updatedAt`
+  /// dates it and the buyer is shown what it converted at.
+  fxRateToGhs   Decimal? @db.Decimal(14, 6)
+  /// The importer's own fee, in cedis. Shown to the buyer as a separate line
+  /// rather than buried in the FOB, so they can compare importers on it.
+  serviceFeeGhs Decimal? @db.Decimal(12, 2)
+  /// Ocean freight the importer quotes, in cedis. Duty is NOT stored here —
+  /// it is estimated at render from the landed-cost engine, because it moves
+  /// with FX and with every new assessment we ingest.
+  freightGhs    Decimal? @db.Decimal(12, 2)
+
+  /// Units available to reserve. A reservation consumes one.
+  quantity Int  @default(1)
+  etaDays  Int?
+
+  status   ImportListingStatus @default(DRAFT)
+  featured Boolean             @default(false)
+  views    Int                 @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  importer     Importer             @relation(fields: [importerId], references: [id], onDelete: Cascade)
+  images       ImportListingImage[]
+  reservations ImportReservation[]
+  requests     ImportRequest[]
+
+  @@index([importerId, status])
+  @@index([status, featured])
+  @@index([make, model, year])
+}
+
+model ImportListingImage {
+  id        String  @id @default(cuid())
+  listingId String
+  url       String
+  alt       String?
+  position  Int     @default(0)
+
+  listing ImportListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, position])
+}
+
+enum ReservationStatus {
+  /// Created, fee not yet cleared. Holds nothing — an abandoned checkout must
+  /// never lock a unit.
+  PENDING_PAYMENT
+  /// Fee cleared. The clock is running and a unit is held.
+  ACTIVE
+  /// FOB paid in time; became an ImportRequest and entered the import pipeline.
+  CONVERTED
+  /// The window closed without the FOB. Unit released, partial refund due.
+  EXPIRED
+  /// Withdrawn by the buyer or the importer before it lapsed.
+  CANCELLED
+}
+
+/// A paid hold on one unit of a listing.
+///
+/// The buyer pays a reservation fee, which holds a unit for a fixed number of
+/// Ghana working days while they arrange the FOB transfer. Pay in time and the
+/// whole fee is credited toward the FOB; miss the window and half comes back.
+///
+/// Both the fee and the refund rate are copied onto the row at reservation
+/// time and never read back from config. When the policy changes — GH¢500
+/// becomes GH¢750, or 50% becomes 30% — reservations already taken must still
+/// settle on the terms their buyer actually agreed to.
+model ImportReservation {
+  id        String @id @default(cuid())
+  reference String @unique
+  listingId String
+  userId    String
+
+  /// What this buyer actually paid, in cedis. Not today's price.
+  feeGhs     Decimal @db.Decimal(12, 2)
+  /// The share refunded if they miss the window, as agreed at reservation time.
+  refundRate Float
+
+  status ReservationStatus @default(PENDING_PAYMENT)
+
+  /// Set when the fee clears — the clock starts here, not at checkout.
+  paidAt       DateTime?
+  /// End of the hold, computed in Ghana working days from `paidAt`.
+  expiresAt    DateTime?
+  /// True when an unconfirmed lunar holiday widened the window (see
+  /// ghana-calendar.ts). Recorded so support can explain the extra day.
+  graceApplied Boolean   @default(false)
+
+  /// Paystack reference for the fee, and for the partial refund if one is due.
+  /// `refundReference` is the idempotency guard: the expiry job refuses to
+  /// refund a reservation that already has one, so a double cron run cannot
+  /// pay a customer twice.
+  paymentReference String?
+  refundReference  String?
+  refundedGhs      Decimal?  @db.Decimal(12, 2)
+  refundedAt       DateTime?
+
+  /// Set when the FOB lands and this becomes a real import.
+  importRequestId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listing       ImportListing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  importRequest ImportRequest? @relation(fields: [importRequestId], references: [id])
+
+  @@index([listingId, status])
+  @@index([userId, status])
+  /// The expiry job's working set: active holds, oldest deadline first.
+  @@index([status, expiresAt])
 }

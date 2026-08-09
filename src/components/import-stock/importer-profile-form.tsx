@@ -2,51 +2,54 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { BadgeCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GHANA_REGIONS } from "@/lib/constants";
-import { SUPPLIER_CATEGORIES, SUPPLIER_CATEGORY_LABELS } from "@/lib/suppliers";
+import { SOURCE_MARKETS } from "@/lib/import-stock";
 import { cn } from "@/lib/utils";
-import type { SupplierRow } from "@/lib/queries";
+import type { Importer } from "@prisma/client";
 
-/** Edit your own supplier profile. The API scopes the write to your row. */
-export function SupplierProfileForm({ supplier }: { supplier: SupplierRow }) {
+/**
+ * Edit your own importer profile.
+ *
+ * Buyers decide whether to wire a five-figure FOB to a stranger partly on what
+ * this page says, so the copy asks for the things that actually settle that
+ * question — how long you have been shipping, what you source, how to reach a
+ * human — rather than treating it as an address book entry.
+ */
+export function ImporterProfileForm({ importer }: { importer: Importer }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<string[]>(supplier.categories);
-  const [regions, setRegions] = useState<string[]>(supplier.servesRegions);
+  const [markets, setMarkets] = useState<string[]>(importer.sourceMarkets);
   const [form, setForm] = useState({
-    businessName: supplier.name,
-    description: supplier.description,
-    minimumOrder: supplier.minimumOrder ?? "",
-    leadTimeDays: supplier.leadTimeDays != null ? String(supplier.leadTimeDays) : "",
-    phone: supplier.phone ?? "",
-    whatsapp: supplier.whatsapp ?? "",
-    website: supplier.website ?? "",
-    city: supplier.city,
-    region: supplier.region,
+    businessName: importer.businessName,
+    description: importer.description ?? "",
+    leadTimeDays: importer.leadTimeDays != null ? String(importer.leadTimeDays) : "",
+    phone: importer.phone ?? "",
+    whatsapp: importer.whatsapp ?? "",
+    email: importer.email ?? "",
+    website: importer.website ?? "",
+    city: importer.city ?? "",
+    region: importer.region ?? "",
   });
 
-  function toggle(list: string[], value: string, set: (v: string[]) => void) {
-    set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
-  }
+  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("/api/supplier/profile", {
+      const res = await fetch("/api/importer/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
           leadTimeDays: form.leadTimeDays === "" ? undefined : form.leadTimeDays,
-          categories,
-          servesRegions: regions,
+          sourceMarkets: markets,
         }),
       });
       const data = await res.json();
@@ -65,6 +68,34 @@ export function SupplierProfileForm({ supplier }: { supplier: SupplierRow }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-8">
+      <div
+        className={cn(
+          "flex items-start gap-3 rounded-xl border p-4 text-sm",
+          importer.verified ? "bg-success/5" : "bg-muted/40",
+        )}
+      >
+        <BadgeCheck
+          className={cn(
+            "mt-0.5 h-5 w-5 shrink-0",
+            importer.verified ? "text-success" : "text-muted-foreground",
+          )}
+        />
+        <p className="text-muted-foreground">
+          {importer.verified ? (
+            <>
+              Your business is <span className="font-medium text-foreground">verified</span>. The
+              badge shows on every car you list.
+            </>
+          ) : (
+            <>
+              Not verified yet. Buyers see the badge on verified importers, and it is the single
+              biggest thing that gets a first FOB transfer sent. Send your business registration
+              to the team to start the check.
+            </>
+          )}
+        </p>
+      </div>
+
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="businessName">Business name</Label>
@@ -72,42 +103,45 @@ export function SupplierProfileForm({ supplier }: { supplier: SupplierRow }) {
             id="businessName"
             required
             value={form.businessName}
-            onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
+            onChange={(e) => set("businessName", e.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="description">What you supply, in your own words</Label>
+          <Label htmlFor="description">How you work, in your own words</Label>
           <Textarea
             id="description"
             rows={4}
             value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Brands you carry, where you source from, who you usually sell to."
+            onChange={(e) => set("description", e.target.value)}
+            placeholder="Which auctions you buy from, how long you have been shipping to Tema, what you do if a car arrives damaged."
           />
         </div>
       </div>
 
       <div>
-        <Label>Categories</Label>
+        <Label>Where you source from</Label>
         <p className="mt-1 text-sm text-muted-foreground">
-          Buyers filter the directory by these. With none selected you don&apos;t appear in any
-          filter.
+          Buyers filter stock by market. With none selected you are missing from every filter.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {SUPPLIER_CATEGORIES.map((c) => (
+          {SOURCE_MARKETS.map((m) => (
             <button
-              key={c}
+              key={m}
               type="button"
-              aria-pressed={categories.includes(c)}
-              onClick={() => toggle(categories, c, setCategories)}
+              aria-pressed={markets.includes(m)}
+              onClick={() =>
+                setMarkets((cur) =>
+                  cur.includes(m) ? cur.filter((v) => v !== m) : [...cur, m],
+                )
+              }
               className={cn(
                 "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
-                categories.includes(c)
+                markets.includes(m)
                   ? "border-brand-600 bg-brand-600 text-white"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
             >
-              {SUPPLIER_CATEGORY_LABELS[c]}
+              {m}
             </button>
           ))}
         </div>
@@ -115,23 +149,15 @@ export function SupplierProfileForm({ supplier }: { supplier: SupplierRow }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="minimumOrder">Minimum order</Label>
-          <Input
-            id="minimumOrder"
-            value={form.minimumOrder}
-            onChange={(e) => setForm((f) => ({ ...f, minimumOrder: e.target.value }))}
-            placeholder="20 units, or GH₵50,000"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="leadTimeDays">Typical lead time (days)</Label>
+          <Label htmlFor="leadTimeDays">Typical door-to-Tema time (days)</Label>
           <Input
             id="leadTimeDays"
             type="number"
-            min={0}
+            min={1}
             max={365}
             value={form.leadTimeDays}
-            onChange={(e) => setForm((f) => ({ ...f, leadTimeDays: e.target.value }))}
+            onChange={(e) => set("leadTimeDays", e.target.value)}
+            placeholder="45"
           />
         </div>
         <div className="space-y-2">
@@ -139,7 +165,7 @@ export function SupplierProfileForm({ supplier }: { supplier: SupplierRow }) {
           <Input
             id="phone"
             value={form.phone}
-            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+            onChange={(e) => set("phone", e.target.value)}
             placeholder="0201234567"
           />
         </div>
@@ -148,23 +174,28 @@ export function SupplierProfileForm({ supplier }: { supplier: SupplierRow }) {
           <Input
             id="whatsapp"
             value={form.whatsapp}
-            onChange={(e) => setForm((f) => ({ ...f, whatsapp: e.target.value }))}
+            onChange={(e) => set("whatsapp", e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Contact email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={form.email}
+            onChange={(e) => set("email", e.target.value)}
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="city">City</Label>
-          <Input
-            id="city"
-            value={form.city}
-            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-          />
+          <Input id="city" value={form.city} onChange={(e) => set("city", e.target.value)} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="region">Region</Label>
           <select
             id="region"
             value={form.region}
-            onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))}
+            onChange={(e) => set("region", e.target.value)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="">Select a region</option>
@@ -180,34 +211,9 @@ export function SupplierProfileForm({ supplier }: { supplier: SupplierRow }) {
           <Input
             id="website"
             value={form.website}
-            onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+            onChange={(e) => set("website", e.target.value)}
             placeholder="https://"
           />
-        </div>
-      </div>
-
-      <div>
-        <Label>Regions you deliver to</Label>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Leave all unselected if you deliver nationwide.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {GHANA_REGIONS.map((r) => (
-            <button
-              key={r}
-              type="button"
-              aria-pressed={regions.includes(r)}
-              onClick={() => toggle(regions, r, setRegions)}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-sm transition-colors",
-                regions.includes(r)
-                  ? "border-brand-600 bg-brand-600 text-white"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-            >
-              {r}
-            </button>
-          ))}
         </div>
       </div>
 

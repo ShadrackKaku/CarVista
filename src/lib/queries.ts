@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { formatNumber } from "@/lib/utils";
 import { isMilestonePayable } from "@/lib/escrow";
+import { holdingWhere } from "@/lib/reservations";
 import {
   getExpandedVehicles,
   SAMPLE_PARTS,
@@ -2171,6 +2172,170 @@ export async function getSupplierForUser(userId: string): Promise<SupplierRow | 
   try {
     const row = await prisma.supplier.findUnique({ where: { userId } });
     return row ? mapSupplier(row) : null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Import stock ──────────────────────────────────────────────
+
+export interface ImportStockRow {
+  id: string;
+  slug: string;
+  title: string;
+  make: string;
+  model: string;
+  trim: string | null;
+  year: number;
+  mileage: number | null;
+  fuelType: string;
+  transmission: string;
+  bodyType: string;
+  color: string | null;
+  countryOfOrigin: string;
+  portOfLoading: string | null;
+  auctionGrade: string | null;
+  fobAmount: number;
+  fobCurrency: string;
+  fxRateToGhs: number | null;
+  serviceFeeGhs: number | null;
+  freightGhs: number | null;
+  quantity: number;
+  /** Units currently held by a paid reservation. */
+  held: number;
+  etaDays: number | null;
+  status: string;
+  featured: boolean;
+  images: string[];
+  importer: { id: string; slug: string; name: string; verified: boolean };
+}
+
+type ImportListingWithRelations = Prisma.ImportListingGetPayload<{
+  include: {
+    images: true;
+    importer: { select: { id: true; slug: true; businessName: true; verified: true } };
+    _count: { select: { reservations: true } };
+  };
+}>;
+
+function mapImportListing(
+  row: ImportListingWithRelations,
+  held: number,
+): ImportStockRow {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    make: row.make,
+    model: row.model,
+    trim: row.trim,
+    year: row.year,
+    mileage: row.mileage,
+    fuelType: row.fuelType,
+    transmission: row.transmission,
+    bodyType: row.bodyType,
+    color: row.color,
+    countryOfOrigin: row.countryOfOrigin,
+    portOfLoading: row.portOfLoading,
+    auctionGrade: row.auctionGrade,
+    fobAmount: Number(row.fobAmount),
+    fobCurrency: row.fobCurrency,
+    fxRateToGhs: row.fxRateToGhs ? Number(row.fxRateToGhs) : null,
+    serviceFeeGhs: row.serviceFeeGhs ? Number(row.serviceFeeGhs) : null,
+    freightGhs: row.freightGhs ? Number(row.freightGhs) : null,
+    quantity: row.quantity,
+    held,
+    etaDays: row.etaDays,
+    status: row.status,
+    featured: row.featured,
+    images: row.images.sort((a, b) => a.position - b.position).map((i) => i.url),
+    importer: {
+      id: row.importer.id,
+      slug: row.importer.slug,
+      name: row.importer.businessName,
+      verified: row.importer.verified,
+    },
+  };
+}
+
+const importListingInclude = {
+  images: true,
+  importer: { select: { id: true, slug: true, businessName: true, verified: true } },
+  _count: { select: { reservations: true } },
+} as const;
+
+/**
+ * Published stock, newest first, with the held count each listing needs to say
+ * how many units are actually free.
+ *
+ * The held figure is counted per listing rather than derived from a column on
+ * the row: a stored counter drifts the first time an expiry job dies halfway
+ * through, and a listing that claims availability it does not have sells the
+ * same chassis twice.
+ */
+export async function getImportStock(): Promise<ImportStockRow[]> {
+  try {
+    const rows = await prisma.importListing.findMany({
+      where: { status: { in: ["ACTIVE", "FULLY_RESERVED"] } },
+      include: importListingInclude,
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+      take: 120,
+    });
+    if (rows.length === 0) return [];
+
+    const holds = await prisma.importReservation.groupBy({
+      by: ["listingId"],
+      where: { listingId: { in: rows.map((r) => r.id) }, ...holdingWhere() },
+      _count: { _all: true },
+    });
+    const heldBy = new Map(holds.map((h) => [h.listingId, h._count._all]));
+    return rows.map((row) => mapImportListing(row, heldBy.get(row.id) ?? 0));
+  } catch {
+    return [];
+  }
+}
+
+export const getImportStockBySlug = cache(async (slug: string): Promise<ImportStockRow | null> => {
+  try {
+    const row = await prisma.importListing.findUnique({
+      where: { slug },
+      include: importListingInclude,
+    });
+    if (!row) return null;
+    const held = await prisma.importReservation.count({
+      where: { listingId: row.id, ...holdingWhere() },
+    });
+    return mapImportListing(row, held);
+  } catch {
+    return null;
+  }
+});
+
+/** An importer's own stock, including drafts, for their console. */
+export async function getImporterStock(importerId: string): Promise<ImportStockRow[]> {
+  try {
+    const rows = await prisma.importListing.findMany({
+      where: { importerId },
+      include: importListingInclude,
+      orderBy: { createdAt: "desc" },
+    });
+    if (rows.length === 0) return [];
+    const holds = await prisma.importReservation.groupBy({
+      by: ["listingId"],
+      where: { listingId: { in: rows.map((r) => r.id) }, ...holdingWhere() },
+      _count: { _all: true },
+    });
+    const heldBy = new Map(holds.map((h) => [h.listingId, h._count._all]));
+    return rows.map((row) => mapImportListing(row, heldBy.get(row.id) ?? 0));
+  } catch {
+    return [];
+  }
+}
+
+/** The importer profile for a signed-in user, or null if they have none. */
+export async function getImporterForUser(userId: string) {
+  try {
+    return await prisma.importer.findUnique({ where: { userId } });
   } catch {
     return null;
   }

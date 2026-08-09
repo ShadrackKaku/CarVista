@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { APPLICABLE_ROLES, ROLE_PROFILES } from "@/lib/roles";
 import { SUPPLIER_CATEGORIES } from "@/lib/suppliers";
+import { FOB_CURRENCIES, SOURCE_MARKETS } from "@/lib/import-stock";
 
 // ── Auth ──────────────────────────────────────────────────────
 export const registerSchema = z
@@ -559,3 +560,109 @@ export type RoleApplicationInput = z.infer<typeof roleApplicationSchema>;
 export type RoleApplicationReviewInput = z.infer<typeof roleApplicationReviewSchema>;
 export type SupplierEnquiryInput = z.infer<typeof supplierEnquirySchema>;
 export type SupplierProfileInput = z.infer<typeof supplierProfileSchema>;
+
+// ── Import stock (importer console) ───────────────────────────
+
+// Derived from the console's own pickers rather than restated here: a market
+// or currency added to one list and not the other fails validation silently.
+const FOB_CURRENCY_VALUES = FOB_CURRENCIES;
+const SOURCE_MARKET_VALUES = SOURCE_MARKETS;
+
+/**
+ * What an importer may set on a stock listing.
+ *
+ * `status` is absent on purpose. It is driven by availability — the reservation
+ * flow flips ACTIVE to FULLY_RESERVED and back from the live count of held
+ * units — so accepting it here would let a form overwrite the truth about what
+ * is actually on the market. Publishing and archiving go through their own
+ * action, which is a different decision from editing the car's details.
+ *
+ * `quantity` is capped: an importer with two hundred identical units has a
+ * data-entry error, not a shipment.
+ */
+export const importListingSchema = z.object({
+  title: z.string().trim().min(4, "Give the listing a title").max(140),
+  make: z.string().trim().min(2, "Enter the make").max(60),
+  model: z.string().trim().min(1, "Enter the model").max(80),
+  trim: z.string().trim().max(80).optional().or(z.literal("")),
+  year: z.coerce
+    .number()
+    .int()
+    .min(1980)
+    .max(new Date().getFullYear() + 1),
+  mileage: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  fuelType: z.enum(["PETROL", "DIESEL", "HYBRID", "ELECTRIC", "PLUGIN_HYBRID", "LPG"]),
+  transmission: z.enum(["AUTOMATIC", "MANUAL", "CVT", "DUAL_CLUTCH"]),
+  bodyType: z.enum([
+    "SEDAN",
+    "SUV",
+    "HATCHBACK",
+    "COUPE",
+    "CONVERTIBLE",
+    "PICKUP",
+    "VAN",
+    "WAGON",
+    "MINIVAN",
+    "TRUCK",
+    "BUS",
+  ]),
+  engineSize: z.coerce.number().positive().max(12).optional(),
+  color: z.string().trim().max(40).optional().or(z.literal("")),
+  drivetrain: z.string().trim().max(20).optional().or(z.literal("")),
+  description: z.string().trim().max(4000).optional().or(z.literal("")),
+
+  countryOfOrigin: z.string().trim().min(2, "Where is the car?").max(60),
+  portOfLoading: z.string().trim().max(80).optional().or(z.literal("")),
+  auctionSource: z.string().trim().max(80).optional().or(z.literal("")),
+  auctionGrade: z.string().trim().max(12).optional().or(z.literal("")),
+  chassisNumber: z.string().trim().max(40).optional().or(z.literal("")),
+
+  fobAmount: z.coerce.number().positive("Enter the FOB price"),
+  fobCurrency: z.enum(FOB_CURRENCY_VALUES),
+  /**
+   * Cedis per unit of `fobCurrency`. Optional, because an importer may publish
+   * a car before settling a rate — the listing then shows what it cannot price
+   * rather than guessing (see `stockPricing`).
+   */
+  fxRateToGhs: z.coerce.number().positive().max(1_000_000).optional(),
+  serviceFeeGhs: z.coerce.number().min(0).max(1_000_000).optional(),
+  freightGhs: z.coerce.number().min(0).max(1_000_000).optional(),
+
+  quantity: z.coerce.number().int().min(1).max(50),
+  etaDays: z.coerce.number().int().min(1).max(365).optional(),
+  images: z.array(z.string().url()).max(20).optional(),
+});
+
+export type ImportListingInput = z.infer<typeof importListingSchema>;
+
+/** Publishing is a separate decision from editing the car's details. */
+export const importListingStatusSchema = z.object({
+  status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]),
+});
+
+/**
+ * Editing your own importer profile.
+ *
+ * `verified`, `featured`, `rating` and `reviewCount` are deliberately absent:
+ * those are things the platform says about an importer, and a buyer trusting a
+ * self-awarded verified badge is exactly the harm the badge exists to prevent.
+ */
+export const importerProfileSchema = z.object({
+  businessName: z.string().trim().min(2, "Name your business").max(120),
+  description: z.string().trim().max(2000).optional().or(z.literal("")),
+  sourceMarkets: z.array(z.enum(SOURCE_MARKET_VALUES)).max(8),
+  leadTimeDays: z.coerce.number().int().min(1).max(365).optional(),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^(\+?233|0)[0-9]{9}$/, "Enter a valid Ghana phone number")
+    .optional()
+    .or(z.literal("")),
+  whatsapp: z.string().trim().max(20).optional().or(z.literal("")),
+  email: z.string().trim().email("Enter a valid email address").optional().or(z.literal("")),
+  website: z.string().trim().url("Enter a full URL").optional().or(z.literal("")),
+  city: z.string().trim().max(80).optional().or(z.literal("")),
+  region: z.string().trim().max(80).optional().or(z.literal("")),
+});
+
+export type ImporterProfileInput = z.infer<typeof importerProfileSchema>;
