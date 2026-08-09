@@ -9,6 +9,7 @@ import {
   RESERVATION_BLOCK_MESSAGES,
   RESERVATION_FEE_GHS,
   RESERVATION_REFUND_RATE,
+  holdingWhere,
   reservationBlock,
   reservationReference,
   type ReservationBlock,
@@ -57,6 +58,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   const reference = reservationReference();
+  // One clock for the whole transaction. Re-reading the time inside would let
+  // a hold count as live in the availability check and lapsed a millisecond
+  // later, which is exactly the ambiguity the SERIALIZABLE block exists to end.
+  const now = new Date();
 
   try {
     const created = await prisma.$transaction(
@@ -71,7 +76,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         // outside would reintroduce the race this whole block exists to close.
         const [holdingCount, mine] = await Promise.all([
           tx.importReservation.count({
-            where: { listingId: listing.id, status: "ACTIVE" },
+            where: { listingId: listing.id, ...holdingWhere(now) },
           }),
           tx.importReservation.count({
             where: { listingId: listing.id, userId: user.id, status: { in: ["ACTIVE", "PENDING_PAYMENT"] } },

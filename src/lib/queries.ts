@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { formatNumber } from "@/lib/utils";
 import { isMilestonePayable } from "@/lib/escrow";
+import { holdingWhere } from "@/lib/reservations";
 import {
   getExpandedVehicles,
   SAMPLE_PARTS,
@@ -2284,7 +2285,7 @@ export async function getImportStock(): Promise<ImportStockRow[]> {
 
     const holds = await prisma.importReservation.groupBy({
       by: ["listingId"],
-      where: { listingId: { in: rows.map((r) => r.id) }, status: "ACTIVE" },
+      where: { listingId: { in: rows.map((r) => r.id) }, ...holdingWhere() },
       _count: { _all: true },
     });
     const heldBy = new Map(holds.map((h) => [h.listingId, h._count._all]));
@@ -2302,7 +2303,7 @@ export const getImportStockBySlug = cache(async (slug: string): Promise<ImportSt
     });
     if (!row) return null;
     const held = await prisma.importReservation.count({
-      where: { listingId: row.id, status: "ACTIVE" },
+      where: { listingId: row.id, ...holdingWhere() },
     });
     return mapImportListing(row, held);
   } catch {
@@ -2321,7 +2322,7 @@ export async function getImporterStock(importerId: string): Promise<ImportStockR
     if (rows.length === 0) return [];
     const holds = await prisma.importReservation.groupBy({
       by: ["listingId"],
-      where: { listingId: { in: rows.map((r) => r.id) }, status: "ACTIVE" },
+      where: { listingId: { in: rows.map((r) => r.id) }, ...holdingWhere() },
       _count: { _all: true },
     });
     const heldBy = new Map(holds.map((h) => [h.listingId, h._count._all]));

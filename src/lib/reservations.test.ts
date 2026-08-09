@@ -4,6 +4,7 @@ import {
   RESERVATION_REFUND_RATE,
   creditTowardFob,
   hasExpired,
+  holdingWhere,
   isHolding,
   refundDue,
   reservationBlock,
@@ -24,6 +25,53 @@ describe("what holds a unit", () => {
     expect(isHolding("EXPIRED")).toBe(false);
     expect(isHolding("CANCELLED")).toBe(false);
     expect(isHolding("CONVERTED")).toBe(false);
+  });
+
+  it("releases the unit the moment the deadline passes, before any sweep", () => {
+    // The failure this closes: expiry used to be status-only, so a lapsed hold
+    // kept a car off the market until the cron next ran. Vercel's Hobby plan
+    // allows one cron run a day, which would have meant up to 24 hours of a
+    // paid-up buyer being told "every unit is reserved" by a hold that ended
+    // yesterday.
+    const now = at("2026-08-12");
+    expect(isHolding("ACTIVE", at("2026-08-13"), now)).toBe(true);
+    expect(isHolding("ACTIVE", at("2026-08-11"), now)).toBe(false);
+  });
+
+  it("treats the deadline itself as up", () => {
+    const now = at("2026-08-12");
+    expect(isHolding("ACTIVE", now, now)).toBe(false);
+  });
+
+  it("still holds when no deadline is known", () => {
+    // A row with no expiry is a hold whose clock has not started — it must not
+    // be released by a missing value.
+    expect(isHolding("ACTIVE", null, at("2026-08-12"))).toBe(true);
+    expect(isHolding("ACTIVE", undefined, at("2026-08-12"))).toBe(true);
+  });
+});
+
+describe("holdingWhere", () => {
+  it("matches active holds that have not run out", () => {
+    const now = at("2026-08-12");
+    expect(holdingWhere(now)).toEqual({ status: "ACTIVE", expiresAt: { gt: now } });
+  });
+
+  it("agrees with isHolding", () => {
+    // These two decide availability in different places — the query layer and
+    // the render layer. A buyer shown a free unit and then refused at payment
+    // is what a disagreement between them looks like.
+    const now = at("2026-08-12");
+    const where = holdingWhere(now);
+    for (const [expiresAt, expected] of [
+      [at("2026-08-13"), true],
+      [at("2026-08-11"), false],
+    ] as const) {
+      const matchesWhere =
+        where.status === "ACTIVE" && expiresAt.getTime() > where.expiresAt.gt.getTime();
+      expect(matchesWhere).toBe(expected);
+      expect(isHolding("ACTIVE", expiresAt, now)).toBe(expected);
+    }
   });
 });
 

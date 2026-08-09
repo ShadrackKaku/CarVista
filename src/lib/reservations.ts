@@ -38,9 +38,33 @@ export type ReservationStatusLike =
  *
  * `CONVERTED` does not either — the unit has left the pool for good by then,
  * which the importer reflects by decrementing quantity when the car is bought.
+ *
+ * A hold past its deadline stops counting immediately, before any sweep has
+ * run. Status alone would mean a car stays off the market until the next cron
+ * fires — an hour, or a day on a plan that only allows daily crons — for a
+ * hold that everyone can already see has lapsed. The sweep still does the
+ * durable work of flipping the row and refunding; it just no longer stands
+ * between a lapsed hold and the next buyer.
  */
-export function isHolding(status: ReservationStatusLike): boolean {
-  return status === "ACTIVE";
+export function isHolding(
+  status: ReservationStatusLike,
+  expiresAt?: Date | null,
+  now: Date = new Date(),
+): boolean {
+  if (status !== "ACTIVE") return false;
+  return !hasExpired(expiresAt ?? null, now);
+}
+
+/**
+ * Prisma `where` matching exactly the reservations that hold a unit.
+ *
+ * Shared by every place that counts availability so the browse page, the
+ * detail page, the importer's console and the reserve endpoint cannot drift
+ * apart on what "held" means — a disagreement that shows up as a car the buyer
+ * is told is free and then refused at the point of paying.
+ */
+export function holdingWhere(now: Date = new Date()) {
+  return { status: "ACTIVE" as const, expiresAt: { gt: now } };
 }
 
 /** Units still open to reserve. Never negative, whatever the data says. */
