@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Loader2, Lock } from "lucide-react";
@@ -28,12 +29,17 @@ export function ReserveButton({
   workingDays: number;
   available: number;
 }) {
+  const router = useRouter();
   const { status } = useSession();
   const [busy, setBusy] = useState(false);
 
   async function reserve() {
     if (status !== "authenticated") {
+      // A toast alone is a dead end on the public page, where every visitor is
+      // signed out — send them somewhere they can act, and back to this car
+      // once they have.
       toast.info("Sign in to reserve this car");
+      router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
     setBusy(true);

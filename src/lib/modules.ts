@@ -30,6 +30,7 @@ import {
   Wallet,
   Wrench,
   type LucideIcon,
+  BookmarkCheck,
 } from "lucide-react";
 import type { UserRole } from "@prisma/client";
 import { isAdmin, isDealer, isImporter, isPartsSeller, isSupplier } from "@/lib/roles";
@@ -174,6 +175,12 @@ const imports: AppModule = {
       description: "Tell us what you want and we'll quote it",
     },
     { label: "My imports", href: "/app/imports/mine", icon: Ship },
+    {
+      label: "My reservations",
+      href: "/app/imports/reservations",
+      icon: BookmarkCheck,
+      description: "Cars you're holding, and how long is left",
+    },
     {
       label: "Track a shipment",
       href: "/app/imports/track",

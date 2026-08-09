@@ -18,17 +18,34 @@ import {
 import { FOB_CURRENCIES, SOURCE_MARKETS } from "@/lib/import-stock";
 import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS } from "@/lib/constants";
 
-/**
- * Publish a car buyers can reserve.
- *
- * Saves as a draft. Publishing is deliberately a second step: a listing with no
- * exchange rate cannot show a landed cost, and a half-priced car on a browse
- * page is worse than no car at all.
- */
-export function StockForm() {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({
+/** The subset of a listing this form edits, as form strings. */
+export interface StockFormValues {
+  title: string;
+  make: string;
+  model: string;
+  trim: string;
+  year: string;
+  mileage: string;
+  fuelType: string;
+  transmission: string;
+  bodyType: string;
+  color: string;
+  countryOfOrigin: string;
+  portOfLoading: string;
+  auctionGrade: string;
+  chassisNumber: string;
+  fobAmount: string;
+  fobCurrency: string;
+  fxRateToGhs: string;
+  freightGhs: string;
+  serviceFeeGhs: string;
+  quantity: string;
+  etaDays: string;
+  description: string;
+}
+
+function blankForm(): StockFormValues {
+  return {
     title: "",
     make: "",
     model: "",
@@ -51,7 +68,32 @@ export function StockForm() {
     quantity: "1",
     etaDays: "",
     description: "",
-  });
+  };
+}
+
+/**
+ * Publish a car buyers can reserve, or correct one already published.
+ *
+ * A new listing saves as a draft. Publishing is deliberately a second step: a
+ * listing with no exchange rate cannot show a landed cost, and a half-priced
+ * car on a browse page is worse than no car at all.
+ *
+ * Editing does NOT touch status. An importer fixing a typo must not silently
+ * unpublish a car that buyers are actively holding units of, so publishing and
+ * archiving stay their own explicit action.
+ */
+export function StockForm({
+  listingId,
+  initial,
+}: {
+  /** Present when editing an existing listing. */
+  listingId?: string;
+  initial?: StockFormValues;
+} = {}) {
+  const router = useRouter();
+  const editing = Boolean(listingId);
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState<StockFormValues>(initial ?? blankForm());
 
   const set = (key: keyof typeof form, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -73,17 +115,22 @@ export function StockForm() {
         if (!form[key]) delete payload[key];
       }
 
-      const res = await fetch("/api/import-listings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        editing ? `/api/import-listings/${listingId}` : "/api/import-listings",
+        {
+          method: editing ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         toast.error(data.error ?? "Could not save the listing");
         return;
       }
-      toast.success("Saved as a draft. Publish it when the pricing is set.");
+      toast.success(
+        editing ? "Listing updated." : "Saved as a draft. Publish it when the pricing is set.",
+      );
       router.push("/dashboard/importer/stock");
       router.refresh();
     } catch {
@@ -264,7 +311,7 @@ export function StockForm() {
       <div className="flex justify-end gap-3 border-t pt-6">
         <Button type="submit" variant="gradient" disabled={busy}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-          Save as draft
+          {editing ? "Save changes" : "Save as draft"}
         </Button>
       </div>
     </form>

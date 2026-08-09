@@ -2340,3 +2340,86 @@ export async function getImporterForUser(userId: string) {
     return null;
   }
 }
+
+export interface MyReservationRow {
+  id: string;
+  reference: string;
+  status: string;
+  feeGhs: number;
+  refundRate: number;
+  refundedGhs: number | null;
+  expiresAt: Date | null;
+  graceApplied: boolean;
+  createdAt: Date;
+  listing: {
+    slug: string;
+    title: string;
+    fobAmount: number;
+    fobCurrency: string;
+    fxRateToGhs: number | null;
+    etaDays: number | null;
+    importer: { name: string; phone: string | null; whatsapp: string | null; email: string | null };
+  };
+}
+
+/**
+ * A buyer's own holds, newest first.
+ *
+ * Scoped by `userId` rather than by any id in the request, so there is no
+ * parameter that could address somebody else's reservation. Includes the
+ * importer's contact details on purpose: the buyer has paid to hold a car and
+ * the next step is arranging the FOB transfer with a human, so making them go
+ * hunting for a phone number is the one thing this page must not do.
+ */
+export async function getMyReservations(userId: string): Promise<MyReservationRow[]> {
+  try {
+    const rows = await prisma.importReservation.findMany({
+      where: { userId },
+      include: {
+        listing: {
+          select: {
+            slug: true,
+            title: true,
+            fobAmount: true,
+            fobCurrency: true,
+            fxRateToGhs: true,
+            etaDays: true,
+            importer: {
+              select: { businessName: true, phone: true, whatsapp: true, email: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    return rows.map((r) => ({
+      id: r.id,
+      reference: r.reference,
+      status: r.status,
+      feeGhs: Number(r.feeGhs),
+      refundRate: Number(r.refundRate),
+      refundedGhs: r.refundedGhs != null ? Number(r.refundedGhs) : null,
+      expiresAt: r.expiresAt,
+      graceApplied: r.graceApplied,
+      createdAt: r.createdAt,
+      listing: {
+        slug: r.listing.slug,
+        title: r.listing.title,
+        fobAmount: Number(r.listing.fobAmount),
+        fobCurrency: r.listing.fobCurrency,
+        fxRateToGhs: r.listing.fxRateToGhs ? Number(r.listing.fxRateToGhs) : null,
+        etaDays: r.listing.etaDays,
+        importer: {
+          name: r.listing.importer.businessName,
+          phone: r.listing.importer.phone,
+          whatsapp: r.listing.importer.whatsapp,
+          email: r.listing.importer.email,
+        },
+      },
+    }));
+  } catch {
+    return [];
+  }
+}
