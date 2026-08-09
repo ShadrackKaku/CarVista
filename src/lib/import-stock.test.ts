@@ -97,7 +97,8 @@ describe("stockPricing", () => {
 
   it("shows the rate it converted at", () => {
     const fobLine = stockPricing(complete).lines[0];
-    expect(fobLine.note).toBe("at JPY 1 = GH¢0.085");
+    // GH₵ (U+20B5) — the same sign formatCurrency emits, not the cent sign.
+    expect(fobLine.note).toBe("at JPY 1 = GH₵0.085");
   });
 
   it("rounds to the pesewa", () => {

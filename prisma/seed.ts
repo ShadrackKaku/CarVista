@@ -10,6 +10,7 @@
 import { PrismaClient, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedCatalog } from "../src/lib/seed/catalog";
+import { seedImportStock } from "../src/lib/seed/import-stock";
 import { SAMPLE_BLOG_POSTS } from "../src/lib/sample-data";
 
 const prisma = new PrismaClient();
@@ -149,11 +150,18 @@ async function main() {
     create: { key: "exchange_rate_usd_ghs", value: "15.5" },
   });
 
+  // ── Importer, stock and the clearance history that prices it ─
+  const stock = await seedImportStock(prisma, password);
+
   console.log("✅ Seed complete.");
   console.log(
     `   Dealers: ${summary.dealers} · Vehicles: ${summary.vehicles} · Vendors: ${summary.vendors} · Parts: ${summary.parts} · Services: ${summary.services}`,
   );
   console.log(`   Demo password for all seeded accounts: ${summary.demoPassword}`);
+  console.log(
+    `   Import stock: ${stock.listings} listings · ${stock.assessments} new clearances`,
+  );
+  console.log("   Importer login: importer@carvista.com.gh / Password123");
   console.log("   Admin login: admin@carvista.com.gh / Password123");
 }
 

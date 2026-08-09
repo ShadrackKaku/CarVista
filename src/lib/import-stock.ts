@@ -77,7 +77,9 @@ export function stockPricing(input: StockPricingInput): StockPricing {
       label: `FOB (${formatSourceAmount(input.fobAmount, input.fobCurrency)})`,
       amountGhs: fob,
       quoted: true,
-      note: `at ${input.fobCurrency} 1 = GH¢${input.fxRateToGhs}`,
+      // GH₵ (U+20B5), matching formatCurrency — the ¢ cent sign next to it in
+      // the same breakdown reads as a different currency.
+      note: `at ${input.fobCurrency} 1 = GH₵${input.fxRateToGhs}`,
     });
   }
 
