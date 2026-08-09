@@ -25,6 +25,12 @@ enum UserRole {
   SERVICE_PROVIDER
   SUPPLIER
   IMPORTER
+
+  /// A CarVista team member. Carries no authority on its own — everything a
+  /// STAFF account may do comes from User.permissions, granted by a super
+  /// admin. Deliberately NOT covered by isAdmin(), so any check that has not
+  /// been converted to a permission refuses staff rather than admitting them.
+  STAFF
   ADMIN
   SUPER_ADMIN
 }
@@ -67,10 +73,22 @@ model User {
   image          String?
   phone          String?
   role           UserRole   @default(USER)
+  /// Named permissions held by a STAFF account (see src/lib/permissions.ts).
+  /// Empty for everyone else: ADMIN and SUPER_ADMIN hold their authority by
+  /// role, and a marketplace role holds none at all.
+  permissions    String[]
   status         UserStatus @default(ACTIVE)
-  city           String?
-  region         String?
-  bio            String?    @db.Text
+
+  /// Who created this account, when an administrator made it on someone's
+  /// behalf rather than the person registering. Kept so a dealer account that
+  /// turns out to be wrong can be traced to whoever set it up.
+  invitedById  String?
+  invitedBy    User?     @relation("StaffInvites", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedUsers User[]    @relation("StaffInvites")
+  invitedAt    DateTime?
+  city         String?
+  region       String?
+  bio          String?   @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

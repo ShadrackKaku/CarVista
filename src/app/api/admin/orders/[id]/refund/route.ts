@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { isPaystackConfigured } from "@/lib/paystack";
 import { initiateOrderRefund } from "@/lib/fulfill-order";
 
@@ -9,7 +9,7 @@ import { initiateOrderRefund } from "@/lib/fulfill-order";
  * webhook finalizes it and restocks the items.
  */
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("escrow:manage");
   if (guard.error) return guard.error;
 
   if (!isPaystackConfigured()) {

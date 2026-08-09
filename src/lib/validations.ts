@@ -2,6 +2,7 @@ import { z } from "zod";
 import { APPLICABLE_ROLES, ROLE_PROFILES } from "@/lib/roles";
 import { SUPPLIER_CATEGORIES } from "@/lib/suppliers";
 import { FOB_CURRENCIES, SOURCE_MARKETS } from "@/lib/import-stock";
+import { ALL_PERMISSIONS } from "@/lib/permissions";
 
 // ── Auth ──────────────────────────────────────────────────────
 export const registerSchema = z
@@ -666,3 +667,77 @@ export const importerProfileSchema = z.object({
 });
 
 export type ImporterProfileInput = z.infer<typeof importerProfileSchema>;
+
+// ── Admin: creating accounts and assigning roles ──────────────
+
+/**
+ * Roles an administrator may create an account as.
+ *
+ * ADMIN and SUPER_ADMIN are absent by design. Administrators are made out of
+ * band, deliberately — an escalation path that runs through a form is one
+ * compromised staff session away from a second super admin.
+ */
+export const CREATABLE_ROLES = [
+  "USER",
+  ...APPLICABLE_ROLES,
+  "STAFF",
+] as const;
+
+/**
+ * Creating an account on somebody's behalf.
+ *
+ * No password field anywhere. The account is created without one and the person
+ * sets their own through a single-use invite link, so a password never travels
+ * through an inbox or a WhatsApp thread and no member of staff ever knows a
+ * user's credentials.
+ */
+export const adminCreateUserSchema = z
+  .object({
+    name: z.string().trim().min(2, "Enter their name").max(80),
+    email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^(\+?233|0)[0-9]{9}$/, "Enter a valid Ghana phone number")
+      .optional()
+      .or(z.literal("")),
+    role: z.enum(CREATABLE_ROLES),
+
+    // Staff only.
+    preset: z.string().trim().optional().or(z.literal("")),
+    permissions: z.array(z.enum(ALL_PERMISSIONS as [string, ...string[]])).optional(),
+
+    // Business details, used to provision the role's profile row.
+    businessName: z.string().trim().max(120).optional().or(z.literal("")),
+    city: z.string().trim().max(80).optional().or(z.literal("")),
+    region: z.string().trim().max(80).optional().or(z.literal("")),
+    message: z.string().trim().max(2000).optional().or(z.literal("")),
+  })
+  .superRefine((d, ctx) => {
+    // A staff account with no permissions can sign in and see nothing. That is
+    // a confusing thing to hand somebody on their first day, so it is refused
+    // at the point of creation rather than discovered by them.
+    if (d.role === "STAFF" && !d.preset && !(d.permissions ?? []).length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["preset"],
+        message: "Choose what this staff member is allowed to do",
+      });
+    }
+    // Every marketplace role provisions a business profile, and a profile with
+    // no name is one the owner has to fix before anyone can find them.
+    if (d.role !== "USER" && d.role !== "STAFF" && !d.businessName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["businessName"],
+        message: "Enter the business name",
+      });
+    }
+  });
+
+export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
+
+/** Changing what an existing staff member may do. */
+export const staffPermissionsSchema = z.object({
+  permissions: z.array(z.enum(ALL_PERMISSIONS as [string, ...string[]])).max(ALL_PERMISSIONS.length),
+});

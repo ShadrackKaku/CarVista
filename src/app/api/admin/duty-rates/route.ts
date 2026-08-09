@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/session";
+import { requirePermission } from "@/lib/admin-guard";
 
 /** GET — list configured duty-rate rows (admin). */
 export async function GET() {
-  const user = await getCurrentUser().catch(() => null);
-  if (!user || user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const { error } = await requirePermission("duty:manage");
+  if (error) return error;
   try {
     const rates = await prisma.dutyRate.findMany({ orderBy: { effectiveFrom: "desc" } });
     return NextResponse.json({ rates });
@@ -18,10 +16,8 @@ export async function GET() {
 
 /** POST — create / update a duty-rate configuration (admin). */
 export async function POST(req: Request) {
-  const user = await getCurrentUser().catch(() => null);
-  if (!user || user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const { error } = await requirePermission("duty:manage");
+  if (error) return error;
   try {
     const body = await req.json();
     const rate = await prisma.dutyRate.create({

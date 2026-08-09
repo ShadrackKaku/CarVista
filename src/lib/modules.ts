@@ -31,9 +31,11 @@ import {
   Wrench,
   type LucideIcon,
   BookmarkCheck,
+  UserCog,
 } from "lucide-react";
 import type { UserRole } from "@prisma/client";
-import { isAdmin, isDealer, isImporter, isPartsSeller, isSupplier } from "@/lib/roles";
+import { isDealer, isImporter, isPartsSeller, isSupplier } from "@/lib/roles";
+import { can, canReachAdmin, type Permission } from "@/lib/permissions";
 
 /**
  * Application modules.
@@ -54,6 +56,12 @@ export interface ModuleNavItem {
   description?: string;
   /** Roles that see this item. Omit for everyone signed in. */
   roles?: UserRole[];
+  /**
+   * Permission required to see this item. Set on every admin entry so a staff
+   * member is shown the two pages they can open rather than nineteen links
+   * that bounce them back to the overview.
+   */
+  permission?: Permission;
   /** Only highlight on an exact path match — for module overviews. */
   exact?: boolean;
   /** Rendered, but inert: the shape is set before the data behind it exists. */
@@ -328,21 +336,23 @@ const admin: AppModule = {
   blurb: "Platform operations, moderation and configuration.",
   items: [
     { label: "Overview", href: "/admin", icon: LayoutGrid, exact: true },
-    { label: "Users", href: "/admin/users", icon: Users },
-    { label: "Vehicles", href: "/admin/vehicles", icon: Car },
-    { label: "Parts", href: "/admin/parts", icon: Package },
-    { label: "Dealers", href: "/admin/dealers", icon: Store },
-    { label: "Verifications", href: "/admin/verifications", icon: BadgeCheck },
-    { label: "Role applications", href: "/admin/role-applications", icon: UserCheck },
-    { label: "Inspections", href: "/admin/inspections", icon: ClipboardCheck },
-    { label: "Orders", href: "/admin/orders", icon: Receipt },
-    { label: "Imports", href: "/admin/imports", icon: Ship },
-    { label: "Escrow", href: "/admin/escrow", icon: Wallet },
-    { label: "Duty rates", href: "/admin/duty-rates", icon: FileText },
-    { label: "Duty data", href: "/admin/assessments", icon: Database },
-    { label: "Accuracy", href: "/admin/accuracy", icon: Gauge },
-    { label: "Reviews", href: "/admin/reviews", icon: ShieldCheck },
-    { label: "Blog", href: "/admin/blog", icon: FileText },
+    { label: "Users", href: "/admin/users", icon: Users, permission: "users:read" },
+    { label: "Staff", href: "/admin/staff", icon: UserCog, permission: "staff:manage",
+      description: "Create accounts and decide what each person may do" },
+    { label: "Vehicles", href: "/admin/vehicles", icon: Car, permission: "listings:moderate" },
+    { label: "Parts", href: "/admin/parts", icon: Package, permission: "listings:moderate" },
+    { label: "Dealers", href: "/admin/dealers", icon: Store, permission: "dealers:manage" },
+    { label: "Verifications", href: "/admin/verifications", icon: BadgeCheck, permission: "verification:review" },
+    { label: "Role applications", href: "/admin/role-applications", icon: UserCheck, permission: "verification:review" },
+    { label: "Inspections", href: "/admin/inspections", icon: ClipboardCheck, permission: "inspections:manage" },
+    { label: "Orders", href: "/admin/orders", icon: Receipt, permission: "orders:read" },
+    { label: "Imports", href: "/admin/imports", icon: Ship, permission: "imports:manage" },
+    { label: "Escrow", href: "/admin/escrow", icon: Wallet, permission: "escrow:manage" },
+    { label: "Duty rates", href: "/admin/duty-rates", icon: FileText, permission: "duty:manage" },
+    { label: "Duty data", href: "/admin/assessments", icon: Database, permission: "assessments:review" },
+    { label: "Accuracy", href: "/admin/accuracy", icon: Gauge, permission: "assessments:review" },
+    { label: "Reviews", href: "/admin/reviews", icon: ShieldCheck, permission: "reviews:moderate" },
+    { label: "Blog", href: "/admin/blog", icon: FileText, permission: "blog:write" },
   ],
 };
 
@@ -387,10 +397,11 @@ export function moduleForPath(pathname: string): AppModule | null {
 }
 
 /** The modules a role may enter, in sidebar order. */
-export function modulesFor(role: UserRole | null): AppModule[] {
+export function modulesFor(role: UserRole | null, permissions?: readonly string[]): AppModule[] {
   if (!role) return [];
+  const principal = { role, permissions };
   return MODULES.filter((m) => {
-    if (m.id === "admin") return isAdmin(role);
+    if (m.id === "admin") return canReachAdmin(principal);
     if (m.id === "dealer") return isDealer(role);
     if (m.id === "seller") return isPartsSeller(role);
     if (m.id === "supplier") return isSupplier(role);
@@ -400,8 +411,17 @@ export function modulesFor(role: UserRole | null): AppModule[] {
 }
 
 /** Module items a role may see. */
-export function moduleItemsFor(module: AppModule, role: UserRole | null): ModuleNavItem[] {
-  return module.items.filter((item) => !item.roles || (role != null && item.roles.includes(role)));
+export function moduleItemsFor(
+  module: AppModule,
+  role: UserRole | null,
+  permissions?: readonly string[],
+): ModuleNavItem[] {
+  const principal = { role, permissions };
+  return module.items.filter((item) => {
+    if (item.roles && !(role != null && item.roles.includes(role))) return false;
+    if (item.permission && !can(principal, item.permission)) return false;
+    return true;
+  });
 }
 
 /** Whether a module nav item should read as the current page. */

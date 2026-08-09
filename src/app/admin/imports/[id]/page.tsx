@@ -8,6 +8,7 @@ import { ImportQuoteForm } from "@/components/admin/import-quote-form";
 import { EscrowPlanManager } from "@/components/admin/escrow-plan-manager";
 import { IMPORT_STAGES } from "@/lib/constants";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ function stageLabel(stage: string) {
 }
 
 export default async function AdminImportDetailPage({ params }: { params: { id: string } }) {
+  await guardPage("imports:manage");
   const req = await getImportRequestDetail(params.id);
   if (!req) notFound();
 

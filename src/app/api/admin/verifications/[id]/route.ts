@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { verificationReviewSchema } from "@/lib/validations";
 
 /**
@@ -8,7 +8,7 @@ import { verificationReviewSchema } from "@/lib/validations";
  * Approving flips the dealer's `verified` flag (the public trust badge).
  */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("verification:review");
   if (guard.error) return guard.error;
 
   try {

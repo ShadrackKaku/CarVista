@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { parseTaxList } from "@/lib/landed-cost";
 
 const bodySchema = z.object({
@@ -18,7 +18,7 @@ const bodySchema = z.object({
  * notice.
  */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const { error } = await requireAdmin();
+  const { error } = await requirePermission("assessments:review");
   if (error) return error;
 
   try {

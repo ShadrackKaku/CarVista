@@ -25,11 +25,13 @@ import {
  */
 export function ModuleSidebar({
   role,
+  permissions,
   onNavigate,
   variant = "column",
   module: explicitModule,
 }: {
   role: UserRole | null;
+  permissions?: string[];
   onNavigate?: () => void;
   /**
    * `column` is a plain full-height panel. `drawer` stacks above the main nav on
@@ -56,7 +58,7 @@ export function ModuleSidebar({
   }, [pathname]);
 
   if (!activeModule) return null;
-  const items = moduleItemsFor(activeModule, role);
+  const items = moduleItemsFor(activeModule, role, permissions);
   const Icon = activeModule.icon;
 
   return (

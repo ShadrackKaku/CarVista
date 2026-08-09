@@ -5,10 +5,12 @@ import { getAdminBlogPosts } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminBlogPage() {
+  await guardPage("blog:write");
   const posts = await getAdminBlogPosts();
   return (
     <div className="mx-auto max-w-5xl">

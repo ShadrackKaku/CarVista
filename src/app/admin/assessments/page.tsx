@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AssessmentReview } from "@/components/admin/assessment-review";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 export default async function AdminAssessmentsPage() {
+  await guardPage("assessments:review");
   const rows = await getAdminAssessments();
   const pending = rows.filter((r) => r.status === "PENDING").length;
   const verified = rows.filter((r) => r.status === "VERIFIED").length;

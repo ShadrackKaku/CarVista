@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { isPaystackConfigured } from "@/lib/paystack";
 import { initiateMilestoneRefund } from "@/lib/escrow";
 import { escrowPaySchema } from "@/lib/validations";
@@ -11,7 +11,7 @@ import { escrowPaySchema } from "@/lib/validations";
  * from the database and the money goes back to whoever paid it (via Paystack).
  */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("escrow:manage");
   if (guard.error) return guard.error;
 
   if (!isPaystackConfigured()) {

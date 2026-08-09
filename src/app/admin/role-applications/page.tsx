@@ -4,11 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { RoleApplicationActions } from "@/components/admin/role-application-actions";
 import { roleLabel } from "@/lib/roles";
 import { formatDate } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
 /** The approval queue: pending first, then everything already decided. */
 export default async function AdminRoleApplicationsPage() {
+  await guardPage("verification:review");
   const applications = await prisma.roleApplication
     .findMany({
       orderBy: [{ status: "asc" }, { submittedAt: "desc" }],

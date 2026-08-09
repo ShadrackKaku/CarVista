@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { roleApplicationReviewSchema } from "@/lib/validations";
 import { isApplicableRole } from "@/lib/roles";
 import { provisionRoleProfile } from "@/lib/provision-role";
@@ -15,7 +15,7 @@ import { provisionRoleProfile } from "@/lib/provision-role";
  * would both be worse than failing.
  */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("verification:review");
   if (guard.error) return guard.error;
 
   const parsed = roleApplicationReviewSchema.safeParse(await req.json().catch(() => ({})));

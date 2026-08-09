@@ -54,6 +54,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           image: user.image,
           role: user.role,
+          permissions: user.permissions,
         };
       },
     }),
@@ -63,20 +64,27 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: UserRole }).role ?? UserRole.USER;
+        token.permissions = (user as { permissions?: string[] }).permissions ?? [];
       }
       // SECURITY: never trust a client-supplied role. On an explicit session
       // update, or when the role is missing (e.g. OAuth first sign-in), re-read
       // it from the database — the DB is the sole source of truth for role.
       // (Trusting `session.role` here would let any signed-in user call
       // `useSession().update({ role: "ADMIN" })` and escalate to admin.)
-      if ((trigger === "update" || !token.role) && token.email) {
+      // Permissions ride along with the role and are re-read on the same
+      // trigger. A token minted before this field existed has no `permissions`
+      // key at all, so its absence — not just an explicit update — forces the
+      // re-read; otherwise a staff member's grants would stay invisible until
+      // they next signed out.
+      if ((trigger === "update" || !token.role || token.permissions === undefined) && token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
-          select: { id: true, role: true },
+          select: { id: true, role: true, permissions: true },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
+          token.permissions = dbUser.permissions;
         }
       }
       return token;
@@ -85,6 +93,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as UserRole;
+        session.user.permissions = (token.permissions as string[] | undefined) ?? [];
       }
       return session;
     },

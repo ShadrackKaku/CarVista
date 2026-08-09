@@ -2423,3 +2423,65 @@ export async function getMyReservations(userId: string): Promise<MyReservationRo
     return [];
   }
 }
+
+
+export interface StaffRow {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  permissions: string[];
+  status: string;
+  /** Null until they accept the invite and set a password. */
+  activatedAt: Date | null;
+  invitedAt: Date | null;
+  invitedByName: string | null;
+  createdAt: Date;
+}
+
+/**
+ * Everyone with authority over the platform, plus anyone still holding an
+ * unaccepted invite.
+ *
+ * `activatedAt` is derived from emailVerified rather than stored: accepting an
+ * invite is what verifies the address, so the two are the same moment. It is
+ * surfaced because "created but never signed in" is the state worth noticing —
+ * an invite that silently never arrived looks identical to one being ignored.
+ */
+export async function getStaff(): Promise<StaffRow[]> {
+  try {
+    const rows = await prisma.user.findMany({
+      where: { role: { in: ["STAFF", "ADMIN", "SUPER_ADMIN"] } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        permissions: true,
+        status: true,
+        emailVerified: true,
+        hashedPassword: true,
+        invitedAt: true,
+        createdAt: true,
+        invitedBy: { select: { name: true } },
+      },
+      orderBy: [{ role: "desc" }, { createdAt: "asc" }],
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      role: r.role,
+      permissions: r.permissions,
+      status: r.status,
+      // A password is the real proof they finished setting up; emailVerified
+      // alone can predate the invite on an account that existed before.
+      activatedAt: r.hashedPassword ? (r.emailVerified ?? r.createdAt) : null,
+      invitedAt: r.invitedAt,
+      invitedByName: r.invitedBy?.name ?? null,
+      createdAt: r.createdAt,
+    }));
+  } catch {
+    return [];
+  }
+}

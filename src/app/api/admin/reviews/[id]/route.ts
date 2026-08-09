@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import type { Prisma } from "@prisma/client";
 
 /** Recompute a target's cached rating/reviewCount after a review is removed. */
@@ -18,7 +18,7 @@ async function recompute(field: "partId" | "dealerId" | "serviceProviderId", id:
 
 /** DELETE — remove a review (moderation) and refresh the target's aggregate. */
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const { error } = await requireAdmin();
+  const { error } = await requirePermission("reviews:moderate");
   if (error) return error;
 
   try {

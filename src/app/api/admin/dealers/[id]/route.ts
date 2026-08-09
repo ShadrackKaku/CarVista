@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 
 /** PATCH — verify / un-verify a dealer. Body: { verified: boolean } */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const { error } = await requireAdmin();
+  const { error } = await requirePermission("dealers:manage");
   if (error) return error;
 
   try {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { inspectionReportSchema } from "@/lib/validations";
 import type { BookingStatus } from "@prisma/client";
 
@@ -9,7 +9,7 @@ import type { BookingStatus } from "@prisma/client";
  * Defaults the booking to COMPLETED once a report is filed.
  */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("inspections:manage");
   if (guard.error) return guard.error;
 
   try {

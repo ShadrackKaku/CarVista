@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { icumsCatalogSchema } from "@/lib/validations";
 
 /**
@@ -11,7 +11,7 @@ import { icumsCatalogSchema } from "@/lib/validations";
  * upload makes first.
  */
 export async function POST(req: Request) {
-  const { error } = await requireAdmin();
+  const { error } = await requirePermission("assessments:review");
   if (error) return error;
 
   try {

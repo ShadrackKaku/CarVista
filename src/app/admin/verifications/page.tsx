@@ -3,6 +3,7 @@ import { getAdminVerifications } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { VerificationReview } from "@/components/admin/verification-review";
 import { formatDate } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ const STATUS_VARIANT: Record<string, "warning" | "success" | "destructive"> = {
 };
 
 export default async function AdminVerificationsPage() {
+  await guardPage("verification:review");
   const rows = await getAdminVerifications();
   const pending = rows.filter((r) => r.status === "PENDING").length;
 

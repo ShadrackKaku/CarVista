@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { AdminActionButton } from "@/components/admin/admin-action-button";
 import { getAdminVehicles } from "@/lib/queries";
 import { formatCurrency } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ const statusVariant: Record<string, "success" | "warning" | "destructive" | "mut
 };
 
 export default async function AdminVehiclesPage() {
+  await guardPage("listings:moderate");
   const vehicles = await getAdminVehicles();
 
   return (

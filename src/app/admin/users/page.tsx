@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserStatusActions } from "@/components/admin/user-status-actions";
 import { getInitials, formatDate } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
 };
 
 export default async function AdminUsersPage() {
+  await guardPage("users:read");
   const users = await getAllUsers();
 
   return (

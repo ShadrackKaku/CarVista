@@ -192,15 +192,19 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
   const password = await bcrypt.hash(DEMO_PASSWORD, 12);
   const now = new Date();
 
-  // ── Reference: an admin owner + brands + part categories ─────
+  // ── Reference: the owner account + brands + part categories ──
+  // SUPER_ADMIN rather than ADMIN: creating accounts and granting permissions
+  // is reserved to the super admin, so a seed that only makes an ADMIN leaves
+  // nobody able to add the first member of staff. `update` carries an existing
+  // seeded admin up to it rather than leaving old databases stuck.
   await prisma.user.upsert({
     where: { email: "admin@carvista.com.gh" },
-    update: {},
+    update: { role: "SUPER_ADMIN" },
     create: {
       name: "CarVista Admin",
       email: "admin@carvista.com.gh",
       hashedPassword: password,
-      role: "ADMIN",
+      role: "SUPER_ADMIN",
       emailVerified: now,
     },
   });

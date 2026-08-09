@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { assessmentReviewSchema } from "@/lib/validations";
 
 /** PATCH /api/admin/duty-assessments/[id] — verify or reject a submitted
  *  duty assessment. Only VERIFIED rows ever feed the landed-cost engine. */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const { user, error } = await requireAdmin();
+  const { user, error } = await requirePermission("assessments:review");
   if (error) return error;
 
   try {

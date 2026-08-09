@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { IMPORT_STAGES } from "@/lib/constants";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ function stageLabel(stage: string) {
 }
 
 export default async function AdminImportsPage() {
+  await guardPage("imports:manage");
   const imports = await getAllImportRequests();
   return (
     <div className="mx-auto max-w-6xl">

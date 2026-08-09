@@ -4,10 +4,12 @@ import { getParts } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPartsPage() {
+  await guardPage("listings:moderate");
   const parts = await getParts();
   return (
     <div className="mx-auto max-w-6xl">

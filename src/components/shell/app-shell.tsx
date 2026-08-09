@@ -5,6 +5,8 @@ import { ShellTopbar } from "@/components/shell/shell-topbar";
 
 export interface AppShellProps {
   role: UserRole;
+  /** Staff permissions, so the admin nav shows only what they can open. */
+  permissions?: string[];
   userName?: string | null;
   userEmail?: string | null;
   userImage?: string | null;
@@ -31,6 +33,7 @@ export interface AppShellProps {
  */
 export function AppShell({
   role,
+  permissions,
   userName = null,
   userEmail = null,
   userImage = null,
@@ -41,6 +44,7 @@ export function AppShell({
     <div className="flex h-screen overflow-hidden bg-background">
       <AppSidebar
         role={role}
+        permissions={permissions}
         userName={userName}
         userEmail={userEmail}
         userImage={userImage}
@@ -54,6 +58,7 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <ShellTopbar
           role={role}
+          permissions={permissions}
           userName={userName}
           userEmail={userEmail}
           userImage={userImage}

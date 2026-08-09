@@ -4,10 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import { AdminActionButton } from "@/components/admin/admin-action-button";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDealersPage() {
+  await guardPage("dealers:manage");
   const dealers = await getDealers();
   return (
     <div className="mx-auto max-w-6xl">

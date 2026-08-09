@@ -17,7 +17,7 @@ import { describe, it, expect } from "vitest";
 const API_ROOT = join(process.cwd(), "src", "app", "api");
 
 /** Anything that resolves the caller. */
-const IDENTIFIES_CALLER = /requireAdmin|getCurrentUser|getServerSession/;
+const IDENTIFIES_CALLER = /requireAdmin|requirePermission|getCurrentUser|getServerSession/;
 
 const MUTATING = ["POST", "PATCH", "PUT", "DELETE"];
 
@@ -43,6 +43,8 @@ const DELIBERATELY_PUBLIC: Record<string, string> = {
   "import-requests/track": "authorised by the tracking reference",
   "icums/makes": "public reference data",
   "icums/models": "public reference data",
+  "auth/accept-invite":
+    "authorised by the single-use invite token, which is the only thing the recipient has",
 };
 
 function routeFiles(dir = API_ROOT): string[] {
@@ -60,6 +62,7 @@ interface Route {
   methods: string[];
   identifiesCaller: boolean;
   usesAdminGuard: boolean;
+  usesPermissionGuard: boolean;
   checksAdminRole: boolean;
 }
 
@@ -76,6 +79,7 @@ const ROUTES: Route[] = routeFiles().map((file) => {
     ),
     identifiesCaller: IDENTIFIES_CALLER.test(source),
     usesAdminGuard: source.includes("requireAdmin"),
+    usesPermissionGuard: source.includes("requirePermission("),
     checksAdminRole: /["']ADMIN["']/.test(source),
   };
 });
@@ -86,11 +90,16 @@ describe("API authorization", () => {
     expect(ROUTES.some((r) => r.id === "vehicles")).toBe(true);
   });
 
-  it("guards every /api/admin route on the ADMIN role", () => {
+  it("guards every /api/admin route", () => {
+    // Administrative authority is expressed as named permissions now, so the
+    // expected shape is `requirePermission("…")`. `requireAdmin()` remains
+    // valid for anything a staff member must never reach whatever they hold.
+    // What is no longer acceptable is an inline `role !== "ADMIN"` comparison:
+    // it cannot be delegated, and it locked SUPER_ADMIN out of its own console.
     const unguarded = ROUTES.filter(
-      (r) => r.id.startsWith("admin/") && !(r.usesAdminGuard || (r.identifiesCaller && r.checksAdminRole)),
+      (r) => r.id.startsWith("admin/") && !r.usesPermissionGuard && !r.usesAdminGuard,
     ).map((r) => r.id);
-    expect(unguarded).toEqual([]);
+    expect(unguarded, `admin routes with no guard:\n${unguarded.join("\n")}`).toEqual([]);
   });
 
   it("identifies the caller on every mutating route", () => {

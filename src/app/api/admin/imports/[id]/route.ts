@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { addVehicleEvent } from "@/lib/passport";
 import { importTrackingUpdateSchema, importQuoteSchema } from "@/lib/validations";
 import type { ImportStage, VehicleEventType } from "@prisma/client";
@@ -22,7 +22,7 @@ const STAGE_TO_PASSPORT: Partial<Record<ImportStage, { type: VehicleEventType; t
  * Admin only.
  */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("imports:manage");
   if (guard.error) return guard.error;
 
   try {
