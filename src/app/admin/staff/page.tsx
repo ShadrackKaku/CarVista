@@ -4,6 +4,7 @@ import { getStaff } from "@/lib/queries";
 import { CreateAccountForm } from "@/components/admin/create-account-form";
 import { Badge } from "@/components/ui/badge";
 import { PERMISSIONS, type Permission } from "@/lib/permissions";
+import { StaffAccessEditor } from "@/components/admin/staff-access-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +39,24 @@ export default async function AdminStaffPage() {
             </div>
 
             {s.role === "STAFF" ? (
-              <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                {s.permissions.map((p) => (
-                  <li key={p}>{PERMISSIONS[p as Permission] ?? p}</li>
-                ))}
-              </ul>
+              <>
+                {s.permissions.length > 0 ? (
+                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                    {s.permissions.map((p) => (
+                      <li key={p}>{PERMISSIONS[p as Permission] ?? p}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    No access to the console.
+                  </p>
+                )}
+                <StaffAccessEditor
+                  staffId={s.id}
+                  name={s.name ?? s.email}
+                  current={s.permissions}
+                />
+              </>
             ) : (
               <p className="mt-3 flex items-start gap-1.5 text-xs text-muted-foreground">
                 <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />

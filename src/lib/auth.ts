@@ -76,15 +76,38 @@ export const authOptions: NextAuthOptions = {
       // key at all, so its absence — not just an explicit update — forces the
       // re-read; otherwise a staff member's grants would stay invisible until
       // they next signed out.
-      if ((trigger === "update" || !token.role || token.permissions === undefined) && token.email) {
+      //
+      // Privileged accounts are re-read on EVERY request, not just on those
+      // triggers. The session is a 30-day JWT, so without this a permission
+      // revoked today would keep working for a month — which would make the
+      // permissions editor decorative in the one direction that matters. Only
+      // STAFF, ADMIN and SUPER_ADMIN pay the extra read, and there are a
+      // handful of those; ordinary users never touch the database here.
+      const privileged =
+        token.role === "STAFF" || token.role === "ADMIN" || token.role === "SUPER_ADMIN";
+
+      if (
+        (trigger === "update" ||
+          !token.role ||
+          token.permissions === undefined ||
+          privileged) &&
+        token.email
+      ) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
-          select: { id: true, role: true, permissions: true },
+          select: { id: true, role: true, permissions: true, status: true },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
           token.permissions = dbUser.permissions;
+          // A suspended administrator keeps a valid token otherwise. Dropping
+          // the role to USER strips every permission on the next request
+          // rather than at the next sign-in.
+          if (dbUser.status === "SUSPENDED") {
+            token.role = UserRole.USER;
+            token.permissions = [];
+          }
         }
       }
       return token;
