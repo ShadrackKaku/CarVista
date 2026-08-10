@@ -2,7 +2,7 @@
   "name": "carvista",
   "version": "1.0.0",
   "private": true,
-  "description": "CarVista — Ghana's complete automotive marketplace & car import platform",
+  "description": "CarVista \u2014 Ghana's complete automotive marketplace & car import platform",
   "author": "CarVista",
   "license": "UNLICENSED",
   "scripts": {
@@ -22,7 +22,8 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
-    "test:responsive": "node scripts/check-responsive.mjs"
+    "test:responsive": "node scripts/check-responsive.mjs",
+    "promote:super-admin": "tsx scripts/promote-super-admin.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
