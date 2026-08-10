@@ -110,31 +110,30 @@ export async function POST(req: Request) {
     const url = absoluteUrl(`/accept-invite?token=${token}`);
     const roleLabel = roleLabelFor(input.role, input.preset);
 
-    // The account exists whether or not the mail server is reachable. Failing
-    // the whole request on a mail error would leave an account created with no
-    // way to tell the admin it happened; instead we report what did and did not
-    // go out, and the admin still holds a working link.
-    let emailed = true;
-    try {
-      await sendMail({
-        to: created.email,
-        subject: "Your CarVista account is ready",
-        html: accountInviteEmail({
-          name: created.name ?? "there",
-          url,
-          roleLabel,
-          invitedBy: (actor.name as string) ?? null,
-          expiresInDays: INVITE_EXPIRY_DAYS,
-        }),
-      });
-    } catch (mailError) {
-      emailed = false;
-      console.error("[admin:users:invite-mail]", mailError);
-    }
+    // The account exists whether or not mail is working. Failing the whole
+    // request on a mail error would leave an account created with no way to
+    // tell the admin it happened; instead we report exactly what did and did
+    // not go out, and the admin still holds a working link either way.
+    //
+    // `delivered` comes from sendMail rather than from "it didn't throw":
+    // with no provider configured it does nothing and returns quite happily,
+    // which is how an invite could be reported sent and never arrive.
+    const mail = await sendMail({
+      to: created.email,
+      subject: "Your CarVista account is ready",
+      html: accountInviteEmail({
+        name: created.name ?? "there",
+        url,
+        roleLabel,
+        invitedBy: (actor.name as string) ?? null,
+        expiresInDays: INVITE_EXPIRY_DAYS,
+      }),
+    });
 
     return NextResponse.json({
       user: created,
-      emailed,
+      emailed: mail.delivered,
+      mailProblem: mail.delivered ? null : mail.reason,
       inviteUrl: url,
       whatsappUrl: input.phone
         ? inviteWhatsappUrl({ phone: input.phone, name: created.name ?? "there", roleLabel, url })

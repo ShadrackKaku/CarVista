@@ -17,6 +17,8 @@ type Result = {
   inviteUrl: string;
   whatsappUrl: string | null;
   emailed: boolean;
+  /** Why it didn't send, when it didn't. */
+  mailProblem: "not-configured" | "failed" | null;
   expiresInDays: number;
   user: { name: string | null; email: string };
 };
@@ -79,10 +81,14 @@ export function CreateAccountForm() {
         return;
       }
       setResult(data);
-      toast.success(
-        data.emailed ? "Account created and invite sent." : "Account created — email didn't send.",
-      );
-      router.refresh();
+      if (data.emailed) toast.success("Account created and invite sent.");
+      // A warning rather than a success: the account is real but the person has
+      // not heard about it, and the admin has to do something about that.
+      else toast.warning("Account created, but the invite email did not send.");
+      // Deliberately no router.refresh() here. It remounts this component and
+      // takes the invite link off the screen — and the link is the whole
+      // fallback for when the email did not go. The list on the right is
+      // refreshed when the admin moves on instead.
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -106,8 +112,11 @@ export function CreateAccountForm() {
             ) : (
               <>
                 The account exists, but the invite email did{" "}
-                <span className="font-medium text-warning">not</span> send. Pass the link on
-                yourself using one of the options below.
+                <span className="font-medium">not</span> send
+                {result.mailProblem === "not-configured"
+                  ? " — this deployment has no email provider set up."
+                  : " — the email provider rejected it."}{" "}
+                Pass the link on yourself using one of the options below.
               </>
             )}
           </p>
@@ -146,6 +155,9 @@ export function CreateAccountForm() {
             onClick={() => {
               setResult(null);
               setForm((f) => ({ ...f, name: "", email: "", phone: "", businessName: "" }));
+              // Now that the link is no longer needed on screen, bring the
+              // "who has access" list up to date.
+              router.refresh();
             }}
           >
             Create another

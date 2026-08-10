@@ -93,8 +93,35 @@ export function generateReference(prefix = "CV") {
   return `${prefix}-${timestamp}-${random}`;
 }
 
+/**
+ * A full URL for something that has to work outside the browser — an invite
+ * link, a password reset, an email verification.
+ *
+ * The fallback used to be `http://localhost:3000` full stop, so a deployment
+ * without NEXT_PUBLIC_APP_URL emailed every customer a link to their own
+ * machine. Vercel always sets VERCEL_PROJECT_PRODUCTION_URL (the stable domain)
+ * and VERCEL_URL (this deployment), so those are used before giving up — the
+ * links work on a fresh deploy with nothing configured.
+ *
+ * Falling all the way through to localhost in production is a misconfiguration
+ * that produces mail nobody can act on, so it is logged rather than shipped
+ * quietly.
+ */
 export function absoluteUrl(path: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const configured =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : undefined) ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+
+  if (!configured && process.env.NODE_ENV === "production") {
+    console.error(
+      "[absoluteUrl] No NEXT_PUBLIC_APP_URL and no Vercel URL — links in emails will point at localhost. Set NEXT_PUBLIC_APP_URL.",
+    );
+  }
+
+  const base = (configured ?? "http://localhost:3000").replace(/\/$/, "");
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
