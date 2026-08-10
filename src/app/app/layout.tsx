@@ -24,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <AppShell
       role={user.role}
+      permissions={user.permissions}
       userName={user.name}
       userEmail={user.email}
       userImage={user.image}

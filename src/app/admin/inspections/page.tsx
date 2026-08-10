@@ -3,6 +3,7 @@ import { getAdminInspections } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { InspectionReportDialog } from "@/components/admin/inspection-report-dialog";
 import { formatDate } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ const STATUS_VARIANT: Record<string, "success" | "brand" | "warning" | "destruct
 };
 
 export default async function AdminInspectionsPage() {
+  await guardPage("inspections:manage");
   const rows = await getAdminInspections();
 
   return (

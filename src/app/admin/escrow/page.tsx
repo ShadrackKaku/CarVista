@@ -3,6 +3,7 @@ import { ShieldCheck, ExternalLink } from "lucide-react";
 import { getAdminEscrowPlans } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ const statusVariant: Record<string, "success" | "brand" | "secondary" | "destruc
 };
 
 export default async function AdminEscrowPage() {
+  await guardPage("escrow:manage");
   const { plans, totals } = await getAdminEscrowPlans();
 
   return (

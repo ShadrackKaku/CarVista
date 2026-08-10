@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { IcumsImportForm } from "@/components/admin/icums-import-form";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
 const ICUMS_CHECKER =
   "https://external.unipassghana.com/cl/tm/tax/selectUsedVehicleTaxCalculate.do?decorator=popup&MENU_ID=IIM01S03V02";
 
-export default function IcumsImportPage() {
+export default async function IcumsImportPage() {
+  await guardPage("assessments:review");
   return (
     <div className="mx-auto max-w-5xl">
       <Link

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { addVehicleEvent } from "@/lib/passport";
 
 /**
@@ -10,7 +10,7 @@ import { addVehicleEvent } from "@/lib/passport";
  *   reject  → status REJECTED
  */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("listings:moderate");
   if (guard.error) return guard.error;
 
   try {

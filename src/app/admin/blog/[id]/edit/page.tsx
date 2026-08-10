@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { getBlogPostForEdit } from "@/lib/queries";
 import { BlogPostForm } from "@/components/admin/blog-post-form";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditBlogPostPage({ params }: { params: { id: string } }) {
+  await guardPage("blog:write");
   // The /admin layout already restricts this route to admins.
   const post = await getBlogPostForEdit(params.id);
   if (!post) notFound();

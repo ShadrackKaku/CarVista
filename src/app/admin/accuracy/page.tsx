@@ -4,12 +4,14 @@ import { getBacktestObservations, getCoverageStats } from "@/lib/queries";
 import { backtest } from "@/lib/landed-cost";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
 const pct = (n: number) => `${(n * 100).toFixed(2)}%`;
 
 export default async function AdminAccuracyPage() {
+  await guardPage("assessments:review");
   const [rows, coverage] = await Promise.all([
     getBacktestObservations(),
     getCoverageStats(),

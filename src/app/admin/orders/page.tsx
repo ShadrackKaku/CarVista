@@ -3,6 +3,7 @@ import { getAllOrders } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { OrderRefundButton } from "@/components/admin/order-refund-button";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ const statusVariant: Record<string, "success" | "brand" | "warning" | "muted" | 
 };
 
 export default async function AdminOrdersPage() {
+  await guardPage("orders:read");
   const orders = await getAllOrders();
   return (
     <div className="mx-auto max-w-6xl">

@@ -4,10 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { AdminActionButton } from "@/components/admin/admin-action-button";
 import { formatDate, truncate } from "@/lib/utils";
+import { guardPage } from "@/lib/page-guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminReviewsPage() {
+  await guardPage("reviews:moderate");
   const reviews = await getAllReviews();
   return (
     <div className="mx-auto max-w-5xl">

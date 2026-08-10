@@ -94,6 +94,32 @@ export function passwordResetEmail(name: string, url: string) {
   );
 }
 
+/**
+ * The email that reaches somebody an administrator created an account for.
+ *
+ * It carries a link, never a password. The account exists with no password at
+ * all until they set one through this link, so there is nothing in this message
+ * that would compromise them if the mailbox were read by someone else — and no
+ * member of staff ever knows their credentials.
+ */
+export function accountInviteEmail(opts: {
+  name: string;
+  url: string;
+  roleLabel: string;
+  invitedBy?: string | null;
+  expiresInDays: number;
+}) {
+  const from = opts.invitedBy ? ` by ${opts.invitedBy}` : "";
+  return layout(
+    "Your CarVista account is ready",
+    `<p>Hi ${opts.name},</p>
+     <p>An account has been created for you on CarVista${from}, set up as <strong>${opts.roleLabel}</strong>.</p>
+     <p>Choose a password to finish setting it up — you pick it yourself, and nobody at CarVista sees it.</p>
+     ${button(opts.url, "Set your password")}
+     <p style="font-size:13px;color:#6b7280">This link works once and expires in ${opts.expiresInDays} days. If you weren't expecting this, you can ignore it — the account cannot be used until a password is set.</p>`,
+  );
+}
+
 export interface OrderConfirmationData {
   name: string;
   orderNumber: string;

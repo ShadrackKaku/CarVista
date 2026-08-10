@@ -1,7 +1,8 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import { shellTwinFor, SHELL_MIRROR_PREFIXES } from "@/lib/shell-mirrors";
-import { isAdmin, isDealer, isPartsSeller, isSupplier } from "@/lib/roles";
+import { isDealer, isPartsSeller, isSupplier } from "@/lib/roles";
+import { canReachAdmin } from "@/lib/permissions";
 
 /**
  * Two jobs.
@@ -33,8 +34,14 @@ export default withAuth(
       }
     }
 
-    // Admin area is admins-only.
-    if (pathname.startsWith("/admin") && !isAdmin(role)) {
+    // The admin console admits administrators and any staff member holding at
+    // least one permission. Which *pages* they may open is decided per page —
+    // this only keeps out everyone with no business here at all, so a staff
+    // member with a single grant is not bounced from the front door.
+    if (
+      pathname.startsWith("/admin") &&
+      !canReachAdmin({ role, permissions: token?.permissions as string[] | undefined })
+    ) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import type { UserStatus } from "@prisma/client";
 
 const ALLOWED: UserStatus[] = ["ACTIVE", "SUSPENDED", "PENDING"];
 
 /** PATCH — change a user's account status. Body: { status: UserStatus } */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("users:manage");
   if (guard.error) return guard.error;
 
   try {

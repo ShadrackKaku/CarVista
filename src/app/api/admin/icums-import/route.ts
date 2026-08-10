@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { parseIcumsTable } from "@/lib/icums-paste";
 
 const importSchema = z.object({
@@ -32,7 +32,7 @@ const norm = (s: string) => s.trim().toUpperCase();
  * matched on their natural key and skipped.
  */
 export async function POST(req: Request) {
-  const { error } = await requireAdmin();
+  const { error } = await requirePermission("assessments:review");
   if (error) return error;
 
   try {

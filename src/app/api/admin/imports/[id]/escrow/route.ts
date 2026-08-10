@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { escrowPlanSchema, escrowPlanActionSchema } from "@/lib/validations";
 import { buildMilestonesFromTemplate } from "@/lib/escrow";
 
@@ -10,7 +10,7 @@ import { buildMilestonesFromTemplate } from "@/lib/escrow";
  * Admin only. All amounts are recomputed and validated server-side.
  */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("escrow:manage");
   if (guard.error) return guard.error;
 
   try {
@@ -91,7 +91,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("escrow:manage");
   if (guard.error) return guard.error;
 
   try {

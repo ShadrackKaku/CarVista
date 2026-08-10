@@ -66,6 +66,7 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   // ── Admin ──────────────────────────────────────────────────────
   ["/admin", { title: "Admin overview", subtitle: "Platform-wide metrics and activity." }],
   ["/admin/users", { title: "User management", subtitle: "Manage all platform users, roles and status." }],
+  ["/admin/staff", { title: "Team & access", subtitle: "Create accounts, and decide what each person may do." }],
   ["/admin/vehicles", { title: "Vehicles", subtitle: "Every listing on the platform." }],
   ["/admin/parts", { title: "Parts", subtitle: "Every part listed by your vendors." }],
   ["/admin/dealers", { title: "Dealers", subtitle: "Dealer accounts and their standing." }],

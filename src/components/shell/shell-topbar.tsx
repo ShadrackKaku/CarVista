@@ -15,6 +15,7 @@ import { openCommandPalette } from "@/lib/ui-events";
 
 export interface ShellTopbarProps {
   role: UserRole;
+  permissions?: string[];
   userName: string | null;
   userEmail: string | null;
   userImage: string | null;
@@ -26,8 +27,21 @@ export interface ShellTopbarProps {
  * visible without needing `sticky`. Account controls live in the sidebar's
  * footer, so this only carries navigation and search.
  */
+/**
+ * The badge shown beside the page title.
+ *
+ * A table rather than `role === "ADMIN"`, which silently excluded SUPER_ADMIN —
+ * the higher role — and would have shown a staff member nothing at all.
+ */
+const ROLE_BADGE: Partial<Record<UserRole, string>> = {
+  SUPER_ADMIN: "Super admin",
+  ADMIN: "Admin",
+  STAFF: "Team",
+};
+
 export function ShellTopbar({
   role,
+  permissions,
   userName,
   userEmail,
   userImage,
@@ -64,9 +78,9 @@ export function ShellTopbar({
           </div>
         )}
 
-        {role === "ADMIN" && (
+        {ROLE_BADGE[role] && (
           <Badge variant="brand" className="hidden shrink-0 lg:inline-flex">
-            Admin
+            {ROLE_BADGE[role]}
           </Badge>
         )}
       </div>
@@ -112,12 +126,14 @@ export function ShellTopbar({
           <div className="flex h-full flex-col overflow-hidden">
             <ModuleSidebar
               role={role}
+              permissions={permissions}
               variant="drawer"
               onNavigate={() => setDrawerOpen(false)}
             />
             <div className="min-h-0 flex-1">
               <AppSidebar
                 role={role}
+                permissions={permissions}
                 userName={userName}
                 userEmail={userEmail}
                 userImage={userImage}

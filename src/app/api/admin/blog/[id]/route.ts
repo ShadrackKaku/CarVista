@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { blogPostSchema } from "@/lib/validations";
 import { resolveBlogCategoryId, estimateReadTime } from "@/lib/blog";
 import { sanitizeRichHtml } from "@/lib/sanitize";
 
 /** PATCH /api/admin/blog/[id] — edit a blog post (admins only). */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const { error } = await requireAdmin();
+  const { error } = await requirePermission("blog:write");
   if (error) return error;
 
   try {

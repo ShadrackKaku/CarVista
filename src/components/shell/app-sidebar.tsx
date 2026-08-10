@@ -17,6 +17,7 @@ const COLLAPSE_KEY = "carvista:sidebar-collapsed";
 
 export interface AppSidebarProps {
   role: UserRole;
+  permissions?: string[];
   userName?: string | null;
   userEmail?: string | null;
   userImage?: string | null;
@@ -53,6 +54,7 @@ export interface AppSidebarProps {
  */
 export function AppSidebar({
   role,
+  permissions,
   userName,
   userEmail,
   userImage,
@@ -61,7 +63,7 @@ export function AppSidebar({
   onNavigate,
 }: AppSidebarProps) {
   const pathname = usePathname();
-  const modules = modulesFor(role);
+  const modules = modulesFor(role, permissions);
   const current = moduleForPath(pathname);
   const isDrawer = variant === "drawer";
   const [collapsed, setCollapsed] = useState(false);
@@ -271,6 +273,7 @@ export function AppSidebar({
         <div className="absolute left-full top-0 z-50 h-full">
           <ModuleSidebar
             role={role}
+            permissions={permissions}
             module={peek}
             variant="flyout"
             onNavigate={closePeek}
