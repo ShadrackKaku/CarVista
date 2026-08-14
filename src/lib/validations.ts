@@ -355,6 +355,18 @@ export const importQuoteSchema = z.object({
   quotedTotal: z.coerce.number().nonnegative().optional(),
 });
 
+/**
+ * Taking a cleared import into inventory.
+ *
+ * `intent` does not change what is created — the vehicle is a draft either
+ * way — only where the owner is sent next and whether they are being nudged
+ * towards a price. Someone importing a car for themselves should never be
+ * pushed through a listing form they have no use for.
+ */
+export const takeIntoInventorySchema = z.object({
+  intent: z.enum(["SELL", "KEEP"]),
+});
+
 // ── Milestone escrow ──────────────────────────────────────────
 export const escrowMilestoneInputSchema = z.object({
   label: z.string().min(2, "Add a label").max(80),

@@ -9,7 +9,7 @@
  * As real dealers/sellers add listings, those records take over automatically.
  */
 import { cache } from "react";
-import type { SupplierCategory } from "@prisma/client";
+import type { ImportStage, SupplierCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { formatNumber } from "@/lib/utils";
@@ -1570,7 +1570,8 @@ export interface EscrowPlanView {
 export interface ImportRequestDetail {
   id: string;
   ref: string;
-  stage: string;
+  /** The real enum, not a widened string — callers gate real behaviour on it. */
+  stage: ImportStage;
   customer: string;
   customerEmail: string | null;
   vehicle: string;

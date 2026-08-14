@@ -3,17 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/admin-guard";
 import { addVehicleEvent } from "@/lib/passport";
 import { importTrackingUpdateSchema, importQuoteSchema } from "@/lib/validations";
-import type { ImportStage, VehicleEventType } from "@prisma/client";
-
-// When an import reaches a real-world milestone and it's tied to a listed
-// vehicle, mirror the milestone onto that vehicle's Passport (the trust graph).
-const STAGE_TO_PASSPORT: Partial<Record<ImportStage, { type: VehicleEventType; title: string }>> = {
-  PURCHASED: { type: "IMPORTED", title: "Purchased at auction" },
-  IN_TRANSIT: { type: "SHIPPED", title: "Shipped — in transit" },
-  ARRIVED_AT_PORT: { type: "NOTE", title: "Arrived at port" },
-  CUSTOMS_CLEARANCE: { type: "CLEARED", title: "Customs cleared" },
-  DELIVERED: { type: "NOTE", title: "Delivered to customer" },
-};
+// Shared with the inventory bridge and the importer's own stage controls: a
+// milestone must read the same way whoever recorded it.
+import { STAGE_TO_PASSPORT } from "@/lib/import-to-inventory";
+import type { ImportStage } from "@prisma/client";
 
 /**
  * PATCH — advance an import request.

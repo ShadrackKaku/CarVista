@@ -6,6 +6,8 @@ import { getUserImportDetail } from "@/lib/queries";
 import { ImportTimeline } from "@/components/import/import-timeline";
 import { ImportMilestones } from "@/components/import/import-milestones";
 import { EscrowPlanCard } from "@/components/import/escrow-plan-card";
+import { TakeIntoInventory } from "@/components/import/take-into-inventory";
+import { canEnterInventory } from "@/lib/import-to-inventory";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -54,6 +56,13 @@ export default async function CustomerImportDetailPage({ params }: { params: { i
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
         {/* Left: progress + real milestones */}
         <div className="space-y-6">
+          {/* The end of the import and the start of ownership. Shown only once
+              customs is behind them, and only until they take it — after that
+              the sidebar carries a link to the car itself. */}
+          {!imp.vehicleSlug && canEnterInventory(imp.stage) && (
+            <TakeIntoInventory importId={imp.id} landedCost={q.total ?? null} />
+          )}
+
           <div className="rounded-2xl border bg-card p-6 shadow-soft">
             <h2 className="text-sm font-semibold">Journey</h2>
             <div className="mt-4">
