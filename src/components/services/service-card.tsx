@@ -1,8 +1,14 @@
-import Link from "next/link";
-import Image from "next/image";
-import { MapPin, ShieldCheck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Check } from "lucide-react";
 import { StarRating } from "@/components/star-rating";
+import {
+  ListingCard,
+  ListingCardBody,
+  ListingCardEyebrow,
+  ListingCardFooter,
+  ListingCardMedia,
+  ListingCardMeta,
+  ListingCardTitle,
+} from "@/components/ui/listing-card";
 import type { SampleService } from "@/lib/sample-data";
 
 export interface ServiceCardProps {
@@ -16,45 +22,47 @@ export interface ServiceCardProps {
 
 export function ServiceCard({ service, basePath = "/services" }: ServiceCardProps) {
   const href = `${basePath}/${service.slug}`;
+
   return (
-    <Link
-      href={href}
-      className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card"
-    >
-      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-        <Image
-          src={service.image}
-          alt={service.name}
-          fill
-          sizes="(max-width: 768px) 100vw, 33vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <Badge className="absolute left-3 top-3" variant="secondary">
-          {service.typeLabel}
-        </Badge>
-      </div>
-      <div className="flex flex-1 flex-col p-4">
-        <div className="flex items-center gap-1.5">
-          <h3 className="font-semibold transition-colors group-hover:text-brand-600">
+    <ListingCard>
+      <ListingCardMedia src={service.image} alt={service.name} aspect="aspect-[16/10]" />
+
+      <ListingCardBody>
+        {/* The type badge that used to sit on the photograph. */}
+        <ListingCardEyebrow>{service.typeLabel}</ListingCardEyebrow>
+
+        <ListingCardTitle href={href} reserveTwoLines={false}>
+          <span className="inline-flex items-center gap-1.5">
             {service.name}
-          </h3>
-          {service.verified && <ShieldCheck className="h-4 w-4 text-success" />}
-        </div>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5" /> {service.city}, {service.region}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {service.services.slice(0, 3).map((s) => (
-            <span key={s} className="rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-              {s}
-            </span>
-          ))}
-        </div>
-        <div className="mt-auto flex items-center justify-between border-t pt-3">
-          <StarRating rating={service.rating} reviewCount={service.reviewCount} size={13} showValue />
-          <span className="text-xs font-medium text-brand-600">{service.priceRange}</span>
-        </div>
-      </div>
-    </Link>
+            {service.verified && (
+              <Check className="h-4 w-4 shrink-0 text-success" aria-label="Verified provider" />
+            )}
+          </span>
+        </ListingCardTitle>
+
+        <ListingCardMeta>
+          {service.city}, {service.region}
+        </ListingCardMeta>
+
+        {/* What they actually do, as one line rather than a row of chips. Three
+            bordered pills for "Diagnostics", "Servicing", "Brakes" is three
+            boxes to draw and read where a sentence does it in one. */}
+        {service.services.length > 0 && (
+          <p className="mt-2 line-clamp-1 text-[13px] text-muted-foreground">
+            {service.services.slice(0, 3).join("  ·  ")}
+          </p>
+        )}
+
+        <ListingCardFooter className="items-center">
+          <StarRating
+            rating={service.rating}
+            reviewCount={service.reviewCount}
+            size={13}
+            showValue
+          />
+          <span className="shrink-0 text-[13px] text-muted-foreground">{service.priceRange}</span>
+        </ListingCardFooter>
+      </ListingCardBody>
+    </ListingCard>
   );
 }

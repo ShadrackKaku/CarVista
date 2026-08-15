@@ -1,8 +1,15 @@
-import Link from "next/link";
 import Image from "next/image";
-import { Car, MapPin, ShieldCheck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Check } from "lucide-react";
 import { StarRating } from "@/components/star-rating";
+import {
+  ListingCard,
+  ListingCardBody,
+  ListingCardFooter,
+  ListingCardMedia,
+  ListingCardMeta,
+  ListingCardTitle,
+} from "@/components/ui/listing-card";
+import { formatNumber } from "@/lib/utils";
 import type { SampleDealer } from "@/lib/sample-data";
 
 export interface DealerCardProps {
@@ -16,45 +23,55 @@ export interface DealerCardProps {
 
 export function DealerCard({ dealer, basePath = "/dealers" }: DealerCardProps) {
   const href = `${basePath}/${dealer.slug}`;
+
   return (
-    <Link
-      href={href}
-      className="group overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card"
-    >
-      <div className="relative h-28 overflow-hidden bg-muted">
-        <Image
-          src={dealer.cover}
-          alt={dealer.name}
-          fill
-          sizes="(max-width: 768px) 100vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-      </div>
-      <div className="px-4 pb-4">
-        <div className="-mt-8 flex items-end justify-between">
-          <div className="relative h-16 w-16 overflow-hidden rounded-xl border-4 border-card bg-background">
-            <Image src={dealer.logo} alt={dealer.name} fill sizes="64px" className="object-cover" />
-          </div>
-          {dealer.verified && (
-            <Badge variant="brand" className="mb-1">
-              <ShieldCheck className="h-3.5 w-3.5" /> Verified
-            </Badge>
-          )}
-        </div>
-        <h3 className="mt-3 font-semibold transition-colors group-hover:text-brand-600">
-          {dealer.name}
-        </h3>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5" /> {dealer.city}, {dealer.region}
-        </p>
-        <div className="mt-3 flex items-center justify-between border-t pt-3">
-          <StarRating rating={dealer.rating} reviewCount={dealer.reviewCount} size={13} showValue />
-          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-            <Car className="h-3.5 w-3.5" /> {dealer.vehicleCount}
+    <ListingCard>
+      {/* The cover photograph, with nothing on it. It used to carry a dark
+          gradient whose only job was making a "Verified" badge legible — the
+          badge has moved into the text, so the gradient had nothing left to do
+          but dim the picture. */}
+      <ListingCardMedia
+        src={dealer.cover}
+        alt={dealer.name}
+        aspect="aspect-[16/9]"
+        sizes="(max-width: 640px) 100vw, 25vw"
+      />
+
+      <ListingCardBody>
+        <div className="flex items-center gap-3">
+          {/* The logo sits beside the name rather than straddling the edge of
+              the photograph: a business is identified by its mark and its name
+              together, and reading them on one line is quicker than reading a
+              badge that overlaps a picture. */}
+          <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border bg-background">
+            <Image src={dealer.logo} alt="" fill sizes="36px" className="object-cover" />
           </span>
+          <div className="min-w-0 flex-1">
+            <ListingCardTitle href={href} reserveTwoLines={false}>
+              <span className="inline-flex items-center gap-1.5">
+                {dealer.name}
+                {dealer.verified && (
+                  <Check
+                    className="h-4 w-4 shrink-0 text-success"
+                    aria-label="Verified dealer"
+                  />
+                )}
+              </span>
+            </ListingCardTitle>
+          </div>
         </div>
-      </div>
-    </Link>
+
+        <ListingCardMeta>
+          {dealer.city}, {dealer.region}
+        </ListingCardMeta>
+
+        <ListingCardFooter className="items-center">
+          <StarRating rating={dealer.rating} reviewCount={dealer.reviewCount} size={13} showValue />
+          <span className="shrink-0 text-[13px] text-muted-foreground">
+            {formatNumber(dealer.vehicleCount)} in stock
+          </span>
+        </ListingCardFooter>
+      </ListingCardBody>
+    </ListingCard>
   );
 }
