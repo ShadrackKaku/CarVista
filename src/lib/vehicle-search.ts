@@ -120,19 +120,24 @@ export interface FilterableVehicle {
 /**
  * Whether a vehicle survives the active filters.
  *
- * `ignore` drops one facet from the test, which is what makes per-option counts
- * honest: the number beside "Ghana Used" has to mean "how many results if I
- * pick this", so it must respect every *other* filter while ignoring the
- * condition already chosen. Counting against the unfiltered list instead would
- * promise 22 cars and deliver 3.
+ * `ignore` drops one or more facets from the test, which is what makes
+ * per-option counts honest: the number beside "Ghana Used" has to mean "how
+ * many results if I pick this", so it must respect every *other* filter while
+ * ignoring the condition already chosen. Counting against the unfiltered list
+ * instead would promise 22 cars and deliver 3.
+ *
+ * It takes a list as well as a single key because price and year are one choice
+ * spread over two fields — counting a price band while still applying the
+ * band's own floor and ceiling would report only the cars already showing.
  */
 export function matchesFilters(
   v: FilterableVehicle,
   filters: VehicleFilters,
-  ignore?: keyof VehicleFilters,
+  ignore?: keyof VehicleFilters | readonly (keyof VehicleFilters)[],
 ): boolean {
+  const ignored = ignore == null ? [] : Array.isArray(ignore) ? ignore : [ignore];
   const on = <K extends keyof VehicleFilters>(key: K) =>
-    ignore === key ? "" : filters[key];
+    (ignored as readonly string[]).includes(key) ? "" : filters[key];
 
   const q = on("q");
   if (q && !`${v.title} ${v.brand} ${v.model}`.toLowerCase().includes(q.toLowerCase())) return false;
@@ -147,4 +152,68 @@ export function matchesFilters(
   if (on("minYear") && v.year < Number(filters.minYear)) return false;
   if (on("maxYear") && v.year > Number(filters.maxYear)) return false;
   return true;
+}
+
+/**
+ * Price and year as a short list of bands rather than two empty number boxes.
+ *
+ * A pair of Min/Max fields asks the buyer to know the market before they can
+ * use it — someone shopping for their first car has no idea whether to type
+ * 80,000 or 300,000, so the commonest outcome is that they type nothing and the
+ * filter does no work. A band is a decision they can actually make, and it puts
+ * price on the same left-aligned rhythm as every other facet instead of being
+ * the one row with boxes in it.
+ *
+ * Bands set the same `minPrice`/`maxPrice` the fields did, so the query string,
+ * saved searches and the matcher are all untouched.
+ */
+export interface RangeBand {
+  id: string;
+  label: string;
+  /** Inclusive floor. Absent means "no lower bound". */
+  min?: number;
+  /** Inclusive ceiling. Absent means "no upper bound". */
+  max?: number;
+}
+
+/** Pitched at the Ghanaian market: a tidy Corolla up to an imported Land Cruiser. */
+export const PRICE_BANDS: readonly RangeBand[] = [
+  { id: "u100", label: "Under GH₵100,000", max: 99_999 },
+  { id: "100-200", label: "GH₵100,000 – 200,000", min: 100_000, max: 200_000 },
+  { id: "200-300", label: "GH₵200,000 – 300,000", min: 200_001, max: 300_000 },
+  { id: "300-500", label: "GH₵300,000 – 500,000", min: 300_001, max: 500_000 },
+  { id: "500-800", label: "GH₵500,000 – 800,000", min: 500_001, max: 800_000 },
+  { id: "o800", label: "Over GH₵800,000", min: 800_001 },
+];
+
+/**
+ * Year bands, newest first.
+ *
+ * Deliberately open-ended at the top — "2023 and newer" keeps working next
+ * year, where a hardcoded "2023–2026" quietly starts hiding cars.
+ */
+export const YEAR_BANDS: readonly RangeBand[] = [
+  { id: "y2023", label: "2023 and newer", min: 2023 },
+  { id: "y2020", label: "2020 – 2022", min: 2020, max: 2022 },
+  { id: "y2017", label: "2017 – 2019", min: 2017, max: 2019 },
+  { id: "y2014", label: "2014 – 2016", min: 2014, max: 2016 },
+  { id: "y0", label: "Older than 2014", max: 2013 },
+];
+
+/** The band currently selected, or null when the range is unset or hand-edited. */
+export function activeBand(
+  bands: readonly RangeBand[],
+  min: string,
+  max: string,
+): RangeBand | null {
+  if (!min && !max) return null;
+  return (
+    bands.find((b) => String(b.min ?? "") === min && String(b.max ?? "") === max) ?? null
+  );
+}
+
+/** The two filter values a band sets. */
+export function bandToRange(band: RangeBand | null): { min: string; max: string } {
+  if (!band) return { min: "", max: "" };
+  return { min: band.min == null ? "" : String(band.min), max: band.max == null ? "" : String(band.max) };
 }

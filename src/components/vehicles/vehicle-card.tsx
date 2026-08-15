@@ -95,9 +95,11 @@ export function VehicleCard({ vehicle, basePath = "/vehicles" }: VehicleCardProp
           </Link>
         </h3>
 
-        {/* The one element with real weight. Deliberately not brand-coloured:
-            size carries it, and blue is kept for things you can click. */}
-        <p className="mt-3 font-display text-2xl font-bold tracking-tight">
+        {/* The one element with real presence. Deliberately not brand-coloured
+            and no heavier than it needs to be: size alone carries the
+            hierarchy, and bold on top of that made a grid of prices shout back
+            at the reader. Blue stays reserved for things you can click. */}
+        <p className="mt-3 font-display text-2xl font-semibold tracking-tight">
           {formatCurrency(vehicle.price)}
         </p>
 

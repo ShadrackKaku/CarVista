@@ -149,7 +149,19 @@ export function FilterLayout({
   return (
     <div className={cn("grid gap-8 lg:grid-cols-[280px_1fr]", className)}>
       <aside className="hidden lg:block">
-        <div className="sticky top-24 rounded-xl border bg-card p-5 shadow-soft">
+        {/* Its own scrolling column, capped to the viewport.
+            `sticky` alone stops meaning anything once the panel is taller than
+            the screen: it pins the top, the bottom runs off, and reaching the
+            last filter means scrolling the results past. Bounding the height
+            and letting the panel scroll inside itself keeps the filters where
+            they were left and the results moving independently — which is what
+            a docked column already does inside the app shell. */}
+        <div
+          className={cn(
+            "no-scrollbar sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto",
+            "rounded-xl border bg-card p-5 shadow-soft",
+          )}
+        >
           <h2 className="mb-4 flex items-center gap-2 font-semibold">
             <SlidersHorizontal className="h-4 w-4" /> Filters
           </h2>
@@ -221,9 +233,41 @@ export function FilterOption({
   );
 }
 
-/** The rows pulled back to the panel's edge, so controls line up with labels. */
-export function FilterOptionList({ children }: { children: React.ReactNode }) {
-  return <div className="-mx-1.5 flex flex-col">{children}</div>;
+/**
+ * The rows pulled back to the panel's edge, so controls line up with labels.
+ *
+ * `maxRows` caps a long facet and lets it scroll inside itself. Sixteen regions
+ * laid out in full would push everything below them off the screen, and a
+ * sidebar you have to scroll past to reach the next filter is the thing a
+ * dropdown was solving. Capping keeps every heading visible at once — which is
+ * what makes the column feel calm — while the choices stay in place, left
+ * aligned with the label above them, instead of hiding behind a control you
+ * have to open.
+ */
+export function FilterOptionList({
+  children,
+  maxRows,
+}: {
+  children: React.ReactNode;
+  maxRows?: number;
+}) {
+  if (!maxRows) return <div className="-mx-1.5 flex flex-col">{children}</div>;
+
+  return (
+    <div
+      // A row is 2.25rem: 1.25rem of text plus py-2 either side.
+      style={{ maxHeight: `${maxRows * 2.25}rem` }}
+      className={cn(
+        "-mx-1.5 flex flex-col overflow-y-auto",
+        // A hairline the scroll can run under, so it reads as a window onto a
+        // longer list rather than as a box drawn around some options.
+        "[scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full",
+        "[&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar]:w-1.5",
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 /** Below `lg` there is no room for a column, so the same panel opens in a sheet. */
