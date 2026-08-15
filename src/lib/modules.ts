@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Ship,
   ShoppingBag,
+  Stamp,
   Store,
   UserCheck,
   Users,
@@ -34,7 +35,7 @@ import {
   UserCog,
 } from "lucide-react";
 import type { UserRole } from "@prisma/client";
-import { isDealer, isImporter, isPartsSeller, isSupplier } from "@/lib/roles";
+import { isClearingAgent, isDealer, isImporter, isPartsSeller, isSupplier } from "@/lib/roles";
 import { can, canReachAdmin, type Permission } from "@/lib/permissions";
 
 /**
@@ -327,6 +328,24 @@ const importerConsole: AppModule = {
   ],
 };
 
+const clearingConsole: AppModule = {
+  id: "clearing",
+  label: "Clearing console",
+  short: "Clear",
+  icon: Stamp,
+  basePath: "/dashboard/clearing",
+  blurb: "The vehicles at the port with your name on them.",
+  items: [
+    {
+      label: "My queue",
+      href: "/dashboard/clearing",
+      icon: LayoutGrid,
+      exact: true,
+      description: "Cars waiting to be cleared",
+    },
+  ],
+};
+
 const admin: AppModule = {
   id: "admin",
   label: "Admin",
@@ -375,6 +394,7 @@ export const MODULES: AppModule[] = [
   sellerConsole,
   supplierConsole,
   importerConsole,
+  clearingConsole,
   garage,
   admin,
 ];
@@ -406,6 +426,7 @@ export function modulesFor(role: UserRole | null, permissions?: readonly string[
     if (m.id === "seller") return isPartsSeller(role);
     if (m.id === "supplier") return isSupplier(role);
     if (m.id === "importer") return isImporter(role);
+    if (m.id === "clearing") return isClearingAgent(role);
     return true;
   });
 }

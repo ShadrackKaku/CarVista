@@ -367,6 +367,43 @@ export const takeIntoInventorySchema = z.object({
   intent: z.enum(["SELL", "KEEP"]),
 });
 
+/** Engaging a licensed broker to clear a car sitting at the port. */
+export const assignClearingAgentSchema = z.object({
+  clearingAgentId: z.string().min(1, "Choose an agent"),
+});
+
+/**
+ * Recording what customs actually charged.
+ *
+ * The entry number is required, not optional. A duty figure with no entry
+ * number behind it is an assertion; with one it is checkable, and checkable is
+ * the whole reason this number is worth more than an estimate.
+ */
+export const recordClearanceSchema = z.object({
+  customsEntryNumber: z.string().trim().min(3, "Enter the customs entry number").max(60),
+  actualDutyGhs: z.coerce.number().positive("Enter the duty actually paid"),
+  assessedAt: z.string().optional(),
+  notes: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
+/** An agent maintaining their own profile. Verification is not theirs to set. */
+export const clearingAgentProfileSchema = z.object({
+  businessName: z.string().trim().min(2, "Name your business").max(120),
+  description: z.string().trim().max(2000).optional().or(z.literal("")),
+  licenceNumber: z.string().trim().max(60).optional().or(z.literal("")),
+  ports: z.array(z.string().trim().max(60)).max(8).optional(),
+  turnaroundDays: z.coerce.number().int().min(0).max(365).optional(),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^(\+?233|0)[0-9]{9}$/, "Enter a valid Ghana phone number")
+    .optional()
+    .or(z.literal("")),
+  whatsapp: z.string().trim().max(20).optional().or(z.literal("")),
+  city: z.string().trim().max(80).optional().or(z.literal("")),
+  region: z.string().trim().max(80).optional().or(z.literal("")),
+});
+
 // ── Milestone escrow ──────────────────────────────────────────
 export const escrowMilestoneInputSchema = z.object({
   label: z.string().min(2, "Add a label").max(80),

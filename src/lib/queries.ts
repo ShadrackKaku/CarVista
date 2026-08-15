@@ -1584,6 +1584,18 @@ export interface ImportRequestDetail {
   trackingNumber: string | null;
   estimatedArrival: Date | null;
   quote: { cif: number | null; duty: number | null; shipping: number | null; total: number | null };
+  /**
+   * What customs actually charged, once a licensed agent has recorded it —
+   * the figure the estimate is finally judged against.
+   */
+  clearance: {
+    agent: string | null;
+    /** Whether a licence number is on file for that agent. */
+    agentLicensed: boolean;
+    actualDuty: number | null;
+    entryNumber: string | null;
+    clearedAt: Date | null;
+  };
   createdAt: Date;
   events: ImportTrackingEventView[];
   escrow: EscrowPlanView | null;
@@ -1593,6 +1605,7 @@ export interface ImportRequestDetail {
 const importDetailInclude = {
   user: { select: { name: true, email: true } },
   vehicle: { select: { id: true, slug: true } },
+  clearingAgent: { select: { businessName: true, slug: true, licenceNumber: true } },
   trackingEvents: { orderBy: { timestamp: "desc" } },
   escrowPlan: { include: { milestones: { orderBy: { sequence: "asc" } } } },
 } satisfies Prisma.ImportRequestInclude;
@@ -1620,6 +1633,13 @@ function mapImportDetail(
       duty: r.quotedDuty ? num(r.quotedDuty) : null,
       shipping: r.quotedShipping ? num(r.quotedShipping) : null,
       total: r.quotedTotal ? num(r.quotedTotal) : null,
+    },
+    clearance: {
+      agent: r.clearingAgent?.businessName ?? null,
+      agentLicensed: Boolean(r.clearingAgent?.licenceNumber),
+      actualDuty: r.actualDutyGhs ? num(r.actualDutyGhs) : null,
+      entryNumber: r.customsEntryNumber,
+      clearedAt: r.clearedAt,
     },
     createdAt: r.createdAt,
     events: r.trackingEvents.map((e) => ({

@@ -167,6 +167,12 @@ export function passportBackfill(events: TrackingLike[]): BackfillEvent[] {
  * are the only ones holding the FOB, the freight and the duty for the same
  * car — which is what makes it worth showing.
  *
+ * Once an agent has recorded what customs actually charged, that figure
+ * replaces the estimate. Anything else would hand a dealer a landed cost that
+ * is knowably wrong at the exact moment they are setting a price against it —
+ * and being out by the duty variance is the specific mistake this whole chain
+ * exists to prevent.
+ *
  * `null` when the import never carried a quote, rather than a misleading zero.
  */
 export function landedCostOf(input: {
@@ -174,9 +180,22 @@ export function landedCostOf(input: {
   quotedCif?: number | null;
   quotedDuty?: number | null;
   quotedShipping?: number | null;
+  /** What customs really charged. Supersedes `quotedDuty` when present. */
+  actualDuty?: number | null;
 }): number | null {
-  if (input.quotedTotal && input.quotedTotal > 0) return input.quotedTotal;
-  const parts = [input.quotedCif, input.quotedDuty, input.quotedShipping].filter(
+  const actual = typeof input.actualDuty === "number" && input.actualDuty > 0 ? input.actualDuty : null;
+
+  if (input.quotedTotal && input.quotedTotal > 0) {
+    // Swap the estimate out of the total rather than recomputing from parts,
+    // because the total may carry fees the individual lines do not.
+    if (actual != null && input.quotedDuty && input.quotedDuty > 0) {
+      return input.quotedTotal - input.quotedDuty + actual;
+    }
+    return input.quotedTotal;
+  }
+
+  const duty = actual ?? input.quotedDuty;
+  const parts = [input.quotedCif, duty, input.quotedShipping].filter(
     (n): n is number => typeof n === "number" && n > 0,
   );
   if (!parts.length) return null;

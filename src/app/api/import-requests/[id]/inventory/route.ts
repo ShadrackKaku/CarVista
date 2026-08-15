@@ -78,6 +78,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         quotedCif: true,
         quotedDuty: true,
         quotedShipping: true,
+        actualDutyGhs: true,
         listing: {
           select: {
             make: true,
@@ -150,6 +151,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       quotedCif: request.quotedCif ? Number(request.quotedCif) : null,
       quotedDuty: request.quotedDuty ? Number(request.quotedDuty) : null,
       quotedShipping: request.quotedShipping ? Number(request.quotedShipping) : null,
+      // The bill, not the estimate, once customs has spoken.
+      actualDuty: request.actualDutyGhs ? Number(request.actualDutyGhs) : null,
     });
 
     const dealer = await prisma.dealer.findUnique({

@@ -108,6 +108,7 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/dashboard/importer/stock/:id/edit", { title: "Edit listing", subtitle: "Correcting details never changes whether the car is published." }],
   ["/dashboard/importer/reservations", { title: "Reservations", subtitle: "Who is holding what, and until when." }],
   ["/dashboard/importer/profile", { title: "My importer profile", subtitle: "What buyers see when they browse your stock." }],
+  ["/dashboard/clearing", { title: "Clearing queue", subtitle: "Vehicles at the port with your name on them." }],
   ["/dashboard/supplier", { title: "Supplier overview", subtitle: "Enquiries waiting on you." }],
   ["/dashboard/supplier/enquiries", { title: "Enquiries", subtitle: "Buyers asking you to quote." }],
   ["/dashboard/supplier/profile", { title: "My supplier profile", subtitle: "What buyers see, and how they filter to you." }],

@@ -26,6 +26,12 @@ enum UserRole {
   SUPPLIER
   IMPORTER
 
+  /// A licensed customs broker who clears vehicles at the port. The only
+  /// business role gated on a real external credential: an unlicensed agent
+  /// moving somebody's car through Tema is precisely the risk this platform
+  /// exists to take off the buyer.
+  CLEARING_AGENT
+
   /// A CarVista team member. Carries no authority on its own — everything a
   /// STAFF account may do comes from User.permissions, granted by a super
   /// admin. Deliberately NOT covered by isAdmin(), so any check that has not
@@ -125,6 +131,8 @@ model User {
   reviewedApplications  RoleApplication[]    @relation("RoleApplicationReviewer")
   supplier              Supplier?
   importer              Importer?
+  clearingAgent         ClearingAgent?
+  clearancesRecorded    ImportRequest[]      @relation("ClearanceRecorder")
   reservations          ImportReservation[]
   supplierEnquiries     SupplierEnquiry[]    @relation("EnquiryBuyer")
 
@@ -885,9 +893,33 @@ model ImportRequest {
   trackingNumber   String?
   estimatedArrival DateTime?
 
+  // ── customs ──
+  /// The licensed broker handling clearance. Assigned once the car is at the
+  /// port; until then there is nothing for an agent to do.
+  clearingAgentId String?
+
+  /// What customs actually charged, entered by the agent who paid it.
+  ///
+  /// This is the number the whole duty engine is trying to predict, and the
+  /// only place it can be observed first-hand. Every clearance recorded here
+  /// becomes a DutyAssessment carrying `predictedTotalTax`, so the residual
+  /// between what we quoted and what was really paid feeds calibration — the
+  /// platform gets better at estimating duty every time it clears a car.
+  actualDutyGhs      Decimal?  @db.Decimal(12, 2)
+  /// The ICUMS entry number on the bill. What makes the figure checkable
+  /// rather than merely asserted.
+  customsEntryNumber String?
+  clearedAt          DateTime?
+  /// Who recorded the clearance — kept separately from the assigned agent,
+  /// because an admin may enter it on an agent's behalf and the passport
+  /// should say who actually attested to it.
+  clearedById        String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  clearingAgent  ClearingAgent?        @relation(fields: [clearingAgentId], references: [id], onDelete: SetNull)
+  clearedBy      User?                 @relation("ClearanceRecorder", fields: [clearedById], references: [id], onDelete: SetNull)
   user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicle        Vehicle?              @relation(fields: [vehicleId], references: [id])
   /// Set when the request began as a reservation on published stock rather
@@ -899,6 +931,8 @@ model ImportRequest {
 
   @@index([userId])
   @@index([stage])
+  /// The agent's working set: their assigned cars, grouped by where each is.
+  @@index([clearingAgentId, stage])
 }
 
 model ImportTrackingEvent {
@@ -1639,6 +1673,56 @@ model Importer {
 
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   listings ImportListing[]
+
+  @@index([verified, featured])
+}
+
+/// A licensed customs broker who clears vehicles at Ghana's ports.
+///
+/// The one business profile gated on an external credential. Every other role
+/// here is a trading relationship the platform can judge for itself; this one
+/// rests on a licence issued by Customs, and the whole value of routing a
+/// buyer's car through a named agent evaporates if the agent is not really
+/// licensed. `verified` is therefore turned on by an administrator who has
+/// seen the licence, never by the agent filling in their own profile — the
+/// same rule the dealer badge follows.
+model ClearingAgent {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  businessName String
+  slug         String  @unique
+  description  String? @db.Text
+  logo         String?
+
+  /// Customs broker licence, as issued by GRA Customs. Nullable because the
+  /// profile is created the moment the role is granted — before the licence
+  /// has been checked — and an agent with no licence recorded simply cannot
+  /// be verified.
+  licenceNumber String?
+  licenceExpiry DateTime?
+
+  phone    String?
+  whatsapp String?
+  email    String?
+  city     String?
+  region   String?
+
+  /// Ports they actually work — "Tema", "Takoradi". A Takoradi agent should
+  /// not be offered a car sitting at Tema.
+  ports          String[]
+  /// Days from arrival to release, as they quote it.
+  turnaroundDays Int?
+
+  verified    Boolean @default(false)
+  featured    Boolean @default(false)
+  rating      Float   @default(0)
+  reviewCount Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clearances ImportRequest[]
 
   @@index([verified, featured])
 }

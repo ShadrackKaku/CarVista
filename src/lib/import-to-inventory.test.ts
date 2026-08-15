@@ -182,6 +182,42 @@ describe("what the car cost to land", () => {
     expect(landedCostOf({})).toBeNull();
     expect(landedCostOf({ quotedTotal: 0 })).toBeNull();
   });
+
+  it("uses the real bill once customs has spoken", () => {
+    // The bug this closes: the car above cost GH₵252,400 to land, not the
+    // GH₵248,400 we estimated — and the dealer was being shown the estimate
+    // at the exact moment they set a price against it.
+    expect(
+      landedCostOf({ quotedTotal: 248_400, quotedDuty: 78_000, actualDuty: 82_000 }),
+    ).toBe(252_400);
+  });
+
+  it("swaps the duty out of the total rather than rebuilding from the lines", () => {
+    // The total may carry fees the individual lines do not, so recomputing
+    // from CIF + duty + shipping would silently drop them.
+    expect(
+      landedCostOf({
+        quotedTotal: 260_000, // 8,000 of service fees beyond the three lines
+        quotedCif: 150_000,
+        quotedDuty: 78_000,
+        quotedShipping: 20_400,
+        actualDuty: 82_000,
+      }),
+    ).toBe(264_000);
+  });
+
+  it("uses the real duty when there was never a total", () => {
+    expect(
+      landedCostOf({ quotedCif: 150_000, quotedShipping: 20_400, actualDuty: 82_000 }),
+    ).toBe(252_400);
+  });
+
+  it("keeps the estimate until an actual figure exists", () => {
+    expect(landedCostOf({ quotedTotal: 248_400, quotedDuty: 78_000, actualDuty: null })).toBe(
+      248_400,
+    );
+    expect(landedCostOf({ quotedTotal: 248_400, quotedDuty: 78_000, actualDuty: 0 })).toBe(248_400);
+  });
 });
 
 describe("the seam itself", () => {

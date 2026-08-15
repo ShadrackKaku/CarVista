@@ -20,6 +20,7 @@ export const APPLICABLE_ROLES = [
   "SERVICE_PROVIDER",
   "SUPPLIER",
   "IMPORTER",
+  "CLEARING_AGENT",
 ] as const satisfies readonly UserRole[];
 
 export type ApplicableRole = (typeof APPLICABLE_ROLES)[number];
@@ -61,6 +62,18 @@ export function isSupplier(role: UserRole | null | undefined): boolean {
 
 export function isImporter(role: UserRole | null | undefined): boolean {
   return role === "IMPORTER" || isAdmin(role);
+}
+
+/**
+ * Whether a role may clear vehicles through customs.
+ *
+ * The role alone is not enough to be *offered* work: an agent must also carry
+ * `ClearingAgent.verified`, which an administrator turns on after seeing the
+ * licence. This function answers "may they open the clearing workspace", not
+ * "should buyers be told this agent is licensed".
+ */
+export function isClearingAgent(role: UserRole | null | undefined): boolean {
+  return role === "CLEARING_AGENT" || isAdmin(role);
 }
 
 export interface RoleProfile {
@@ -125,6 +138,20 @@ export const ROLE_PROFILES: Record<ApplicableRole, RoleProfile> = {
       "Clearing and shipment tracking tools",
       "Landed-cost quoting for customers",
     ],
+    requires: ["businessName", "businessRegNumber", "phone", "city"],
+  },
+  CLEARING_AGENT: {
+    role: "CLEARING_AGENT",
+    label: "Clearing agent",
+    blurb: "Clear vehicles through customs as a licensed broker.",
+    unlocks: [
+      "Vehicles at your port assigned to you",
+      "Record the duty actually paid against the entry number",
+      "The verified-agent badge, once your Customs licence checks out",
+    ],
+    // The registration number is the licence conversation starting: an agent
+    // who cannot produce one cannot be verified, and an unverified agent is
+    // never offered a car.
     requires: ["businessName", "businessRegNumber", "phone", "city"],
   },
 };
