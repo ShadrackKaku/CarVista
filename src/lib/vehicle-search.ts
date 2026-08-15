@@ -74,20 +74,94 @@ export function queryToFilters(source: ParamSource): { filters: VehicleFilters; 
   return { filters, sort };
 }
 
-/** How many filters are set — for the "active filters" badge. */
+/**
+ * Facets where more than one value may be chosen at once.
+ *
+ * These are the questions with an honest "or" in them — somebody shopping for
+ * a family car will take a RAV4 or a CR-V, and forcing them to run the search
+ * twice is the interface being difficult about it. Price and year are
+ * deliberately absent: they are ranges, and two disjoint bands ("under
+ * GH₵100,000 or over GH₵800,000") is not a search anybody means to run.
+ *
+ * Values are stored comma-joined in the same single string the fields always
+ * used, so `brand=Toyota` from a saved search made before this existed still
+ * parses and still matches.
+ */
+export const MULTI_FACETS = [
+  "brand",
+  "bodyType",
+  "fuelType",
+  "transmission",
+  "condition",
+  "region",
+] as const satisfies readonly (keyof VehicleFilters)[];
+
+export type MultiFacet = (typeof MULTI_FACETS)[number];
+
+/** The values chosen in a multi-select facet. */
+export function selectedValues(value: string): string[] {
+  return value ? value.split(",").filter(Boolean) : [];
+}
+
+export function isSelected(current: string, value: string): boolean {
+  return selectedValues(current).includes(value);
+}
+
+/** Add the value if absent, remove it if present. */
+export function toggleValue(current: string, value: string): string {
+  const values = selectedValues(current);
+  const next = values.includes(value)
+    ? values.filter((v) => v !== value)
+    : [...values, value];
+  return next.join(",");
+}
+
+/**
+ * How many filters are set — for the "active filters" badge.
+ *
+ * Counted as a person would: each chosen value in a multi-select facet is one
+ * filter, and a price or year band is one filter rather than the two fields it
+ * happens to write. The old count said "2 filters" for a single price band,
+ * which made the badge quietly untrustworthy.
+ */
 export function activeFilterCount(filters: VehicleFilters): number {
-  return FILTER_KEYS.reduce((n, key) => (filters[key].trim() ? n + 1 : n), 0);
+  let n = 0;
+  for (const key of FILTER_KEYS) {
+    const value = filters[key].trim();
+    if (!value) continue;
+    if (key === "maxPrice" || key === "maxYear") continue; // counted with their floor
+    if ((MULTI_FACETS as readonly string[]).includes(key)) n += selectedValues(value).length;
+    else n += 1;
+  }
+  // A band with only a ceiling ("Under GH₵100,000") sets no floor, so it would
+  // otherwise slip through the skip above.
+  if (!filters.minPrice.trim() && filters.maxPrice.trim()) n += 1;
+  if (!filters.minYear.trim() && filters.maxYear.trim()) n += 1;
+  return n;
 }
 
 /** A short human summary of a saved search, e.g. "Toyota · SUV · ≤ GHS 200,000". */
 export function describeQuery(query: string): string {
   const p = new URLSearchParams(query);
   const parts: string[] = [];
+  // Multi-select facets read back as "Toyota or Honda" rather than the raw
+  // comma-joined value, so a saved search describes itself the way it was made.
+  const list = (key: string, tidy: (s: string) => string = (s) => s) => {
+    const values = selectedValues(p.get(key) ?? "").map(tidy);
+    if (!values.length) return null;
+    if (values.length === 1) return values[0];
+    return `${values.slice(0, -1).join(", ")} or ${values[values.length - 1]}`;
+  };
+
   if (p.get("q")) parts.push(`"${p.get("q")}"`);
-  if (p.get("brand")) parts.push(p.get("brand")!);
-  if (p.get("bodyType")) parts.push(p.get("bodyType")!);
-  if (p.get("condition")) parts.push(p.get("condition")!.replace(/_/g, " ").toLowerCase());
-  if (p.get("region")) parts.push(p.get("region")!);
+  const brand = list("brand");
+  if (brand) parts.push(brand);
+  const bodyType = list("bodyType");
+  if (bodyType) parts.push(bodyType);
+  const condition = list("condition", (s) => s.replace(/_/g, " ").toLowerCase());
+  if (condition) parts.push(condition);
+  const region = list("region");
+  if (region) parts.push(region);
   if (p.get("minPrice") || p.get("maxPrice")) {
     const min = p.get("minPrice");
     const max = p.get("maxPrice");
@@ -139,14 +213,22 @@ export function matchesFilters(
   const on = <K extends keyof VehicleFilters>(key: K) =>
     (ignored as readonly string[]).includes(key) ? "" : filters[key];
 
+  // Within a facet the chosen values are an OR; across facets they are an AND.
+  // "Toyota or Honda, and an SUV" is what a person means by ticking three
+  // boxes, and it is the only reading that can ever return anything.
+  const anyOf = (facet: MultiFacet, actual: string | undefined) => {
+    const values = selectedValues(on(facet));
+    return values.length === 0 || (actual != null && values.includes(actual));
+  };
+
   const q = on("q");
   if (q && !`${v.title} ${v.brand} ${v.model}`.toLowerCase().includes(q.toLowerCase())) return false;
-  if (on("brand") && v.brand !== filters.brand) return false;
-  if (on("bodyType") && v.bodyType !== filters.bodyType) return false;
-  if (on("fuelType") && v.fuelType !== filters.fuelType) return false;
-  if (on("transmission") && v.transmission !== filters.transmission) return false;
-  if (on("condition") && v.condition !== filters.condition) return false;
-  if (on("region") && v.region !== filters.region) return false;
+  if (!anyOf("brand", v.brand)) return false;
+  if (!anyOf("bodyType", v.bodyType)) return false;
+  if (!anyOf("fuelType", v.fuelType)) return false;
+  if (!anyOf("transmission", v.transmission)) return false;
+  if (!anyOf("condition", v.condition)) return false;
+  if (!anyOf("region", v.region)) return false;
   if (on("minPrice") && v.price < Number(filters.minPrice)) return false;
   if (on("maxPrice") && v.price > Number(filters.maxPrice)) return false;
   if (on("minYear") && v.year < Number(filters.minYear)) return false;

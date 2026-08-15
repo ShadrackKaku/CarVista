@@ -22,6 +22,7 @@ import { usePagedList } from "@/lib/use-paged-list";
 import { POPULAR_BRANDS, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, GHANA_REGIONS } from "@/lib/constants";
 import type { SampleVehicle } from "@/lib/sample-data";
 import {
+  type MultiFacet,
   type RangeBand,
   type VehicleFilters,
   type VehicleSort,
@@ -32,7 +33,9 @@ import {
   activeFilterCount,
   bandToRange,
   filtersToQuery,
+  isSelected,
   matchesFilters,
+  toggleValue,
 } from "@/lib/vehicle-search";
 
 /**
@@ -203,6 +206,45 @@ export function VehicleBrowser({
   const paged = usePagedList(filtered, query);
 
   /**
+   * A facet you may tick more than one of.
+   *
+   * Rendered as checkboxes because that is what they are: within a facet the
+   * choices are an OR, so "Toyota and Honda" returns both rather than nothing.
+   * The leading "Any …" row is checked whenever the facet is empty and clears
+   * it when clicked, which keeps the reset in the same place as on the
+   * single-choice facets instead of introducing a second kind of control.
+   */
+  const multi = (
+    facet: MultiFacet,
+    anyLabel: string,
+    options: readonly { value: string; label: string }[],
+    countMap: Record<string, number>,
+    maxRows?: number,
+  ) => (
+    <FilterOptionList maxRows={maxRows}>
+      <FilterOption
+        name={facet}
+        label={anyLabel}
+        multiple
+        checked={filters[facet] === ""}
+        onSelect={() => set(facet, "")}
+        count={countMap.any}
+      />
+      {options.map((o) => (
+        <FilterOption
+          key={o.value}
+          name={facet}
+          label={o.label}
+          multiple
+          checked={isSelected(filters[facet], o.value)}
+          onSelect={() => set(facet, toggleValue(filters[facet], o.value))}
+          count={countMap[o.value] ?? 0}
+        />
+      ))}
+    </FilterOptionList>
+  );
+
+  /**
    * Every facet is the same shape: a heading, then its choices listed under it,
    * left aligned with the heading and with the count of what each would leave.
    *
@@ -212,6 +254,9 @@ export function VehicleBrowser({
    * which is what made this sidebar feel busy next to the one calm list on it.
    * Long facets scroll inside their own window instead, so every heading stays
    * visible at once.
+   *
+   * Categorical facets take several answers; price and year take one, because
+   * they are ranges and two disjoint bands is not a search anybody means.
    */
   const FilterPanel = (
     <div className="space-y-6">
@@ -225,47 +270,17 @@ export function VehicleBrowser({
       </div>
 
       <Facet label="Brand">
-        <FilterOptionList maxRows={7}>
-          <FilterOption
-            name="brand"
-            label="Any brand"
-            checked={filters.brand === ""}
-            onSelect={() => set("brand", "")}
-            count={counts.brand.any}
-          />
-          {POPULAR_BRANDS.map((b) => (
-            <FilterOption
-              key={b}
-              name="brand"
-              label={b}
-              checked={filters.brand === b}
-              onSelect={() => set("brand", b)}
-              count={counts.brand[b] ?? 0}
-            />
-          ))}
-        </FilterOptionList>
+        {multi(
+          "brand",
+          "Any brand",
+          POPULAR_BRANDS.map((b) => ({ value: b, label: b })),
+          counts.brand,
+          7,
+        )}
       </Facet>
 
       <Facet label="Body type">
-        <FilterOptionList maxRows={6}>
-          <FilterOption
-            name="bodyType"
-            label="Any body type"
-            checked={filters.bodyType === ""}
-            onSelect={() => set("bodyType", "")}
-            count={counts.bodyType.any}
-          />
-          {BODY_TYPES.map((b) => (
-            <FilterOption
-              key={b.value}
-              name="bodyType"
-              label={b.label}
-              checked={filters.bodyType === b.value}
-              onSelect={() => set("bodyType", b.value)}
-              count={counts.bodyType[b.value] ?? 0}
-            />
-          ))}
-        </FilterOptionList>
+        {multi("bodyType", "Any body type", BODY_TYPES, counts.bodyType, 6)}
       </Facet>
 
       <Facet label="Price">
@@ -313,91 +328,25 @@ export function VehicleBrowser({
       </Facet>
 
       <Facet label="Condition">
-        <FilterOptionList>
-          <FilterOption
-            name="condition"
-            label="Any condition"
-            checked={filters.condition === ""}
-            onSelect={() => set("condition", "")}
-            count={counts.condition.any}
-          />
-          {CONDITIONS.map((c) => (
-            <FilterOption
-              key={c.value}
-              name="condition"
-              label={c.label}
-              checked={filters.condition === c.value}
-              onSelect={() => set("condition", c.value)}
-              count={counts.condition[c.value] ?? 0}
-            />
-          ))}
-        </FilterOptionList>
+        {multi("condition", "Any condition", CONDITIONS, counts.condition)}
       </Facet>
 
       <Facet label="Fuel type">
-        <FilterOptionList>
-          <FilterOption
-            name="fuelType"
-            label="Any fuel"
-            checked={filters.fuelType === ""}
-            onSelect={() => set("fuelType", "")}
-            count={counts.fuelType.any}
-          />
-          {FUEL_TYPES.map((f) => (
-            <FilterOption
-              key={f.value}
-              name="fuelType"
-              label={f.label}
-              checked={filters.fuelType === f.value}
-              onSelect={() => set("fuelType", f.value)}
-              count={counts.fuelType[f.value] ?? 0}
-            />
-          ))}
-        </FilterOptionList>
+        {multi("fuelType", "Any fuel", FUEL_TYPES, counts.fuelType)}
       </Facet>
 
       <Facet label="Transmission">
-        <FilterOptionList>
-          <FilterOption
-            name="transmission"
-            label="Any transmission"
-            checked={filters.transmission === ""}
-            onSelect={() => set("transmission", "")}
-            count={counts.transmission.any}
-          />
-          {TRANSMISSIONS.map((t) => (
-            <FilterOption
-              key={t.value}
-              name="transmission"
-              label={t.label}
-              checked={filters.transmission === t.value}
-              onSelect={() => set("transmission", t.value)}
-              count={counts.transmission[t.value] ?? 0}
-            />
-          ))}
-        </FilterOptionList>
+        {multi("transmission", "Any transmission", TRANSMISSIONS, counts.transmission)}
       </Facet>
 
       <Facet label="Region">
-        <FilterOptionList maxRows={7}>
-          <FilterOption
-            name="region"
-            label="Any region"
-            checked={filters.region === ""}
-            onSelect={() => set("region", "")}
-            count={counts.region.any}
-          />
-          {GHANA_REGIONS.map((r) => (
-            <FilterOption
-              key={r}
-              name="region"
-              label={r}
-              checked={filters.region === r}
-              onSelect={() => set("region", r)}
-              count={counts.region[r] ?? 0}
-            />
-          ))}
-        </FilterOptionList>
+        {multi(
+          "region",
+          "Any region",
+          GHANA_REGIONS.map((r) => ({ value: r, label: r })),
+          counts.region,
+          7,
+        )}
       </Facet>
 
       <Button variant="outline" className="w-full" onClick={reset}>

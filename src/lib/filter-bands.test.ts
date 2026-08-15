@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   EMPTY_FILTERS,
+  activeFilterCount,
+  describeQuery,
+  isSelected,
+  selectedValues,
+  toggleValue,
   PRICE_BANDS,
   YEAR_BANDS,
   activeBand,
@@ -152,5 +157,127 @@ describe("every band actually reaches cars", () => {
       );
       expect(matching, `${year} lands in ${matching.length} bands`).toHaveLength(1);
     }
+  });
+});
+
+describe("choosing more than one of something", () => {
+  const car = (over: Partial<FilterableVehicle>): FilterableVehicle => ({
+    title: "Toyota Harrier",
+    brand: "Toyota",
+    model: "Harrier",
+    bodyType: "SUV",
+    fuelType: "HYBRID",
+    transmission: "CVT",
+    condition: "FOREIGN_USED",
+    region: "Greater Accra",
+    price: 289_000,
+    year: 2019,
+    ...over,
+  });
+
+  const fleet = [
+    car({ brand: "Toyota", bodyType: "SUV" }),
+    car({ brand: "Honda", bodyType: "SUV" }),
+    car({ brand: "Kia", bodyType: "SEDAN" }),
+    car({ brand: "Toyota", bodyType: "SEDAN" }),
+  ];
+
+  it("returns the union within a facet, not the intersection", () => {
+    // Ticking two brands must widen the search. Read as an AND it would return
+    // nothing at all, because no car is both a Toyota and a Honda — the classic
+    // way multi-select filters get shipped broken.
+    const filters = { ...EMPTY_FILTERS, brand: "Toyota,Honda" };
+    const hits = fleet.filter((c) => matchesFilters(c, filters));
+    expect(hits).toHaveLength(3);
+    expect(new Set(hits.map((c) => c.brand))).toEqual(new Set(["Toyota", "Honda"]));
+  });
+
+  it("still narrows across facets", () => {
+    // "Toyota or Honda, AND an SUV" — the only reading that means anything.
+    const filters = { ...EMPTY_FILTERS, brand: "Toyota,Honda", bodyType: "SUV" };
+    const hits = fleet.filter((c) => matchesFilters(c, filters));
+    expect(hits).toHaveLength(2);
+  });
+
+  it("treats a single value exactly as it always did", () => {
+    // Saved searches and shared links made before multi-select carry
+    // `brand=Toyota`, and must keep working untouched.
+    const filters = { ...EMPTY_FILTERS, brand: "Toyota" };
+    expect(fleet.filter((c) => matchesFilters(c, filters))).toHaveLength(2);
+  });
+
+  it("treats an empty facet as no constraint", () => {
+    expect(fleet.filter((c) => matchesFilters(c, { ...EMPTY_FILTERS, brand: "" }))).toHaveLength(4);
+  });
+
+  it("does not match a car whose value is missing", () => {
+    // A listing with no region should fail a region filter rather than pass
+    // every one of them.
+    const noRegion = car({ region: undefined });
+    expect(matchesFilters(noRegion, { ...EMPTY_FILTERS, region: "Ashanti" })).toBe(false);
+  });
+});
+
+describe("toggling a value", () => {
+  it("adds, then removes", () => {
+    expect(toggleValue("", "Toyota")).toBe("Toyota");
+    expect(toggleValue("Toyota", "Honda")).toBe("Toyota,Honda");
+    expect(toggleValue("Toyota,Honda", "Toyota")).toBe("Honda");
+    expect(toggleValue("Honda", "Honda")).toBe("");
+  });
+
+  it("reports what is selected", () => {
+    expect(selectedValues("Toyota,Honda")).toEqual(["Toyota", "Honda"]);
+    expect(selectedValues("")).toEqual([]);
+    expect(isSelected("Toyota,Honda", "Honda")).toBe(true);
+    expect(isSelected("Toyota,Honda", "Kia")).toBe(false);
+    // "Kia" must not match inside "Kia,Nissan" by substring.
+    expect(isSelected("Toyota", "Toy")).toBe(false);
+  });
+});
+
+describe("the active-filter badge", () => {
+  it("counts each chosen value, not each facet", () => {
+    expect(activeFilterCount({ ...EMPTY_FILTERS, brand: "Toyota,Honda,Kia" })).toBe(3);
+  });
+
+  it("counts a price band as one filter, not the two fields it writes", () => {
+    // The old count said "2 filters" for a single band, which made the number
+    // on the mobile trigger quietly untrustworthy.
+    const band = bandToRange(PRICE_BANDS.find((b) => b.id === "200-300")!);
+    expect(
+      activeFilterCount({ ...EMPTY_FILTERS, minPrice: band.min, maxPrice: band.max }),
+    ).toBe(1);
+  });
+
+  it("counts an open-ended band as one", () => {
+    const under = bandToRange(PRICE_BANDS.find((b) => b.id === "u100")!);
+    expect(activeFilterCount({ ...EMPTY_FILTERS, minPrice: under.min, maxPrice: under.max })).toBe(1);
+    const over = bandToRange(PRICE_BANDS.find((b) => b.id === "o800")!);
+    expect(activeFilterCount({ ...EMPTY_FILTERS, minPrice: over.min, maxPrice: over.max })).toBe(1);
+  });
+
+  it("adds up across facets", () => {
+    expect(
+      activeFilterCount({
+        ...EMPTY_FILTERS,
+        q: "camry",
+        brand: "Toyota,Honda",
+        minPrice: "200001",
+        maxPrice: "300000",
+      }),
+    ).toBe(4);
+  });
+
+  it("is zero for an untouched panel", () => {
+    expect(activeFilterCount(EMPTY_FILTERS)).toBe(0);
+  });
+});
+
+describe("describing a saved search", () => {
+  it("reads several values back as a person would say them", () => {
+    expect(describeQuery("brand=Toyota,Honda")).toBe("Toyota or Honda");
+    expect(describeQuery("brand=Toyota,Honda,Kia")).toBe("Toyota, Honda or Kia");
+    expect(describeQuery("brand=Toyota")).toBe("Toyota");
   });
 });
