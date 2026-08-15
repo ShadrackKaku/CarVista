@@ -9,6 +9,7 @@ import { RegisterForm } from "@/components/auth/register-form";
 import { GoogleButton } from "@/components/auth/google-button";
 import { cn } from "@/lib/utils";
 import { OPEN_AUTH_DIALOG, type AuthDialogMode, type AuthDialogOptions } from "@/lib/ui-events";
+import { SITE } from "@/lib/constants";
 
 const PERKS = [
   { icon: BadgeCheck, title: "Verified dealers", desc: "Buy with total confidence." },
@@ -52,13 +53,13 @@ export function AuthDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-h-[92vh] max-w-md overflow-y-auto sm:max-w-lg">
         <DialogTitle className="sr-only">
-          {isLogin ? "Sign in to CarVista" : "Create a CarVista account"}
+          {isLogin ? `Sign in to ${SITE.name}` : `Create a ${SITE.name} account`}
         </DialogTitle>
 
         {/* Heading first, so the dialog's close button has clear space. */}
         <div className="pr-8">
           <h2 className="font-display text-xl font-bold">
-            {isLogin ? "Welcome back" : "Join CarVista"}
+            {isLogin ? "Welcome back" : `Join ${SITE.name}`}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {isLogin

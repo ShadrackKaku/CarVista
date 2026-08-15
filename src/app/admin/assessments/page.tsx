@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AssessmentReview } from "@/components/admin/assessment-review";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { guardPage } from "@/lib/page-guard";
+import { SITE } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ const STATUS_VARIANT: Record<string, "warning" | "success" | "destructive"> = {
 };
 
 const SOURCE_LABELS: Record<string, string> = {
-  PLATFORM_DEAL: "CarVista deal",
+  PLATFORM_DEAL: `${SITE.name} deal`,
   AGENT: "Clearing agent",
   COMMUNITY: "Community",
   ICUMS_LOOKUP: "ICUMS lookup",

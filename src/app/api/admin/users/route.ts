@@ -8,6 +8,7 @@ import { accountInviteEmail, sendMail } from "@/lib/email";
 import { INVITE_EXPIRY_DAYS, inviteExpiry, inviteToken, inviteWhatsappUrl, roleLabelFor } from "@/lib/invite";
 import { absoluteUrl } from "@/lib/utils";
 import type { ApplicableRole } from "@/lib/roles";
+import { SITE } from "@/lib/constants";
 
 /**
  * POST /api/admin/users — create an account on somebody's behalf.
@@ -120,7 +121,7 @@ export async function POST(req: Request) {
     // which is how an invite could be reported sent and never arrive.
     const mail = await sendMail({
       to: created.email,
-      subject: "Your CarVista account is ready",
+      subject: `Your ${SITE.name} account is ready`,
       html: accountInviteEmail({
         name: created.name ?? "there",
         url,

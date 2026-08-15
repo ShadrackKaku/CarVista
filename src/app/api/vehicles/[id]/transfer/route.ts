@@ -4,9 +4,10 @@ import { getCurrentUser } from "@/lib/session";
 import { rateLimit, getClientId } from "@/lib/rate-limit";
 import { ownershipTransferSchema } from "@/lib/validations";
 import { addVehicleEvent } from "@/lib/passport";
+import { SITE } from "@/lib/constants";
 
 /**
- * POST — transfer a vehicle to another CarVista user.
+ * POST — transfer a vehicle to another member of the platform.
  *
  * Only the current owner or an admin may transfer. The change reassigns the
  * listing's seller and writes a *verified* OWNERSHIP_TRANSFER event onto the
@@ -48,7 +49,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     });
     if (!target) {
       return NextResponse.json(
-        { error: "No CarVista account with that email. Ask them to sign up first." },
+        { error: `No ${SITE.name} account with that email. Ask them to sign up first.` },
         { status: 404 },
       );
     }
@@ -93,7 +94,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             userId: target.id,
             type: "SYSTEM",
             title: "A vehicle was transferred to you",
-            body: `You're now the owner of "${vehicle.title}" on CarVista.`,
+            body: `You're now the owner of "${vehicle.title}" on ${SITE.name}.`,
             link: `/dashboard`,
           },
           ...(previousOwnerId

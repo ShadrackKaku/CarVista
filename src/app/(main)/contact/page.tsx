@@ -7,7 +7,7 @@ import { whatsappUrl } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Contact Us",
-  description: "Get in touch with the CarVista team. We're here to help with buying, importing and servicing your vehicle.",
+  description: `Get in touch with the ${SITE.name} team. We're here to help with buying, importing and servicing your vehicle.`,
   alternates: { canonical: "/contact" },
 };
 
@@ -41,7 +41,7 @@ export default function ContactPage() {
               </div>
             ))}
             <a
-              href={whatsappUrl(SITE.whatsapp, "Hi CarVista, I have a question.")}
+              href={whatsappUrl(SITE.whatsapp, `Hi ${SITE.name}, I have a question.`)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-4 rounded-xl bg-[#25D366] p-5 text-white transition-opacity hover:opacity-95"

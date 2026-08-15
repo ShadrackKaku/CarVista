@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "CarVista is free to join, free to browse and free to list. Dealer, supplier and importer accounts are priced on what you trade — talk to us.",
+    `${SITE.name} is free to join, free to browse and free to list. Dealer, supplier and importer accounts are priced on what you trade — talk to us.`,
   alternates: { canonical: "/pricing" },
 };
 
@@ -87,7 +87,7 @@ export default function PricingPage() {
       <PageHeader
         eyebrow="Pricing"
         title="Free to join. Priced only when you trade."
-        description="Buying, importing and running your own car costs nothing on CarVista. We charge businesses that use the platform to sell — and only once it's working for them."
+        description={`Buying, importing and running your own car costs nothing on ${SITE.name}. We charge businesses that use the platform to sell — and only once it's working for them.`}
       />
 
       <div className="container-page py-12">
@@ -147,7 +147,7 @@ export default function PricingPage() {
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               Everyone registers as an ordinary user — there is no account type to choose at
               sign-up. When you want to trade, you apply for the role that matches what you do and
-              we review it. That review is the reason a verified badge on CarVista means something,
+              we review it. That review is the reason a verified badge on {SITE.name} means something,
               and it is why we can price business accounts on what you actually trade rather than on
               a tier you self-selected.
             </p>
@@ -161,7 +161,7 @@ export default function PricingPage() {
             <div className="mt-5 flex flex-wrap gap-3">
               <Button asChild className="bg-[#25D366] text-white hover:bg-[#20bd5a]">
                 <a
-                  href={whatsappUrl(SITE.whatsapp, "Hi CarVista, I'd like to ask about pricing.")}
+                  href={whatsappUrl(SITE.whatsapp, `Hi ${SITE.name}, I'd like to ask about pricing.`)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

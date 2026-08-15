@@ -1,10 +1,22 @@
+/**
+ * Everything the product is called, in one place.
+ *
+ * `SITE.name` is the only spelling of the brand anywhere in the application —
+ * every heading, email, page title and WhatsApp message reads it from here, and
+ * `brand-strings.test.ts` fails the build if a new literal appears. Renaming the
+ * product is this file plus the environment, not a hundred-file sweep.
+ */
+const DOMAIN = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? "carvista.com.gh";
+
 export const SITE = {
   name: "CarVista",
   tagline: "Ghana's Complete Automotive Marketplace",
   description:
     "Buy, sell and import vehicles, shop genuine car parts, calculate import duties, and find trusted dealers & automotive services across Ghana — all in one place.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@carvista.com.gh",
+  /** Bare domain, no scheme — the thing addresses are built on. */
+  domain: DOMAIN,
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? `support@${DOMAIN}`,
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "233200000000",
   phone: "+233 20 000 0000",
   address: "Airport City, Accra, Ghana",
@@ -16,6 +28,19 @@ export const SITE = {
     twitter: process.env.NEXT_PUBLIC_TWITTER_URL ?? "",
   },
 };
+
+/**
+ * Prefix for localStorage keys and custom DOM events.
+ *
+ * Deliberately a frozen string rather than derived from `SITE.name`. These keys
+ * address data already sitting in people's browsers: tying them to the brand
+ * would mean that renaming the product silently empties every existing user's
+ * cart and wishlist, and collapses their sidebar preferences, for no benefit
+ * anyone can see. Internal identifiers should not churn with marketing.
+ *
+ * Change this only with a deliberate migration.
+ */
+export const APP_KEY = "carvista";
 
 export const GHANA_REGIONS = [
   "Greater Accra",
@@ -153,6 +178,30 @@ export const SERVICE_TYPES = [
   { value: "TOWING", label: "Towing", icon: "Truck" },
   { value: "TYRE_SERVICE", label: "Tyre Services", icon: "CircleDot" },
 ] as const;
+
+/**
+ * The display label for a vehicle enum value.
+ *
+ * The tables above already spell these correctly — "CVT", "SUV", "Plug-in
+ * Hybrid" — and reading them is the only way to get that right. Lower-casing
+ * the enum and leaning on CSS `capitalize` looks fine on PETROL and produces
+ * "Cvt" and "Suv" on the acronyms, which is the sort of thing a buyer reads as
+ * carelessness on a page asking them for GH₵289,000.
+ *
+ * Falls back to the raw value rather than throwing: an enum we have not
+ * tabulated should render plainly, not break the page.
+ */
+const ENUM_LABELS: Record<string, string> = Object.fromEntries(
+  [...FUEL_TYPES, ...TRANSMISSIONS, ...BODY_TYPES, ...VEHICLE_CONDITIONS].map((e) => [
+    e.value,
+    e.label,
+  ]),
+);
+
+export function enumLabel(value: string | null | undefined): string {
+  if (!value) return "";
+  return ENUM_LABELS[value] ?? value;
+}
 
 /**
  * The public site's own navigation.

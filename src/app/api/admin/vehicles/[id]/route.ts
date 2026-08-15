@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/admin-guard";
 import { addVehicleEvent } from "@/lib/passport";
+import { SITE } from "@/lib/constants";
 
 /**
  * PATCH — approve or reject a vehicle listing.
@@ -26,7 +27,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       await addVehicleEvent({
         vehicleId: params.id,
         type: "INSPECTED",
-        title: "Verified & approved by CarVista",
+        title: `Verified & approved by ${SITE.name}`,
         occurredAt: new Date(),
         verified: true,
         source: "admin",

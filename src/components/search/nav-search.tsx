@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SITE } from "@/lib/constants";
 
 /** Quick search shortcuts shown beneath the search box. */
 const POPULAR_SEARCHES = ["Toyota", "Honda", "Hyundai", "Brake pads", "Tyres", "Car service"];
@@ -48,7 +49,7 @@ export function NavSearch() {
         </Button>
       </DialogTrigger>
       <DialogContent className="top-[12%] max-w-xl translate-y-0 gap-0 p-0 sm:rounded-2xl">
-        <DialogTitle className="sr-only">Search CarVista</DialogTitle>
+        <DialogTitle className="sr-only">Search {SITE.name}</DialogTitle>
         <DialogDescription className="sr-only">
           Search across cars, parts, services and dealers. Type a query and press Enter to see
           results.

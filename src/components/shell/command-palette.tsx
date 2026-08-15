@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { navigationFor, type NavItem } from "@/lib/navigation";
 import { OPEN_COMMAND_PALETTE } from "@/lib/ui-events";
+import { SITE } from "@/lib/constants";
 
 interface Entry {
   item: NavItem;
@@ -130,7 +131,7 @@ export function CommandPalette() {
       {/* The dialog's own close button would land on top of the search field,
           so it is hidden here — Escape and the overlay both still close. */}
       <DialogContent className="top-[15%] max-w-xl translate-y-0 gap-0 overflow-hidden p-0 [&>button:last-of-type]:hidden">
-        <DialogTitle className="sr-only">Search CarVista</DialogTitle>
+        <DialogTitle className="sr-only">Search {SITE.name}</DialogTitle>
 
         <div className="flex items-center gap-3 border-b px-4">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -142,7 +143,7 @@ export function CommandPalette() {
             }}
             onKeyDown={onInputKeyDown}
             placeholder="Search pages, tools, cars, parts…"
-            aria-label="Search CarVista"
+            aria-label={`Search ${SITE.name}`}
             className="h-14 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
           <kbd className="hidden shrink-0 rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:block">

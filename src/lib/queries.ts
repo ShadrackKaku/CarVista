@@ -29,7 +29,7 @@ import {
   type SampleService,
   type SampleBlogPost,
 } from "@/lib/sample-data";
-import { SERVICE_TYPES } from "@/lib/constants";
+import { SERVICE_TYPES, SITE } from "@/lib/constants";
 
 const PLACEHOLDER_VEHICLE =
   "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=1200&q=80";
@@ -670,7 +670,7 @@ function mapPart(p: PartRow): SamplePart {
     compatibleMakes: p.compatibleMakes ?? [],
     image: p.images[0]?.url ?? PLACEHOLDER_PART,
     store: {
-      name: p.store?.storeName ?? p.seller.name ?? "CarVista Store",
+      name: p.store?.storeName ?? p.seller.name ?? `${SITE.name} Store`,
       slug: p.store?.slug ?? "",
       verified: p.store?.verified ?? false,
     },
@@ -1006,7 +1006,7 @@ function mapBlog(b: BlogRow): SampleBlogPost {
     excerpt: b.excerpt ?? "",
     category: b.category?.name ?? "Article",
     cover: b.coverImage ?? PLACEHOLDER_COVER,
-    author: b.author?.name ?? "CarVista Editorial",
+    author: b.author?.name ?? `${SITE.name} Editorial`,
     date: (b.publishedAt ?? b.createdAt).toISOString().slice(0, 10),
     readTime: b.readTime,
     content: b.content,
@@ -2027,7 +2027,7 @@ export async function getUserConversations(userId: string): Promise<Conversation
       const ctxId = r.vehicleId ?? r.partId ?? "";
       return {
         id: r.id,
-        otherParty: other?.name ?? "CarVista member",
+        otherParty: other?.name ?? `${SITE.name} member`,
         subject: r.subject,
         context: contexts.get(ctxId) ?? null,
         lastMessage: last?.body ?? "",
@@ -2079,7 +2079,7 @@ export async function getConversation(
 
     return {
       id: convo.id,
-      otherParty: other?.name ?? "CarVista member",
+      otherParty: other?.name ?? `${SITE.name} member`,
       subject: convo.subject,
       context: contexts.get(convo.vehicleId ?? convo.partId ?? "") ?? null,
       messages: convo.messages.map((m) => ({

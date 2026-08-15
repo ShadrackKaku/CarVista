@@ -13,12 +13,12 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { IMPORT_STAGES } from "@/lib/constants";
+import { IMPORT_STAGES, SITE } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Import a Car to Ghana — End-to-End Vehicle Import Service",
   description:
-    "Import any vehicle to Ghana with CarVista. We source from US, UK, German, Japanese and Dubai auctions, ship, clear customs at Tema or Takoradi, and deliver to your door.",
+    `Import any vehicle to Ghana with ${SITE.name}. We source from US, UK, German, Japanese and Dubai auctions, ship, clear customs at Tema or Takoradi, and deliver to your door.`,
   alternates: { canonical: "/import" },
 };
 

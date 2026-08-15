@@ -1,4 +1,5 @@
 import { BadgeCheck, Banknote, Headphones, Lock, Ship, Sparkles } from "lucide-react";
+import { SITE } from "@/lib/constants";
 
 const features = [
   {
@@ -38,7 +39,7 @@ export function Features() {
     <section className="container-page py-16">
       <div className="mx-auto max-w-2xl text-center">
         <span className="text-sm font-semibold uppercase tracking-wide text-brand-600">
-          Why CarVista
+          Why {SITE.name}
         </span>
         <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
           Everything automotive, in one trusted place

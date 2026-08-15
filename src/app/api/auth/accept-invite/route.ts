@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { resetPasswordSchema } from "@/lib/validations";
 import { rateLimit, getClientId } from "@/lib/rate-limit";
+import { SITE } from "@/lib/constants";
 
 /**
  * POST /api/auth/accept-invite — set the password on an account an
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
 
     if (record.user.status === "SUSPENDED") {
       return NextResponse.json(
-        { error: "This account is suspended. Contact CarVista." },
+        { error: `This account is suspended. Contact ${SITE.name}.` },
         { status: 403 },
       );
     }

@@ -4,10 +4,11 @@ import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { AuthQueryToasts } from "@/components/auth/auth-query-toasts";
 import { GoogleButton } from "@/components/auth/google-button";
+import { SITE } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Sign in",
-  description: "Sign in to your CarVista account.",
+  description: `Sign in to your ${SITE.name} account.`,
 };
 
 export default function LoginPage({

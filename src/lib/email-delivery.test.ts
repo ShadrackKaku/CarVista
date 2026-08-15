@@ -118,10 +118,10 @@ describe("links that have to work from someone else's inbox", () => {
   });
 
   it("prefers the explicitly configured URL", async () => {
-    process.env.NEXT_PUBLIC_APP_URL = "https://carvista.com.gh";
+    process.env.NEXT_PUBLIC_APP_URL = "https://example.com";
     const { absoluteUrl } = await import("./utils");
     expect(absoluteUrl("/accept-invite?token=x")).toBe(
-      "https://carvista.com.gh/accept-invite?token=x",
+      "https://example.com/accept-invite?token=x",
     );
   });
 
@@ -130,22 +130,22 @@ describe("links that have to work from someone else's inbox", () => {
     // to email every recipient a link to http://localhost:3000, which is their
     // own machine and has nothing on it.
     delete process.env.NEXT_PUBLIC_APP_URL;
-    process.env.VERCEL_PROJECT_PRODUCTION_URL = "carvista.vercel.app";
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "example.vercel.app";
     const { absoluteUrl } = await import("./utils");
-    expect(absoluteUrl("/reset-password")).toBe("https://carvista.vercel.app/reset-password");
+    expect(absoluteUrl("/reset-password")).toBe("https://example.vercel.app/reset-password");
   });
 
   it("falls back to the deployment URL when there is no production domain", async () => {
     delete process.env.NEXT_PUBLIC_APP_URL;
     delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
-    process.env.VERCEL_URL = "carvista-abc123.vercel.app";
+    process.env.VERCEL_URL = "example-abc123.vercel.app";
     const { absoluteUrl } = await import("./utils");
-    expect(absoluteUrl("/x")).toBe("https://carvista-abc123.vercel.app/x");
+    expect(absoluteUrl("/x")).toBe("https://example-abc123.vercel.app/x");
   });
 
   it("does not double the slash", async () => {
-    process.env.NEXT_PUBLIC_APP_URL = "https://carvista.com.gh/";
+    process.env.NEXT_PUBLIC_APP_URL = "https://example.com/";
     const { absoluteUrl } = await import("./utils");
-    expect(absoluteUrl("/a")).toBe("https://carvista.com.gh/a");
+    expect(absoluteUrl("/a")).toBe("https://example.com/a");
   });
 });

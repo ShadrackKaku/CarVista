@@ -1,5 +1,5 @@
 /**
- * CarVista database seed.
+ * Database seed.
  * Run with: npm run db:seed
  *
  * Populates the database with a realistic starting catalogue (dealers, vehicles,
@@ -10,6 +10,7 @@
 import { PrismaClient, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedCatalog } from "../src/lib/seed/catalog";
+import { SITE } from "../src/lib/constants";
 import { seedImportStock } from "../src/lib/seed/import-stock";
 import { SAMPLE_BLOG_POSTS } from "../src/lib/sample-data";
 
@@ -32,18 +33,18 @@ async function main() {
 
   // ── A demo customer account ──────────────────────────────────
   await prisma.user.upsert({
-    where: { email: "customer@carvista.com.gh" },
+    where: { email: `customer@${SITE.domain}` },
     update: {},
     create: {
       name: "Kwame Mensah",
-      email: "customer@carvista.com.gh",
+      email: `customer@${SITE.domain}`,
       hashedPassword: password,
       role: UserRole.USER,
       emailVerified: new Date(),
     },
   });
 
-  const admin = await prisma.user.findUnique({ where: { email: "admin@carvista.com.gh" } });
+  const admin = await prisma.user.findUnique({ where: { email: `admin@${SITE.domain}` } });
 
   // ── Blog ─────────────────────────────────────────────────────
   if (admin) {
@@ -161,8 +162,8 @@ async function main() {
   console.log(
     `   Import stock: ${stock.listings} listings · ${stock.assessments} new clearances`,
   );
-  console.log("   Importer login: importer@carvista.com.gh / Password123");
-  console.log("   Admin login: admin@carvista.com.gh / Password123");
+  console.log(`   Importer login: importer@${SITE.domain} / Password123`);
+  console.log(`   Admin login: admin@${SITE.domain} / Password123`);
 }
 
 main()

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import type { UserRole } from "@prisma/client";
 import { TOOLS } from "./tools";
+import { SITE } from "@/lib/constants";
 
 /**
  * The whole system's navigation, in one tree.
@@ -77,7 +78,7 @@ const marketplace: NavSection = {
       label: "Browse vehicles",
       href: "/app/marketplace/vehicles",
       icon: Car,
-      description: "Every car listed on CarVista",
+      description: `Every car listed on ${SITE.name}`,
       keywords: ["cars", "search", "buy", "listings"],
     },
     { label: "Parts", href: "/app/marketplace/parts", icon: Package, description: "Genuine and aftermarket parts" },

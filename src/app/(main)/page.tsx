@@ -25,6 +25,7 @@ import {
   getHomeStats,
 } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
+import { SITE } from "@/lib/constants";
 
 // Cache the homepage and revalidate every 60s (ISR) for fast loads.
 export const revalidate = 60;
@@ -189,7 +190,7 @@ export default async function HomePage() {
           <SectionHeading
             onImage
             eyebrow="Insights & guides"
-            title="From the CarVista Blog"
+            title={`From the ${SITE.name} Blog`}
             description="Expert advice on buying, importing and maintaining vehicles in Ghana."
             action={{ label: "Read the blog", href: "/blog" }}
           />
@@ -233,7 +234,7 @@ export default async function HomePage() {
             Ready to find, import or sell your next car?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-brand-100">
-            Join thousands of Ghanaians who trust CarVista for a smarter automotive experience.
+            Join thousands of Ghanaians who trust {SITE.name} for a smarter automotive experience.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg" className="bg-white text-brand-700 hover:bg-brand-50">

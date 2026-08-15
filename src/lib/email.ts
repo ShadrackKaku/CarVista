@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import { SITE } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 
-const FROM = process.env.EMAIL_FROM ?? `${SITE.name} <no-reply@carvista.com.gh>`;
+const FROM = process.env.EMAIL_FROM ?? `${SITE.name} <no-reply@${SITE.domain}>`;
 
 interface SendMailOptions {
   to: string;
@@ -106,7 +106,7 @@ export async function sendMail({ to, subject, html }: SendMailOptions): Promise<
 function layout(title: string, body: string) {
   return `
   <div style="font-family:system-ui,-apple-system,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#20214a">
-    <div style="font-size:22px;font-weight:800;color:#5a5fe0;margin-bottom:24px">CarVista</div>
+    <div style="font-size:22px;font-weight:800;color:#5a5fe0;margin-bottom:24px">${SITE.name}</div>
     <h1 style="font-size:20px;margin:0 0 12px">${title}</h1>
     ${body}
     <hr style="border:none;border-top:1px solid #eceefd;margin:28px 0" />
@@ -124,7 +124,7 @@ export function verificationEmail(name: string, url: string) {
   return layout(
     "Verify your email",
     `<p>Hi ${name},</p>
-     <p>Welcome to CarVista! Please confirm your email address to activate your account.</p>
+     <p>Welcome to ${SITE.name}! Please confirm your email address to activate your account.</p>
      ${button(url, "Verify Email")}
      <p style="font-size:13px;color:#6b7280">This link expires in 24 hours. If you didn't create an account, you can ignore this email.</p>`,
   );
@@ -134,7 +134,7 @@ export function passwordResetEmail(name: string, url: string) {
   return layout(
     "Reset your password",
     `<p>Hi ${name},</p>
-     <p>We received a request to reset your CarVista password. Click below to choose a new one.</p>
+     <p>We received a request to reset your ${SITE.name} password. Click below to choose a new one.</p>
      ${button(url, "Reset Password")}
      <p style="font-size:13px;color:#6b7280">This link expires in 1 hour. If you didn't request this, no action is needed.</p>`,
   );
@@ -157,10 +157,10 @@ export function accountInviteEmail(opts: {
 }) {
   const from = opts.invitedBy ? ` by ${opts.invitedBy}` : "";
   return layout(
-    "Your CarVista account is ready",
+    `Your ${SITE.name} account is ready`,
     `<p>Hi ${opts.name},</p>
-     <p>An account has been created for you on CarVista${from}, set up as <strong>${opts.roleLabel}</strong>.</p>
-     <p>Choose a password to finish setting it up — you pick it yourself, and nobody at CarVista sees it.</p>
+     <p>An account has been created for you on ${SITE.name}${from}, set up as <strong>${opts.roleLabel}</strong>.</p>
+     <p>Choose a password to finish setting it up — you pick it yourself, and nobody at ${SITE.name} sees it.</p>
      ${button(opts.url, "Set your password")}
      <p style="font-size:13px;color:#6b7280">This link works once and expires in ${opts.expiresInDays} days. If you weren't expecting this, you can ignore it — the account cannot be used until a password is set.</p>`,
   );
@@ -232,6 +232,6 @@ export function savedSearchAlertEmail(
     `<p>Hi ${name},</p>
      <p><strong>${count}</strong> new vehicle${count === 1 ? "" : "s"} just matched your saved search <strong>“${searchName}”</strong>.</p>
      ${button(url, "See the new matches")}
-     <p style="font-size:13px;color:#6b7280">You're receiving this because you saved this search on CarVista.</p>`,
+     <p style="font-size:13px;color:#6b7280">You're receiving this because you saved this search on ${SITE.name}.</p>`,
   );
 }

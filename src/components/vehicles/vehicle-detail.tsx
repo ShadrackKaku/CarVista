@@ -32,6 +32,7 @@ import { calculateDuty } from "@/lib/duty-calculator";
 import { formatCurrency, formatNumber, safeJsonLd } from "@/lib/utils";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { sanitizeRichHtml } from "@/lib/sanitize";
+import { enumLabel } from "@/lib/constants";
 
 const CONDITION_LABELS: Record<string, string> = {
   NEW: "Brand New",
@@ -85,9 +86,9 @@ export async function VehicleDetail({ slug, inShell = false }: VehicleDetailProp
   const specs = [
     { icon: Calendar, label: "Year", value: vehicle.year },
     { icon: Gauge, label: "Mileage", value: `${formatNumber(vehicle.mileage)} km` },
-    { icon: Fuel, label: "Fuel", value: vehicle.fuelType.toLowerCase() },
-    { icon: Settings2, label: "Transmission", value: vehicle.transmission.toLowerCase() },
-    { icon: Car, label: "Body type", value: vehicle.bodyType.toLowerCase() },
+    { icon: Fuel, label: "Fuel", value: enumLabel(vehicle.fuelType) },
+    { icon: Settings2, label: "Transmission", value: enumLabel(vehicle.transmission) },
+    { icon: Car, label: "Body type", value: enumLabel(vehicle.bodyType) },
     { icon: Palette, label: "Colour", value: vehicle.color },
   ];
 
@@ -198,7 +199,7 @@ export async function VehicleDetail({ slug, inShell = false }: VehicleDetailProp
               <div key={spec.label} className="rounded-xl border bg-card p-4">
                 <spec.icon className="h-5 w-5 text-brand-500" />
                 <p className="mt-2 text-xs text-muted-foreground">{spec.label}</p>
-                <p className="font-semibold capitalize">{spec.value}</p>
+                <p className="font-semibold">{spec.value}</p>
               </div>
             ))}
           </div>

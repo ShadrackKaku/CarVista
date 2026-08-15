@@ -3,6 +3,7 @@ import { ROLE_PROFILES } from "@/lib/roles";
 import { presetById } from "@/lib/permissions";
 import { whatsappUrl } from "@/lib/utils";
 import type { UserRole } from "@prisma/client";
+import { SITE } from "@/lib/constants";
 
 /**
  * Inviting somebody whose account an administrator created for them.
@@ -44,9 +45,9 @@ export function inviteToken(): string {
 export function roleLabelFor(role: UserRole, presetId?: string | null): string {
   if (role === "STAFF") {
     const preset = presetId ? presetById(presetId) : undefined;
-    return preset ? `CarVista team — ${preset.label}` : "CarVista team member";
+    return preset ? `${SITE.name} team — ${preset.label}` : `${SITE.name} team member`;
   }
-  if (role === "USER") return "a CarVista account";
+  if (role === "USER") return `a ${SITE.name} account`;
   const profile = ROLE_PROFILES[role as keyof typeof ROLE_PROFILES];
   return profile?.label ?? role.toLowerCase().replace(/_/g, " ");
 }
@@ -70,7 +71,7 @@ export function inviteWhatsappUrl(opts: {
 }): string {
   const first = opts.name.trim().split(/\s+/)[0] || "there";
   const message =
-    `Hi ${first}, your CarVista account is ready — set up as ${opts.roleLabel}. ` +
+    `Hi ${first}, your ${SITE.name} account is ready — set up as ${opts.roleLabel}. ` +
     `Choose your password here (the link works once and expires in ${INVITE_EXPIRY_DAYS} days): ${opts.url}`;
   return whatsappUrl(opts.phone, message);
 }

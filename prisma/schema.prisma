@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// CarVista — Prisma Schema
+// Prisma Schema
 // Ghana's Automotive Marketplace & Car Import Platform
 // ─────────────────────────────────────────────────────────────
 
@@ -32,7 +32,7 @@ enum UserRole {
   /// exists to take off the buyer.
   CLEARING_AGENT
 
-  /// A CarVista team member. Carries no authority on its own — everything a
+  /// An internal team member. Carries no authority on its own — everything a
   /// STAFF account may do comes from User.permissions, granted by a super
   /// admin. Deliberately NOT covered by isAdmin(), so any check that has not
   /// been converted to a permission refuses staff rather than admitting them.
@@ -954,7 +954,7 @@ model ImportTrackingEvent {
 //
 //  A NON-CUSTODIAL, milestone-protected installment plan. The buyer pays
 //  each installment directly through Paystack (which settles to the merchant
-//  account) — CarVista never holds a third-party balance, so this stays out
+//  account) — the platform never holds a third-party balance, so this stays out
 //  of regulated fund-custody territory. An installment only becomes payable
 //  once ops verifies the matching real-world import stage, so a customer
 //  never pays for a step that hasn't happened.
@@ -1201,7 +1201,7 @@ model HdvReference {
 
 // Where a duty-assessment observation came from.
 enum AssessmentSource {
-  PLATFORM_DEAL // a CarVista-managed import that cleared
+  PLATFORM_DEAL // a platform-managed import that cleared
   AGENT // logged by a partner clearing agent
   COMMUNITY // public "check my duty bill" submission
   ICUMS_LOOKUP // read off the public ICUMS used-vehicle checker

@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { MODULES } from "@/lib/modules";
 import { ROLE_PROFILES, APPLICABLE_ROLES } from "@/lib/roles";
 import { TOOLS } from "@/lib/tools";
+import { SITE } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Features",
   description:
-    "Everything CarVista does once you're signed in: a vehicle and parts marketplace, verified dealers and services, and calculators built on real Ghanaian customs assessments.",
+    `Everything ${SITE.name} does once you're signed in: a vehicle and parts marketplace, verified dealers and services, and calculators built on real Ghanaian customs assessments.`,
   alternates: { canonical: "/features" },
 };
 
@@ -32,7 +33,7 @@ export default function FeaturesPage() {
       <PageHeader
         eyebrow="What you get"
         title="One place for buying, importing and running a vehicle"
-        description="CarVista is a marketplace and an import desk in the same application. Create a free account and everything below is yours."
+        description={`${SITE.name} is a marketplace and an import desk in the same application. Create a free account and everything below is yours.`}
       />
 
       <div className="container-page py-12">
@@ -90,7 +91,7 @@ export default function FeaturesPage() {
         </section>
 
         <section className="mt-16">
-          <h2 className="font-display text-2xl font-bold">Grow a business on CarVista</h2>
+          <h2 className="font-display text-2xl font-bold">Grow a business on {SITE.name}</h2>
           <p className="mt-2 max-w-2xl text-muted-foreground">
             Everyone signs up as an ordinary user. When you&apos;re ready to trade, apply for the
             role that matches what you do — we review each application before it goes live, which is

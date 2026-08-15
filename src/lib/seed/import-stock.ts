@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { SITE } from "@/lib/constants";
 
 /**
  * A working importer, their shelf, and the clearance history that prices it.
@@ -50,10 +51,10 @@ export async function seedImportStock(
   const thisYear = new Date().getFullYear();
 
   const user = await prisma.user.upsert({
-    where: { email: "importer@carvista.com.gh" },
+    where: { email: `importer@${SITE.domain}` },
     update: { role: "IMPORTER" },
     create: {
-      email: "importer@carvista.com.gh",
+      email: `importer@${SITE.domain}`,
       name: "Kojo Mensah",
       role: "IMPORTER",
       hashedPassword,

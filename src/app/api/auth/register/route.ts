@@ -7,6 +7,7 @@ import { rateLimit, getClientId } from "@/lib/rate-limit";
 import { sendMail, verificationEmail } from "@/lib/email";
 import { absoluteUrl } from "@/lib/utils";
 import { UserRole } from "@prisma/client";
+import { SITE } from "@/lib/constants";
 
 export async function POST(req: Request) {
   const limit = await rateLimit(`register:${getClientId(req)}`, 5, 60_000);
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
 
     await sendMail({
       to: normalizedEmail,
-      subject: "Verify your CarVista email",
+      subject: `Verify your ${SITE.name} email`,
       html: verificationEmail(name, absoluteUrl(`/verify-email?token=${token}`)),
     });
 

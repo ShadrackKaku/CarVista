@@ -5,7 +5,7 @@ import { SITE } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Terms & Conditions",
-  description: "The terms and conditions governing your use of the CarVista platform.",
+  description: `The terms and conditions governing your use of the ${SITE.name} platform.`,
   alternates: { canonical: "/terms" },
 };
 
@@ -21,7 +21,7 @@ export default function TermsPage() {
             using the Platform, you agree to these Terms.
           </p>
 
-          <LegalSection title="1. About CarVista">
+          <LegalSection title={`1. About ${SITE.name}`}>
             <p>
               {SITE.name} is an online automotive marketplace and import facilitation platform
               operating in Ghana. We connect buyers with vehicle dealers, private sellers, parts

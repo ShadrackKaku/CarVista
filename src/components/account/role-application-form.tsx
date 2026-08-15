@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { GHANA_REGIONS } from "@/lib/constants";
+import { GHANA_REGIONS, SITE } from "@/lib/constants";
 import { APPLICABLE_ROLES, ROLE_PROFILES, type ApplicableRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +67,7 @@ export function RoleApplicationForm({ currentRole }: { currentRole: string }) {
   return (
     <form onSubmit={onSubmit} className="space-y-8">
       <div>
-        <h2 className="text-lg font-semibold">What would you like to do on CarVista?</h2>
+        <h2 className="text-lg font-semibold">What would you like to do on {SITE.name}?</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Your account stays exactly as it is until an administrator approves the request.
         </p>

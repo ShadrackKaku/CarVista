@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SITE } from "@/lib/constants";
 
 // Event types an owner/admin would log by hand (import/shipping milestones are
 // written automatically by the ops flow).
@@ -230,7 +231,7 @@ function TransferDialog({
         <DialogHeader>
           <DialogTitle>Transfer ownership</DialogTitle>
           <DialogDescription>
-            Hand this vehicle to another CarVista member. It records a verified transfer on the
+            Hand this vehicle to another {SITE.name} member. It records a verified transfer on the
             passport and moves the listing to them.
           </DialogDescription>
         </DialogHeader>

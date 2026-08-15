@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { GHANA_REGIONS } from "@/lib/constants";
+import { GHANA_REGIONS, SITE } from "@/lib/constants";
 import { ROLE_PROFILES, APPLICABLE_ROLES } from "@/lib/roles";
 import { STAFF_PRESETS, PERMISSIONS, presetById } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -212,13 +212,13 @@ export function CreateAccountForm() {
               role === "USER"
                 ? "Ordinary account"
                 : role === "STAFF"
-                  ? "CarVista team member"
+                  ? `${SITE.name} team member`
                   : ROLE_PROFILES[role].label;
             const blurb =
               role === "USER"
                 ? "Can browse, save and buy. No business tools."
                 : role === "STAFF"
-                  ? "Works for CarVista. You choose what they can do below."
+                  ? `Works for ${SITE.name}. You choose what they can do below.`
                   : ROLE_PROFILES[role].blurb;
             return (
               <button

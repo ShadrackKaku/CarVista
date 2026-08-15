@@ -59,7 +59,7 @@ export async function ServiceDetail({ slug, inShell = false }: ServiceDetailProp
           <section className="mt-8 rounded-xl border bg-card p-5">
             <h2 className="font-semibold">About</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {service.name} is a {service.verified ? "CarVista-verified" : "listed"} {service.typeLabel.toLowerCase()} based in {service.city}. With a {service.rating.toFixed(1)}-star rating across {service.reviewCount} reviews, they are trusted by drivers across the {service.region} region.
+              {service.name} is a {service.verified ? `${SITE.name}-verified` : "listed"} {service.typeLabel.toLowerCase()} based in {service.city}. With a {service.rating.toFixed(1)}-star rating across {service.reviewCount} reviews, they are trusted by drivers across the {service.region} region.
             </p>
           </section>
         </div>
@@ -72,7 +72,7 @@ export async function ServiceDetail({ slug, inShell = false }: ServiceDetailProp
             </p>
             <div className="mt-5 space-y-2.5">
               <Button className="w-full bg-[#25D366] text-white hover:bg-[#20bd5a]" asChild>
-                <a href={whatsappUrl(SITE.whatsapp, `Hi ${service.name}, I found you on CarVista.`)} target="_blank" rel="noopener noreferrer">
+                <a href={whatsappUrl(SITE.whatsapp, `Hi ${service.name}, I found you on ${SITE.name}.`)} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="h-4 w-4" /> Chat on WhatsApp
                 </a>
               </Button>

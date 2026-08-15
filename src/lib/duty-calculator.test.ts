@@ -177,7 +177,7 @@ describe("calculateDuty — examination fee", () => {
     expect(used.taxesSubtotal - brandNew.taxesSubtotal).toBeCloseTo(1_000, 6);
   });
 
-  it("defaults to USED — CarVista imports used vehicles", () => {
+  it("defaults to USED — the imports this platform handles are used vehicles", () => {
     expect(bare({ cifValue: 50_000 }).condition).toBe("USED");
   });
 });
