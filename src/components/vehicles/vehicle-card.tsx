@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Check } from "lucide-react";
 import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import { enumLabel } from "@/lib/constants";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import type { SampleVehicle } from "@/lib/sample-data";
 
 /**
@@ -11,11 +11,12 @@ import type { SampleVehicle } from "@/lib/sample-data";
  *
  * Three rules hold this together, and every detail below follows from them.
  *
- * **The photograph is never touched.** No badges, no gradient scrim, no save
- * button, no hover zoom. A car is bought with the eyes first, and anything laid
- * over the image is competing with the only thing on the card that actually
- * sells it. Everything the badges used to say is said underneath, where text
- * belongs.
+ * **Nothing is laid over the photograph.** No badges, no gradient scrim, no
+ * save button. A car is bought with the eyes first, and anything on top of the
+ * image is competing with the only thing on the card that actually sells it.
+ * Everything the badges used to say is said underneath, where text belongs.
+ * The one thing that does touch it is motion, and only on the card you are
+ * pointing at — see the hover notes below.
  *
  * **Colour means interaction, not emphasis.** The old card coloured the price
  * brand-blue, then put a brand badge, a green badge and a white badge on top of
@@ -61,16 +62,30 @@ export function VehicleCard({ vehicle, basePath = "/vehicles" }: VehicleCardProp
   const dutyPaid = vehicle.importStatus === "CLEARED";
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card transition-shadow duration-300 hover:shadow-card">
+    <article
+      className={cn(
+        "group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-soft",
+        // One movement, slow enough to read as the card rising to meet you
+        // rather than snapping. `shadow-lift` is the elevation's designed hover
+        // partner — the card was reaching for `shadow-card`, which is the same
+        // value as its resting state and so changed nothing.
+        "transition-[transform,box-shadow] duration-300 ease-out hover:shadow-lift",
+        "motion-safe:hover:-translate-y-1",
+      )}
+    >
       {/* The image, alone. */}
       <Link href={href} className="block" tabIndex={-1} aria-hidden>
-        <div className="relative aspect-[4/3] bg-muted">
+        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           <Image
             src={vehicle.images[0]}
             alt={vehicle.title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover"
+            // A drift, not a zoom. Three per cent over most of a second is felt
+            // rather than seen; the 105-in-500ms this replaces was a lurch, and
+            // a wall of them lurching in turn is the fatigue we set out to fix.
+            // Suppressed entirely for anyone who asks for reduced motion.
+            className="object-cover motion-safe:transition-transform motion-safe:duration-[900ms] motion-safe:ease-out motion-safe:group-hover:scale-[1.03]"
           />
         </div>
       </Link>
@@ -95,11 +110,16 @@ export function VehicleCard({ vehicle, basePath = "/vehicles" }: VehicleCardProp
           </Link>
         </h3>
 
-        {/* The one element with real presence. Deliberately not brand-coloured
-            and no heavier than it needs to be: size alone carries the
-            hierarchy, and bold on top of that made a grid of prices shout back
-            at the reader. Blue stays reserved for things you can click. */}
-        <p className="mt-3 font-display text-2xl font-semibold tracking-tight">
+        {/* The one element with real presence — and no more presence than that.
+            It was set in the display face at 24px, which is Sora: wide,
+            geometric, drawn to be a page heading. At that size it stopped being
+            the loudest thing on the card and started being the loudest thing on
+            the screen. The body face at 20px still leads the block without
+            raising its voice, and blue stays reserved for things you can click.
+
+            Tabular figures so prices align digit for digit down a column, which
+            is what lets the eye compare a row of cards without reading them. */}
+        <p className="mt-3 text-xl font-semibold tracking-tight tabular-nums">
           {formatCurrency(vehicle.price)}
         </p>
 
