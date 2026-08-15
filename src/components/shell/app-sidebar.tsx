@@ -12,8 +12,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn, getInitials } from "@/lib/utils";
 import { moduleForPath, modulesFor, usesRail, type AppModule } from "@/lib/modules";
 import { openCommandPalette } from "@/lib/ui-events";
+import { APP_KEY } from "@/lib/constants";
 
-const COLLAPSE_KEY = "carvista:sidebar-collapsed";
+const COLLAPSE_KEY = `${APP_KEY}:sidebar-collapsed`;
 
 export interface AppSidebarProps {
   role: UserRole;

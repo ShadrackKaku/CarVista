@@ -8,12 +8,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SITE } from "@/lib/constants";
 
 /**
  * Where somebody lands when an administrator created their account.
  *
  * Worded as an invitation rather than a reset, because from their side nothing
- * is being reset — this is the first time they have seen CarVista, and "reset
+ * is being reset — this is the first time they have seen {SITE.name}, and "reset
  * your password" for an account they never made reads like a phishing mail.
  */
 function AcceptInviteForm() {
@@ -67,10 +68,10 @@ function AcceptInviteForm() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold">Welcome to CarVista</h1>
+      <h1 className="font-display text-2xl font-bold">Welcome to {SITE.name}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Your account has been set up for you. Choose a password and it&apos;s yours — nobody at
-        CarVista can see it.
+        {SITE.name} can see it.
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">

@@ -111,7 +111,7 @@ export async function DealerDetail({ slug, inShell = false }: DealerDetailProps)
           </div>
           <div className="flex gap-2">
             <Button asChild className="bg-[#25D366] text-white hover:bg-[#20bd5a]">
-              <a href={whatsappUrl(SITE.whatsapp, `Hi ${dealer.name}, I found you on CarVista.`)} target="_blank" rel="noopener noreferrer">
+              <a href={whatsappUrl(SITE.whatsapp, `Hi ${dealer.name}, I found you on ${SITE.name}.`)} target="_blank" rel="noopener noreferrer">
                 <MessageCircle className="h-4 w-4" /> WhatsApp
               </a>
             </Button>

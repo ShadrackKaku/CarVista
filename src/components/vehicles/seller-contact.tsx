@@ -18,7 +18,7 @@ export function SellerContact({
   price: string;
   children?: React.ReactNode;
 }) {
-  const message = `Hi ${dealerName}, I'm interested in the ${vehicleTitle} (${price}) listed on CarVista. Is it still available?`;
+  const message = `Hi ${dealerName}, I'm interested in the ${vehicleTitle} (${price}) listed on ${SITE.name}. Is it still available?`;
 
   return (
     <div className="rounded-2xl border bg-card p-5 shadow-soft">

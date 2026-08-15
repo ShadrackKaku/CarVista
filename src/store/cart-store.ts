@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { APP_KEY } from "@/lib/constants";
 
 /**
  * A snapshot of a product captured when it's added to the cart. Storing the
@@ -59,7 +60,7 @@ export const useCartStore = create<CartState>()(
       totalCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
     }),
     {
-      name: "carvista-cart",
+      name: `${APP_KEY}-cart`,
       version: 1,
       // v0 stored only { partId, quantity } with no product snapshot, which the
       // new UI can't render — reset those old carts on upgrade.
@@ -93,6 +94,6 @@ export const useWishlistStore = create<WishlistState>()(
       setIds: (ids) => set({ ids: Array.from(new Set(ids)) }),
       has: (id) => get().ids.includes(id),
     }),
-    { name: "carvista-wishlist" },
+    { name: `${APP_KEY}-wishlist` },
   ),
 );

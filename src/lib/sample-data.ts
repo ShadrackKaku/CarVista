@@ -1,3 +1,4 @@
+import { SITE } from "@/lib/constants";
 /**
  * Sample catalogue data used to render the public marketing & marketplace
  * pages without requiring a live database connection. The same shapes are
@@ -610,7 +611,7 @@ export const SAMPLE_TESTIMONIALS: SampleTestimonial[] = [
     avatar: "https://i.pravatar.cc/120?img=12",
     rating: 5,
     quote:
-      "CarVista's import calculator was spot on — the final duty was within GHS 300 of the estimate. My Highlander arrived in 6 weeks. Truly professional service.",
+      `${SITE.name}'s import calculator was spot on — the final duty was within GHS 300 of the estimate. My Highlander arrived in 6 weeks. Truly professional service.`,
   },
   {
     id: "t2",
@@ -630,7 +631,7 @@ export const SAMPLE_TESTIMONIALS: SampleTestimonial[] = [
     avatar: "https://i.pravatar.cc/120?img=33",
     rating: 5,
     quote:
-      "As a parts seller, the dashboard makes managing inventory and orders effortless. My sales have grown 40% since joining CarVista.",
+      `As a parts seller, the dashboard makes managing inventory and orders effortless. My sales have grown 40% since joining ${SITE.name}.`,
   },
   {
     id: "t4",
@@ -668,7 +669,7 @@ export const SAMPLE_BLOG_POSTS: SampleBlogPost[] = [
       "Everything you need to know about calculating import duty, VAT and levies when bringing a vehicle into Ghana — with worked examples.",
     category: "Import Guides",
     cover: img("photo-1494976388531-d1058494cdd8"),
-    author: "CarVista Editorial",
+    author: `${SITE.name} Editorial`,
     date: "2025-01-15",
     readTime: 8,
   },
@@ -680,7 +681,7 @@ export const SAMPLE_BLOG_POSTS: SampleBlogPost[] = [
       "We break down the costs, risks and transit times of the two most popular vehicle shipping methods into Tema Port.",
     category: "Shipping",
     cover: img("photo-1605559424843-9e4c228bf1c2"),
-    author: "CarVista Editorial",
+    author: `${SITE.name} Editorial`,
     date: "2025-01-08",
     readTime: 6,
   },
@@ -692,7 +693,7 @@ export const SAMPLE_BLOG_POSTS: SampleBlogPost[] = [
       "From pothole-proof suspensions to fuel economy, here are the vehicles that thrive in Ghana's driving conditions.",
     category: "Buying Advice",
     cover: img("photo-1552519507-da3b142c6e3d"),
-    author: "CarVista Editorial",
+    author: `${SITE.name} Editorial`,
     date: "2024-12-22",
     readTime: 7,
   },
@@ -704,7 +705,7 @@ export const SAMPLE_BLOG_POSTS: SampleBlogPost[] = [
       "Counterfeit parts are everywhere. Learn the tell-tale signs and protect your engine with these expert tips.",
     category: "Maintenance",
     cover: img("photo-1486262715619-67b85e0b08d3"),
-    author: "CarVista Editorial",
+    author: `${SITE.name} Editorial`,
     date: "2024-12-10",
     readTime: 5,
   },

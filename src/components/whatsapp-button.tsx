@@ -4,7 +4,7 @@ import { whatsappUrl } from "@/lib/utils";
 export function WhatsAppButton() {
   return (
     <a
-      href={whatsappUrl(SITE.whatsapp, "Hi CarVista, I'd like some help.")}
+      href={whatsappUrl(SITE.whatsapp, `Hi ${SITE.name}, I'd like some help.`)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"

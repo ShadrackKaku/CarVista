@@ -3,7 +3,7 @@
  *
  * This is a NON-CUSTODIAL, milestone-protected installment model. The buyer
  * pays each installment directly through Paystack (which settles into the
- * merchant account); CarVista never holds a third-party balance, so it stays
+ * merchant account); the platform never holds a third-party balance, so it stays
  * out of regulated fund-custody territory. An installment only becomes
  * *payable* once ops verifies the matching real-world import stage — so a
  * customer never pays for a step that hasn't happened.

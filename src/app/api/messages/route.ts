@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { messageSchema } from "@/lib/validations";
 import { rateLimit, getClientId } from "@/lib/rate-limit";
+import { SITE } from "@/lib/constants";
 
 export async function POST(req: Request) {
   const limit = await rateLimit(`message:${getClientId(req)}`, 20, 60_000);
@@ -91,7 +92,7 @@ export async function POST(req: Request) {
         data: {
           userId: otherPartyId,
           type: "MESSAGE",
-          title: `New message from ${user.name ?? "a CarVista member"}`,
+          title: `New message from ${user.name ?? "a ${SITE.name} member"}`,
           body: body.slice(0, 120),
           link: `/dashboard/messages/${convo.id}`,
         },

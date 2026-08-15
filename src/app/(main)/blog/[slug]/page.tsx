@@ -44,7 +44,7 @@ export async function generateMetadata({
 // Rich placeholder body rendered as sections for each article.
 const bodyParagraphs = (title: string) => [
   `${title} — this guide walks you through everything you need to know, tailored specifically for the Ghanaian market. Whether you're a first-time buyer or a seasoned importer, understanding the details can save you thousands of cedis and a great deal of stress.`,
-  "Ghana's automotive market has evolved rapidly. With more buyers importing vehicles directly from overseas auctions and a growing network of verified local dealers, having accurate, transparent information has never been more important. That's exactly what CarVista is built to provide.",
+  `Ghana's automotive market has evolved rapidly. With more buyers importing vehicles directly from overseas auctions and a growing network of verified local dealers, having accurate, transparent information has never been more important. That's exactly what ${SITE.name} is built to provide.`,
   "Before making any decision, always calculate your total landed cost using our import duty and shipping calculators. These tools use current GRA rates and real shipping lanes so you know the full picture before committing — no surprises at the port.",
   "Finally, remember that trust matters. Look for verified badges, read genuine reviews, inspect vehicles in person, and never make full payment before seeing what you're buying. Following these principles will keep your automotive journey smooth and secure.",
 ];
@@ -63,7 +63,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     datePublished: post.date,
     dateModified: post.date,
     author: { "@type": "Organization", name: post.author },
-    publisher: { "@type": "Organization", name: "CarVista" },
+    publisher: { "@type": "Organization", name: `${SITE.name}` },
     mainEntityOfPage: `${SITE.url}/blog/${post.slug}`,
   };
 

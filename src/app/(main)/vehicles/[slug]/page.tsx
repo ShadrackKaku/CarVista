@@ -3,6 +3,7 @@ import { VehicleDetail } from "@/components/vehicles/vehicle-detail";
 import { getVehicleBySlug } from "@/lib/queries";
 import { formatNumber } from "@/lib/utils";
 import { stripHtml } from "@/lib/sanitize";
+import { SITE } from "@/lib/constants";
 
 export const revalidate = 60;
 
@@ -18,7 +19,7 @@ export async function generateMetadata({
     stripHtml(vehicle.description ?? "") ||
     `${vehicle.year} ${vehicle.title} for sale in ${vehicle.city}, Ghana — ${formatNumber(
       vehicle.mileage,
-    )} km, ${vehicle.transmission.toLowerCase()}, ${vehicle.fuelType.toLowerCase()}. View photos, full specs and price on CarVista.`;
+    )} km, ${vehicle.transmission.toLowerCase()}, ${vehicle.fuelType.toLowerCase()}. View photos, full specs and price on {SITE.name}.`;
   const image = vehicle.images[0];
   return {
     title: `${vehicle.title} for sale in ${vehicle.city}`,

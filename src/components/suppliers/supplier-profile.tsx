@@ -9,6 +9,7 @@ import { SupplierEnquiryDialog } from "@/components/suppliers/supplier-enquiry-d
 import { getSupplierBySlug } from "@/lib/queries";
 import { SUPPLIER_CATEGORY_LABELS } from "@/lib/suppliers";
 import { whatsappUrl } from "@/lib/utils";
+import { SITE } from "@/lib/constants";
 
 export interface SupplierProfileProps {
   slug: string;
@@ -142,7 +143,7 @@ export async function SupplierProfile({ slug, inShell = false }: SupplierProfile
               {supplier.whatsapp && (
                 <Button asChild className="w-full bg-[#25D366] text-white hover:bg-[#20bd5a]">
                   <a
-                    href={whatsappUrl(supplier.whatsapp, `Hi ${supplier.name}, I found you on CarVista.`)}
+                    href={whatsappUrl(supplier.whatsapp, `Hi ${supplier.name}, I found you on ${SITE.name}.`)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

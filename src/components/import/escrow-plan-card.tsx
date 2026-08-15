@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Check, Loader2, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { IMPORT_STAGES } from "@/lib/constants";
+import { IMPORT_STAGES, SITE } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 import type { EscrowPlanView } from "@/lib/queries";
 
@@ -144,7 +144,7 @@ export function EscrowPlanCard({ importId, plan }: { importId: string; plan: Esc
       </ul>
 
       <p className="mt-4 text-[11px] text-muted-foreground">
-        Payments are processed securely by Paystack. CarVista never stores your card or Mobile Money
+        Payments are processed securely by Paystack. {SITE.name} never stores your card or Mobile Money
         details.
       </p>
     </div>

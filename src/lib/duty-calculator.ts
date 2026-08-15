@@ -1,3 +1,4 @@
+import { SITE } from "@/lib/constants";
 /**
  * Ghana Vehicle Import Duty Calculator
  * ------------------------------------
@@ -120,7 +121,7 @@ export interface DutyInput {
   engineSizeCc: number;
   fuelType: FuelKind;
   bodyType: BodyKind;
-  /** Defaults to USED — CarVista imports used vehicles. */
+  /** Defaults to USED — the imports this platform handles are used vehicles. */
   condition?: VehicleCondition;
   /** Freight + insurance as a fraction of FOB, when FOB is not supplied. */
   freightInsuranceRate?: number;
@@ -502,7 +503,7 @@ export function calculateDuty(input: DutyInput): DutyResult {
     { key: "port", label: "Port Charges (GPHA/Terminal)", amount: portCharges },
     { key: "clearing", label: "Clearing / Agent Charges", amount: clearingCharges },
     { key: "delivery", label: "Delivery to Your Location", amount: deliveryCost },
-    { key: "processing", label: "CarVista Processing Fee", amount: processingFee },
+    { key: "processing", label: `${SITE.name} Processing Fee`, amount: processingFee },
   ];
   const logisticsSubtotal = logisticsLineItems.reduce((sum, li) => sum + li.amount, 0);
 

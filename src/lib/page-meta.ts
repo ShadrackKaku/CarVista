@@ -1,3 +1,4 @@
+import { SITE } from "@/lib/constants";
 /**
  * Page titles for the signed-in shell.
  *
@@ -22,7 +23,7 @@ export interface PageMeta {
 const ROUTES: [pattern: string, meta: PageMeta][] = [
   // ── Marketplace module ─────────────────────────────────────────
   ["/app/marketplace", { title: "Marketplace", subtitle: "Vehicles, parts, dealers and services in one place." }],
-  ["/app/marketplace/vehicles", { title: "Vehicles", subtitle: "Every car listed on CarVista." }],
+  ["/app/marketplace/vehicles", { title: "Vehicles", subtitle: `Every car listed on ${SITE.name}.` }],
   ["/app/marketplace/vehicles/:id", { title: "Vehicle", subtitle: "Specs, history and landed cost." }],
   ["/app/marketplace/parts", { title: "Parts", subtitle: "Genuine and aftermarket parts from verified sellers." }],
   ["/app/marketplace/parts/:id", { title: "Part", subtitle: "Fitment, condition and delivery." }],
@@ -74,7 +75,7 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/admin/role-applications", { title: "Role applications", subtitle: "Approve or reject requests for specialised roles." }],
   ["/admin/inspections", { title: "Inspections", subtitle: "Requested and completed vehicle inspections." }],
   ["/admin/orders", { title: "Orders", subtitle: "Parts orders across the marketplace." }],
-  ["/admin/imports", { title: "Import requests", subtitle: "Every import CarVista is handling." }],
+  ["/admin/imports", { title: "Import requests", subtitle: `Every import ${SITE.name} is handling.` }],
   ["/admin/imports/:id", { title: "Import request", subtitle: "Timeline, documents and status." }],
   ["/admin/escrow", { title: "Escrow", subtitle: "Funds held, released and refunded." }],
   ["/admin/duty-rates", { title: "Duty & levy rates", subtitle: "The rates every calculator quotes from." }],
@@ -108,6 +109,7 @@ const ROUTES: [pattern: string, meta: PageMeta][] = [
   ["/dashboard/importer/stock/:id/edit", { title: "Edit listing", subtitle: "Correcting details never changes whether the car is published." }],
   ["/dashboard/importer/reservations", { title: "Reservations", subtitle: "Who is holding what, and until when." }],
   ["/dashboard/importer/profile", { title: "My importer profile", subtitle: "What buyers see when they browse your stock." }],
+  ["/dashboard/clearing", { title: "Clearing queue", subtitle: "Vehicles at the port with your name on them." }],
   ["/dashboard/supplier", { title: "Supplier overview", subtitle: "Enquiries waiting on you." }],
   ["/dashboard/supplier/enquiries", { title: "Enquiries", subtitle: "Buyers asking you to quote." }],
   ["/dashboard/supplier/profile", { title: "My supplier profile", subtitle: "What buyers see, and how they filter to you." }],

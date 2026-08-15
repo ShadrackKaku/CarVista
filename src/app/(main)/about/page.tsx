@@ -4,10 +4,11 @@ import { Award, Globe, HeartHandshake, Target, TrendingUp, Users } from "lucide-
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { HOME_STATS } from "@/lib/sample-data";
+import { SITE } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "About Us",
-  description: "CarVista is Ghana's complete automotive marketplace and import platform — built to make buying, importing and maintaining vehicles simple and transparent.",
+  description: `${SITE.name} is Ghana's complete automotive marketplace and import platform — built to make buying, importing and maintaining vehicles simple and transparent.`,
   alternates: { canonical: "/about" },
 };
 
@@ -24,7 +25,7 @@ export default function AboutPage() {
       <PageHeader
         eyebrow="Our Story"
         title="Driving Ghana's automotive future"
-        description="CarVista was founded to fix a broken, opaque car-buying experience — bringing trust, transparency and technology to Ghana's automotive market."
+        description={`${SITE.name} was founded to fix a broken, opaque car-buying experience — bringing trust, transparency and technology to Ghana's automotive market.`}
       />
       <div className="container-page py-12">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -43,9 +44,9 @@ export default function AboutPage() {
             <h2 className="font-display text-2xl font-bold">Our mission</h2>
             <p className="mt-4 leading-relaxed text-muted-foreground">
               For too long, buying or importing a car in Ghana meant uncertainty — unclear duties,
-              hidden fees and no way to verify who you were dealing with. We built CarVista to change
+              hidden fees and no way to verify who you were dealing with. We built {SITE.name} to change
               that. Whether you're buying your first car, importing a dream vehicle from an overseas
-              auction, sourcing genuine parts, or running a dealership, CarVista gives you the tools,
+              auction, sourcing genuine parts, or running a dealership, {SITE.name} gives you the tools,
               transparency and trust to do it with confidence.
             </p>
             <p className="mt-4 leading-relaxed text-muted-foreground">
@@ -81,7 +82,7 @@ export default function AboutPage() {
             Join thousands of happy customers
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-brand-100">
-            Whether you're buying, selling, importing or servicing — CarVista is your trusted
+            Whether you're buying, selling, importing or servicing — {SITE.name} is your trusted
             automotive partner in Ghana.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">

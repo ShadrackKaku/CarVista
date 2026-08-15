@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RegisterForm } from "@/components/auth/register-form";
 import { GoogleButton } from "@/components/auth/google-button";
+import { SITE } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Create account",
-  description: "Create your free CarVista account.",
+  description: `Create your free ${SITE.name} account.`,
 };
 
 export default function RegisterPage({
@@ -17,7 +18,7 @@ export default function RegisterPage({
     <div>
       <h1 className="font-display text-2xl font-bold">Create your account</h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        Join CarVista to buy, sell, import and maintain vehicles.
+        Join {SITE.name} to buy, sell, import and maintain vehicles.
       </p>
 
       <div className="mt-8">

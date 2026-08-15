@@ -6,6 +6,11 @@ import { getUserImportDetail } from "@/lib/queries";
 import { ImportTimeline } from "@/components/import/import-timeline";
 import { ImportMilestones } from "@/components/import/import-milestones";
 import { EscrowPlanCard } from "@/components/import/escrow-plan-card";
+import { TakeIntoInventory } from "@/components/import/take-into-inventory";
+import { ChooseClearingAgent } from "@/components/import/choose-clearing-agent";
+import { ClearanceReceipt } from "@/components/import/clearance-receipt";
+import { canEnterInventory, landedCostOf } from "@/lib/import-to-inventory";
+import { canAssignAgent } from "@/lib/clearing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -54,6 +59,31 @@ export default async function CustomerImportDetailPage({ params }: { params: { i
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
         {/* Left: progress + real milestones */}
         <div className="space-y-6">
+          {/* At the port with no broker engaged: the one decision the buyer has
+              to make before the car can move. */}
+          {canAssignAgent(imp.stage) && !imp.clearance.agent && (
+            <ChooseClearingAgent importId={imp.id} />
+          )}
+
+          {/* The end of the import and the start of ownership. Shown only once
+              customs is behind them, and only until they take it — after that
+              the sidebar carries a link to the car itself. */}
+          {!imp.vehicleSlug && canEnterInventory(imp.stage) && (
+            <TakeIntoInventory
+              importId={imp.id}
+              // The real bill once it exists: a dealer setting a price against
+              // a landed cost we know to be stale is the one mistake this
+              // whole chain is built to prevent.
+              landedCost={landedCostOf({
+                quotedTotal: q.total,
+                quotedCif: q.cif,
+                quotedDuty: q.duty,
+                quotedShipping: q.shipping,
+                actualDuty: imp.clearance.actualDuty,
+              })}
+            />
+          )}
+
           <div className="rounded-2xl border bg-card p-6 shadow-soft">
             <h2 className="text-sm font-semibold">Journey</h2>
             <div className="mt-4">
@@ -109,6 +139,16 @@ export default async function CustomerImportDetailPage({ params }: { params: { i
               </p>
             )}
           </div>
+
+          {/* Once the bill is real, the estimate is judged against it. */}
+          <ClearanceReceipt
+            estimatedDuty={q.duty ?? null}
+            actualDuty={imp.clearance.actualDuty}
+            entryNumber={imp.clearance.entryNumber}
+            agent={imp.clearance.agent}
+            agentLicensed={imp.clearance.agentLicensed}
+            clearedAt={imp.clearance.clearedAt}
+          />
 
           {imp.vehicleSlug && (
             <Link

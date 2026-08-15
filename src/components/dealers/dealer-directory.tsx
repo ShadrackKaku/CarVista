@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GHANA_REGIONS } from "@/lib/constants";
+import { GHANA_REGIONS, SITE } from "@/lib/constants";
 import { usePagedList } from "@/lib/use-paged-list";
 import type { SampleDealer } from "@/lib/sample-data";
 
@@ -122,7 +122,7 @@ export function DealerDirectory({
           <ShieldCheck className="h-5 w-5 shrink-0 text-brand-600" />
           <span className="text-muted-foreground">
             Look for the <span className="font-semibold text-foreground">Verified</span> badge — it
-            means the dealer&apos;s business documents and location have been confirmed by CarVista.
+            means the dealer&apos;s business documents and location have been confirmed by {SITE.name}.
           </span>
         </div>
         <p className="text-sm text-muted-foreground">

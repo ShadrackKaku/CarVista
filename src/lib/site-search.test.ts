@@ -100,7 +100,7 @@ const blog = (over: Partial<SampleBlogPost> = {}): SampleBlogPost => ({
   excerpt: "Everything you need to know about duty and clearing.",
   category: "Guides",
   cover: "https://img/blog.jpg",
-  author: "CarVista Team",
+  author: "Editorial Team",
   date: "2026-01-01",
   readTime: 6,
   ...over,

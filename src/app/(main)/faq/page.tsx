@@ -8,10 +8,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { SITE } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
-  description: "Answers to common questions about buying, importing, and selling vehicles and parts on CarVista.",
+  description: `Answers to common questions about buying, importing, and selling vehicles and parts on ${SITE.name}.`,
   alternates: { canonical: "/faq" },
 };
 
@@ -105,7 +106,7 @@ export default function FAQPage() {
       <PageHeader
         eyebrow="Help Center"
         title="Frequently Asked Questions"
-        description="Everything you need to know about buying, importing, selling and servicing on CarVista."
+        description={`Everything you need to know about buying, importing, selling and servicing on ${SITE.name}.`}
       />
       <div className="container-page py-12">
         <div className="mx-auto max-w-3xl space-y-10">

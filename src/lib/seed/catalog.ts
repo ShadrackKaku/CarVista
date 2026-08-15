@@ -25,6 +25,7 @@ import type {
   VehicleEventType,
 } from "@prisma/client";
 import { SAMPLE_VEHICLES, SAMPLE_PARTS, SAMPLE_SERVICES } from "../sample-data";
+import { SITE } from "@/lib/constants";
 
 export const DEMO_PASSWORD = "Password123";
 
@@ -198,11 +199,11 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
   // nobody able to add the first member of staff. `update` carries an existing
   // seeded admin up to it rather than leaving old databases stuck.
   await prisma.user.upsert({
-    where: { email: "admin@carvista.com.gh" },
+    where: { email: `admin@${SITE.domain}` },
     update: { role: "SUPER_ADMIN" },
     create: {
-      name: "CarVista Admin",
-      email: "admin@carvista.com.gh",
+      name: `${SITE.name} Admin`,
+      email: `admin@${SITE.domain}`,
       hashedPassword: password,
       role: "SUPER_ADMIN",
       emailVerified: now,
@@ -243,7 +244,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
     const d = DEALERS[di];
     const slug = slugify(d.name);
     const loc = CITIES[d.cityIdx];
-    const email = `${slug}@dealers.carvista.com.gh`;
+    const email = `${slug}@dealers.${SITE.domain}`;
 
     // Reuse a dealer that already owns this slug (from a prior run or an app
     // signup) rather than colliding on the unique slug — keeps this idempotent.
@@ -281,7 +282,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
           userId: user.id,
           businessName: d.name,
           slug,
-          description: `${d.name} is a trusted CarVista dealer in ${loc.city} with ${d.years} years selling quality foreign-used and brand-new vehicles.`,
+          description: `${d.name} is a trusted ${SITE.name} dealer in ${loc.city} with ${d.years} years selling quality foreign-used and brand-new vehicles.`,
           coverImage: pick(VEHICLE_IMAGES, di),
           logo: `https://i.pravatar.cc/160?u=${slug}`,
           phone: `+2332${(4 + di).toString()}${(1000000 + di).toString().slice(0, 7)}`,
@@ -411,16 +412,16 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
                 { type: "SHIPPED", title: "Shipped to Tema Port", occurredAt: at(35), verified: true, source: "import" },
                 { type: "CLEARED", title: "Customs cleared — duty paid", occurredAt: at(20), verified: true, source: "import" },
                 { type: "INSPECTED", title: "Certified inspection passed", occurredAt: at(12), verified: true, source: "inspection" },
-                { type: "LISTED", title: "Listed on CarVista", occurredAt: at(5), verified: false, source: "system" },
+                { type: "LISTED", title: `Listed on ${SITE.name}`, occurredAt: at(5), verified: false, source: "system" },
               ]
             : v.importStatus === "AVAILABLE_FOR_IMPORT"
               ? [
                   { type: "NOTE", title: "Available to import to order", notes: "Landed cost estimated at current GRA duty rates.", occurredAt: at(6), verified: false, source: "system" },
-                  { type: "LISTED", title: "Listed on CarVista", occurredAt: at(5), verified: false, source: "system" },
+                  { type: "LISTED", title: `Listed on ${SITE.name}`, occurredAt: at(5), verified: false, source: "system" },
                 ]
               : [
                   { type: "INSPECTED", title: "Certified inspection passed", occurredAt: at(8), verified: true, source: "inspection" },
-                  { type: "LISTED", title: "Listed on CarVista", occurredAt: at(5), verified: false, source: "system" },
+                  { type: "LISTED", title: `Listed on ${SITE.name}`, occurredAt: at(5), verified: false, source: "system" },
                 ];
         await prisma.vehicleEvent.createMany({
           data: events.map((e) => ({ passportId: passport.id, ...e })),
@@ -436,7 +437,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
     const vendor = VENDORS[vi];
     const slug = slugify(vendor.name);
     const loc = CITIES[vendor.cityIdx];
-    const email = `${slug}@stores.carvista.com.gh`;
+    const email = `${slug}@stores.${SITE.domain}`;
 
     // Reuse an existing store with this slug to stay idempotent / collision-free.
     let storeId: string;
@@ -541,7 +542,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<SeedSummary> {
     async ({ s, i }) => {
       const slug = slugify(s.name);
       const loc = CITIES[s.cityIdx];
-      const email = `${slug}@services.carvista.com.gh`;
+      const email = `${slug}@services.${SITE.domain}`;
 
       // Skip if a provider already owns this slug (idempotent / collision-free).
       const existingProvider = await prisma.serviceProvider.findUnique({

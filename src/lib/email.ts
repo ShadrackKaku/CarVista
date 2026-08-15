@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import { SITE } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 
-const FROM = process.env.EMAIL_FROM ?? `${SITE.name} <no-reply@carvista.com.gh>`;
+const FROM = process.env.EMAIL_FROM ?? `${SITE.name} <no-reply@${SITE.domain}>`;
 
 interface SendMailOptions {
   to: string;
@@ -11,12 +11,42 @@ interface SendMailOptions {
 }
 
 /**
- * Sends an email using the first configured provider:
- *   1. Resend (RESEND_API_KEY)      — recommended, via REST API (no dependency)
- *   2. SMTP (EMAIL_SERVER_* vars)    — any SMTP provider, via nodemailer
- *   3. Console log                   — development fallback
+ * What actually happened to the message.
+ *
+ * `sendMail` used to return void, and returned it just as happily when it had
+ * done nothing at all — with no provider configured it logged a line to the
+ * console and came back clean. Every caller read that as success, which meant
+ * password resets, email verification, order confirmations and admin invites
+ * all reported themselves sent on a deployment with no mail provider. Silence
+ * is the one failure mode email must not have.
  */
-export async function sendMail({ to, subject, html }: SendMailOptions) {
+export type MailOutcome =
+  | { delivered: true; via: "resend" | "smtp" }
+  | { delivered: false; reason: "not-configured" | "failed"; detail?: string };
+
+/** True when no provider is configured at all — a deployment mistake, not a bug. */
+export function isMailConfigured(): boolean {
+  return Boolean(
+    process.env.RESEND_API_KEY ||
+      (process.env.EMAIL_SERVER_HOST && process.env.EMAIL_SERVER_USER),
+  );
+}
+
+/**
+ * Send an email through the first configured provider.
+ *
+ *   1. Resend (RESEND_API_KEY)    — recommended, via REST (no dependency)
+ *   2. SMTP (EMAIL_SERVER_*)      — any SMTP provider, via nodemailer
+ *   3. Nothing                    — logged, and reported as undelivered
+ *
+ * Never throws. Callers that ignore the result behave exactly as before — a
+ * failed order-confirmation must not turn a paid order into a 500 — while
+ * callers who need to tell the user whether the message went can read it.
+ */
+export async function sendMail({ to, subject, html }: SendMailOptions): Promise<MailOutcome> {
+  const hasSmtp = Boolean(process.env.EMAIL_SERVER_HOST && process.env.EMAIL_SERVER_USER);
+  let failure: string | undefined;
+
   // 1) Resend
   if (process.env.RESEND_API_KEY) {
     try {
@@ -32,35 +62,51 @@ export async function sendMail({ to, subject, html }: SendMailOptions) {
         const detail = await res.text().catch(() => "");
         throw new Error(`Resend error ${res.status}: ${detail}`);
       }
-      return;
+      return { delivered: true, via: "resend" };
     } catch (error) {
+      failure = error instanceof Error ? error.message : String(error);
       console.error("[email:resend]", error);
-      // fall through to SMTP if available
+      // Falls through to SMTP when one is configured.
     }
   }
 
   // 2) SMTP
-  if (process.env.EMAIL_SERVER_HOST && process.env.EMAIL_SERVER_USER) {
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER_HOST,
-      port: Number(process.env.EMAIL_SERVER_PORT ?? 587),
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-    });
-    await transporter.sendMail({ from: FROM, to, subject, html });
-    return;
+  if (hasSmtp) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_SERVER_HOST,
+        port: Number(process.env.EMAIL_SERVER_PORT ?? 587),
+        auth: {
+          user: process.env.EMAIL_SERVER_USER,
+          pass: process.env.EMAIL_SERVER_PASSWORD,
+        },
+      });
+      await transporter.sendMail({ from: FROM, to, subject, html });
+      return { delivered: true, via: "smtp" };
+    } catch (error) {
+      failure = error instanceof Error ? error.message : String(error);
+      console.error("[email:smtp]", error);
+    }
   }
 
-  // 3) Dev fallback
-  console.info(`[email:dev] To: ${to} — ${subject}`);
+  if (failure) {
+    return { delivered: false, reason: "failed", detail: failure };
+  }
+
+  // 3) Nothing configured. Fine locally, a misconfiguration in production —
+  // said loudly enough to find in the logs, because the symptom otherwise is
+  // simply that nobody ever receives anything.
+  const message = `[email] No provider configured — "${subject}" to ${to} was NOT sent. Set RESEND_API_KEY (and EMAIL_FROM), or the EMAIL_SERVER_* variables.`;
+  if (process.env.NODE_ENV === "production") console.error(message);
+  else console.info(`[email:dev] To: ${to} — ${subject}`);
+
+  return { delivered: false, reason: "not-configured" };
 }
 
 function layout(title: string, body: string) {
   return `
   <div style="font-family:system-ui,-apple-system,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#20214a">
-    <div style="font-size:22px;font-weight:800;color:#5a5fe0;margin-bottom:24px">CarVista</div>
+    <div style="font-size:22px;font-weight:800;color:#5a5fe0;margin-bottom:24px">${SITE.name}</div>
     <h1 style="font-size:20px;margin:0 0 12px">${title}</h1>
     ${body}
     <hr style="border:none;border-top:1px solid #eceefd;margin:28px 0" />
@@ -78,7 +124,7 @@ export function verificationEmail(name: string, url: string) {
   return layout(
     "Verify your email",
     `<p>Hi ${name},</p>
-     <p>Welcome to CarVista! Please confirm your email address to activate your account.</p>
+     <p>Welcome to ${SITE.name}! Please confirm your email address to activate your account.</p>
      ${button(url, "Verify Email")}
      <p style="font-size:13px;color:#6b7280">This link expires in 24 hours. If you didn't create an account, you can ignore this email.</p>`,
   );
@@ -88,7 +134,7 @@ export function passwordResetEmail(name: string, url: string) {
   return layout(
     "Reset your password",
     `<p>Hi ${name},</p>
-     <p>We received a request to reset your CarVista password. Click below to choose a new one.</p>
+     <p>We received a request to reset your ${SITE.name} password. Click below to choose a new one.</p>
      ${button(url, "Reset Password")}
      <p style="font-size:13px;color:#6b7280">This link expires in 1 hour. If you didn't request this, no action is needed.</p>`,
   );
@@ -111,10 +157,10 @@ export function accountInviteEmail(opts: {
 }) {
   const from = opts.invitedBy ? ` by ${opts.invitedBy}` : "";
   return layout(
-    "Your CarVista account is ready",
+    `Your ${SITE.name} account is ready`,
     `<p>Hi ${opts.name},</p>
-     <p>An account has been created for you on CarVista${from}, set up as <strong>${opts.roleLabel}</strong>.</p>
-     <p>Choose a password to finish setting it up — you pick it yourself, and nobody at CarVista sees it.</p>
+     <p>An account has been created for you on ${SITE.name}${from}, set up as <strong>${opts.roleLabel}</strong>.</p>
+     <p>Choose a password to finish setting it up — you pick it yourself, and nobody at ${SITE.name} sees it.</p>
      ${button(opts.url, "Set your password")}
      <p style="font-size:13px;color:#6b7280">This link works once and expires in ${opts.expiresInDays} days. If you weren't expecting this, you can ignore it — the account cannot be used until a password is set.</p>`,
   );
@@ -186,6 +232,6 @@ export function savedSearchAlertEmail(
     `<p>Hi ${name},</p>
      <p><strong>${count}</strong> new vehicle${count === 1 ? "" : "s"} just matched your saved search <strong>“${searchName}”</strong>.</p>
      ${button(url, "See the new matches")}
-     <p style="font-size:13px;color:#6b7280">You're receiving this because you saved this search on CarVista.</p>`,
+     <p style="font-size:13px;color:#6b7280">You're receiving this because you saved this search on ${SITE.name}.</p>`,
   );
 }

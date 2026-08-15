@@ -5,6 +5,7 @@ import { forgotPasswordSchema } from "@/lib/validations";
 import { rateLimit, getClientId } from "@/lib/rate-limit";
 import { sendMail, passwordResetEmail } from "@/lib/email";
 import { absoluteUrl } from "@/lib/utils";
+import { SITE } from "@/lib/constants";
 
 export async function POST(req: Request) {
   const limit = await rateLimit(`forgot:${getClientId(req)}`, 5, 60_000);
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
       });
       await sendMail({
         to: email,
-        subject: "Reset your CarVista password",
+        subject: `Reset your ${SITE.name} password`,
         html: passwordResetEmail(user.name ?? "there", absoluteUrl(`/reset-password?token=${token}`)),
       });
     }

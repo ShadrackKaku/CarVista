@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SITE } from "@/lib/constants";
 
 export interface RegisterFormProps {
   /** Where to land once the new account is signed in. */
@@ -78,7 +79,7 @@ export function RegisterForm({
         return;
       }
 
-      toast.success("Welcome to CarVista!");
+      toast.success(`Welcome to ${SITE.name}!`);
       if (onSuccess) {
         onSuccess();
         router.refresh();

@@ -33,7 +33,14 @@ async function uniqueSlug(
 
 export interface ProvisionResult {
   /** Which profile was created, or null when the role needs none. */
-  created: "dealer" | "partsStore" | "serviceProvider" | "supplier" | "importer" | null;
+  created:
+    | "dealer"
+    | "partsStore"
+    | "serviceProvider"
+    | "supplier"
+    | "importer"
+    | "clearingAgent"
+    | null;
   /** True when a profile already existed and was left untouched. */
   alreadyExisted: boolean;
 }
@@ -132,6 +139,24 @@ export async function provisionRoleProfile(
         data: { ...common, businessName: name, slug, sourceMarkets: [] },
       });
       return { created: "importer", alreadyExisted: false };
+    }
+
+    case "CLEARING_AGENT": {
+      if (await tx.clearingAgent.findUnique({ where: { userId }, select: { id: true } })) {
+        return { created: null, alreadyExisted: true };
+      }
+      const slug = await uniqueSlug(tx, name, async (s) =>
+        Boolean(await tx.clearingAgent.findUnique({ where: { slug: s }, select: { id: true } })),
+      );
+      await tx.clearingAgent.create({
+        // Deliberately created unverified and with no licence number, even
+        // though the application asked for a registration number. The licence
+        // is the one fact on this profile that a buyer relies on, so it is
+        // recorded by the administrator who checked it — not carried across
+        // from a form the applicant filled in themselves.
+        data: { ...common, businessName: name, slug, ports: [] },
+      });
+      return { created: "clearingAgent", alreadyExisted: false };
     }
 
     // USER, ADMIN and SUPER_ADMIN never reach here — the application schema

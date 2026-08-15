@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/admin-guard";
 import { verificationReviewSchema } from "@/lib/validations";
+import { SITE } from "@/lib/constants";
 
 /**
  * PATCH — approve or reject a dealer verification. Admin only.
@@ -49,7 +50,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           type: "SYSTEM",
           title: approved ? "You're verified! ✅" : "Verification needs attention",
           body: approved
-            ? `${verification.dealer.businessName} is now a verified dealer on CarVista.`
+            ? `${verification.dealer.businessName} is now a verified dealer on ${SITE.name}.`
             : parsed.data.reviewNote || "Your verification was not approved. Please review and resubmit.",
           link: "/dashboard/dealer/verification",
         },

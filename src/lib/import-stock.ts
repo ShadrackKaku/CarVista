@@ -3,7 +3,7 @@
  *
  * This is the reason to browse stock here rather than on SBT or BE FORWARD.
  * They publish FOB — the price at the port of loading — and a Ghanaian buyer
- * discovers duty at Tema, weeks later, having already committed. CarVista holds
+ * discovers duty at Tema, weeks later, having already committed. This platform holds
  * verified GRA assessments and HDV reference values, so the number that
  * actually matters can be put on the card.
  *

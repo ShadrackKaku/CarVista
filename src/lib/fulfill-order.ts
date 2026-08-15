@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { sendMail, orderConfirmationEmail } from "@/lib/email";
 import { refundTransaction } from "@/lib/paystack";
 import { absoluteUrl } from "@/lib/utils";
+import { SITE } from "@/lib/constants";
 
 /**
  * Atomically marks a payment SUCCESS and its order PAID **exactly once**, then
@@ -51,7 +52,7 @@ export async function confirmPaidPayment(paymentId: string, providerRef?: string
   if (order.email) {
     await sendMail({
       to: order.email,
-      subject: `Your CarVista order ${order.orderNumber} is confirmed`,
+      subject: `Your ${SITE.name} order ${order.orderNumber} is confirmed`,
       html: orderConfirmationEmail({
         name: order.fullName,
         orderNumber: order.orderNumber,

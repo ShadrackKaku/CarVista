@@ -9,12 +9,13 @@
  * As real dealers/sellers add listings, those records take over automatically.
  */
 import { cache } from "react";
-import type { SupplierCategory } from "@prisma/client";
+import type { ImportStage, SupplierCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { formatNumber } from "@/lib/utils";
 import { isMilestonePayable } from "@/lib/escrow";
 import { holdingWhere } from "@/lib/reservations";
+import { buildProvenance, type Provenance } from "@/lib/provenance";
 import {
   getExpandedVehicles,
   SAMPLE_PARTS,
@@ -28,7 +29,7 @@ import {
   type SampleService,
   type SampleBlogPost,
 } from "@/lib/sample-data";
-import { SERVICE_TYPES } from "@/lib/constants";
+import { SERVICE_TYPES, SITE } from "@/lib/constants";
 
 const PLACEHOLDER_VEHICLE =
   "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=1200&q=80";
@@ -669,7 +670,7 @@ function mapPart(p: PartRow): SamplePart {
     compatibleMakes: p.compatibleMakes ?? [],
     image: p.images[0]?.url ?? PLACEHOLDER_PART,
     store: {
-      name: p.store?.storeName ?? p.seller.name ?? "CarVista Store",
+      name: p.store?.storeName ?? p.seller.name ?? `${SITE.name} Store`,
       slug: p.store?.slug ?? "",
       verified: p.store?.verified ?? false,
     },
@@ -818,6 +819,54 @@ export interface VehiclePassportView {
   events: PassportEvent[];
 }
 
+/**
+ * What this car can prove about its origin, assembled from the import behind
+ * it. Null for a vehicle that was never imported through the platform — which
+ * is most of them, and the panel simply does not appear.
+ */
+export async function getVehicleProvenance(vehicleId: string): Promise<Provenance | null> {
+  try {
+    const request = await prisma.importRequest.findFirst({
+      where: { vehicleId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        countryOfOrigin: true,
+        auctionSource: true,
+        clearedAt: true,
+        actualDutyGhs: true,
+        customsEntryNumber: true,
+        clearingAgent: { select: { businessName: true, licenceNumber: true } },
+        listing: { select: { auctionGrade: true, auctionSource: true, chassisNumber: true } },
+        trackingEvents: {
+          where: { stage: { in: ["PURCHASED", "ARRIVED_AT_PORT"] } },
+          orderBy: { timestamp: "asc" },
+          select: { stage: true, timestamp: true },
+        },
+      },
+    });
+    if (!request) return null;
+
+    const first = (stage: string) =>
+      request.trackingEvents.find((e) => e.stage === stage)?.timestamp ?? null;
+
+    return buildProvenance({
+      countryOfOrigin: request.countryOfOrigin,
+      auctionSource: request.listing?.auctionSource ?? request.auctionSource,
+      auctionGrade: request.listing?.auctionGrade ?? null,
+      chassisNumber: request.listing?.chassisNumber ?? null,
+      clearedAt: request.clearedAt,
+      actualDutyGhs: request.actualDutyGhs ? num(request.actualDutyGhs) : null,
+      customsEntryNumber: request.customsEntryNumber,
+      agentName: request.clearingAgent?.businessName ?? null,
+      agentLicenceNumber: request.clearingAgent?.licenceNumber ?? null,
+      purchasedAt: first("PURCHASED"),
+      arrivedAt: first("ARRIVED_AT_PORT"),
+    });
+  } catch {
+    return null;
+  }
+}
+
 /** The public trust timeline for a listed vehicle, newest first. */
 export async function getVehiclePassport(vehicleId: string): Promise<VehiclePassportView | null> {
   try {
@@ -957,7 +1006,7 @@ function mapBlog(b: BlogRow): SampleBlogPost {
     excerpt: b.excerpt ?? "",
     category: b.category?.name ?? "Article",
     cover: b.coverImage ?? PLACEHOLDER_COVER,
-    author: b.author?.name ?? "CarVista Editorial",
+    author: b.author?.name ?? `${SITE.name} Editorial`,
     date: (b.publishedAt ?? b.createdAt).toISOString().slice(0, 10),
     readTime: b.readTime,
     content: b.content,
@@ -1570,7 +1619,8 @@ export interface EscrowPlanView {
 export interface ImportRequestDetail {
   id: string;
   ref: string;
-  stage: string;
+  /** The real enum, not a widened string — callers gate real behaviour on it. */
+  stage: ImportStage;
   customer: string;
   customerEmail: string | null;
   vehicle: string;
@@ -1583,6 +1633,18 @@ export interface ImportRequestDetail {
   trackingNumber: string | null;
   estimatedArrival: Date | null;
   quote: { cif: number | null; duty: number | null; shipping: number | null; total: number | null };
+  /**
+   * What customs actually charged, once a licensed agent has recorded it —
+   * the figure the estimate is finally judged against.
+   */
+  clearance: {
+    agent: string | null;
+    /** Whether a licence number is on file for that agent. */
+    agentLicensed: boolean;
+    actualDuty: number | null;
+    entryNumber: string | null;
+    clearedAt: Date | null;
+  };
   createdAt: Date;
   events: ImportTrackingEventView[];
   escrow: EscrowPlanView | null;
@@ -1592,6 +1654,7 @@ export interface ImportRequestDetail {
 const importDetailInclude = {
   user: { select: { name: true, email: true } },
   vehicle: { select: { id: true, slug: true } },
+  clearingAgent: { select: { businessName: true, slug: true, licenceNumber: true } },
   trackingEvents: { orderBy: { timestamp: "desc" } },
   escrowPlan: { include: { milestones: { orderBy: { sequence: "asc" } } } },
 } satisfies Prisma.ImportRequestInclude;
@@ -1619,6 +1682,13 @@ function mapImportDetail(
       duty: r.quotedDuty ? num(r.quotedDuty) : null,
       shipping: r.quotedShipping ? num(r.quotedShipping) : null,
       total: r.quotedTotal ? num(r.quotedTotal) : null,
+    },
+    clearance: {
+      agent: r.clearingAgent?.businessName ?? null,
+      agentLicensed: Boolean(r.clearingAgent?.licenceNumber),
+      actualDuty: r.actualDutyGhs ? num(r.actualDutyGhs) : null,
+      entryNumber: r.customsEntryNumber,
+      clearedAt: r.clearedAt,
     },
     createdAt: r.createdAt,
     events: r.trackingEvents.map((e) => ({
@@ -1957,7 +2027,7 @@ export async function getUserConversations(userId: string): Promise<Conversation
       const ctxId = r.vehicleId ?? r.partId ?? "";
       return {
         id: r.id,
-        otherParty: other?.name ?? "CarVista member",
+        otherParty: other?.name ?? `${SITE.name} member`,
         subject: r.subject,
         context: contexts.get(ctxId) ?? null,
         lastMessage: last?.body ?? "",
@@ -2009,7 +2079,7 @@ export async function getConversation(
 
     return {
       id: convo.id,
-      otherParty: other?.name ?? "CarVista member",
+      otherParty: other?.name ?? `${SITE.name} member`,
       subject: convo.subject,
       context: contexts.get(convo.vehicleId ?? convo.partId ?? "") ?? null,
       messages: convo.messages.map((m) => ({

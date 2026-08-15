@@ -14,6 +14,7 @@ import { SearchResultCard } from "@/components/search/search-result-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { SITE } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export function generateMetadata({ searchParams }: { searchParams: { q?: string 
   return {
     // Search pages are per-query and near-infinite, so keep them out of the index.
     title: q ? `Search results for “${q}”` : "Search",
-    description: "Search cars, parts, services and dealers across CarVista.",
+    description: `Search cars, parts, services and dealers across ${SITE.name}.`,
     robots: { index: false, follow: true },
   };
 }

@@ -1,3 +1,4 @@
+import { APP_KEY } from "@/lib/constants";
 /**
  * Window-level UI events.
  *
@@ -7,8 +8,8 @@
  * event rather than by threading state through context or props.
  */
 
-export const OPEN_COMMAND_PALETTE = "carvista:open-command-palette";
-export const OPEN_AUTH_DIALOG = "carvista:open-auth-dialog";
+export const OPEN_COMMAND_PALETTE = `${APP_KEY}:open-command-palette`;
+export const OPEN_AUTH_DIALOG = `${APP_KEY}:open-auth-dialog`;
 
 export type AuthDialogMode = "login" | "register";
 

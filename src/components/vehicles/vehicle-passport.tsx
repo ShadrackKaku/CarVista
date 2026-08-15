@@ -17,6 +17,7 @@ import { getVehiclePassport } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { PassportManager } from "@/components/vehicles/passport-manager";
 import { formatDate } from "@/lib/utils";
+import { SITE } from "@/lib/constants";
 
 const EVENT_ICON: Record<string, LucideIcon> = {
   IMPORTED: Ship,
@@ -68,7 +69,7 @@ export async function VehiclePassport({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-brand-600" />
-            <h2 className="text-xl font-bold">CarVista Passport</h2>
+            <h2 className="text-xl font-bold">{SITE.name} Passport</h2>
           </div>
           {passport && (
             <span className="font-mono text-xs text-muted-foreground">VIN&nbsp;{passport.vin}</span>
