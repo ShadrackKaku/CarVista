@@ -7,6 +7,8 @@
  * source of truth for a search.
  */
 
+import { describeValues, matchesAny, selectedValues } from "@/lib/multi-select";
+
 export interface VehicleFilters {
   q: string;
   brand: string;
@@ -98,23 +100,8 @@ export const MULTI_FACETS = [
 
 export type MultiFacet = (typeof MULTI_FACETS)[number];
 
-/** The values chosen in a multi-select facet. */
-export function selectedValues(value: string): string[] {
-  return value ? value.split(",").filter(Boolean) : [];
-}
-
-export function isSelected(current: string, value: string): boolean {
-  return selectedValues(current).includes(value);
-}
-
-/** Add the value if absent, remove it if present. */
-export function toggleValue(current: string, value: string): string {
-  const values = selectedValues(current);
-  const next = values.includes(value)
-    ? values.filter((v) => v !== value)
-    : [...values, value];
-  return next.join(",");
-}
+// The set helpers are shared with every other browser on the platform.
+export { selectedValues, isSelected, toggleValue } from "@/lib/multi-select";
 
 /**
  * How many filters are set — for the "active filters" badge.
@@ -146,12 +133,7 @@ export function describeQuery(query: string): string {
   const parts: string[] = [];
   // Multi-select facets read back as "Toyota or Honda" rather than the raw
   // comma-joined value, so a saved search describes itself the way it was made.
-  const list = (key: string, tidy: (s: string) => string = (s) => s) => {
-    const values = selectedValues(p.get(key) ?? "").map(tidy);
-    if (!values.length) return null;
-    if (values.length === 1) return values[0];
-    return `${values.slice(0, -1).join(", ")} or ${values[values.length - 1]}`;
-  };
+  const list = (key: string, tidy?: (s: string) => string) => describeValues(p.get(key) ?? "", tidy);
 
   if (p.get("q")) parts.push(`"${p.get("q")}"`);
   const brand = list("brand");
@@ -216,10 +198,7 @@ export function matchesFilters(
   // Within a facet the chosen values are an OR; across facets they are an AND.
   // "Toyota or Honda, and an SUV" is what a person means by ticking three
   // boxes, and it is the only reading that can ever return anything.
-  const anyOf = (facet: MultiFacet, actual: string | undefined) => {
-    const values = selectedValues(on(facet));
-    return values.length === 0 || (actual != null && values.includes(actual));
-  };
+  const anyOf = (facet: MultiFacet, actual: string | undefined) => matchesAny(on(facet), actual);
 
   const q = on("q");
   if (q && !`${v.title} ${v.brand} ${v.model}`.toLowerCase().includes(q.toLowerCase())) return false;

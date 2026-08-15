@@ -3,19 +3,19 @@
 import { useMemo, useState } from "react";
 import { Search, ShieldCheck, X } from "lucide-react";
 import { DealerCard } from "@/components/dealers/dealer-card";
-import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
+import {
+  Facet,
+  FilterLayout,
+  FilterOption,
+  FilterOptionList,
+  MultiFacet,
+} from "@/components/shell/filter-dock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { GHANA_REGIONS, SITE } from "@/lib/constants";
+import { matchesAny, selectedValues } from "@/lib/multi-select";
 import { usePagedList } from "@/lib/use-paged-list";
 import type { SampleDealer } from "@/lib/sample-data";
 
@@ -41,7 +41,7 @@ export function DealerDirectory({
     const term = q.trim().toLowerCase();
     return dealers.filter((d) => {
       if (verifiedOnly && !d.verified) return false;
-      if (region && d.region !== region) return false;
+      if (!matchesAny(region, d.region)) return false;
       if (!term) return true;
       return (
         d.name.toLowerCase().includes(term) ||
@@ -51,7 +51,20 @@ export function DealerDirectory({
     });
   }, [dealers, q, region, verifiedOnly]);
 
-  const activeCount = (q ? 1 : 0) + (region ? 1 : 0) + (verifiedOnly ? 1 : 0);
+  /** How many dealers each region would leave, given the other filters. */
+  const regionCounts = useMemo(() => {
+    const pool = dealers.filter((d) => {
+      if (q && !`${d.name} ${d.city ?? ""}`.toLowerCase().includes(q.toLowerCase())) return false;
+      if (verifiedOnly && !d.verified) return false;
+      return true;
+    });
+    return {
+      any: pool.length,
+      ...Object.fromEntries(GHANA_REGIONS.map((r) => [r, pool.filter((d) => d.region === r).length])),
+    };
+  }, [dealers, q, verifiedOnly]);
+
+  const activeCount = (q ? 1 : 0) + selectedValues(region).length + (verifiedOnly ? 1 : 0);
   const paged = usePagedList(filtered, `${q}|${region}|${verifiedOnly}`);
 
   function reset() {
@@ -76,22 +89,17 @@ export function DealerDirectory({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Region</Label>
-        <Select value={region || "any"} onValueChange={(v) => setRegion(v === "any" ? "" : v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Any region" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any region</SelectItem>
-            {GHANA_REGIONS.map((r) => (
-              <SelectItem key={r} value={r}>
-                {r}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Facet label="Region">
+        <MultiFacet
+          name="region"
+          anyLabel="Any region"
+          options={GHANA_REGIONS.map((r) => ({ value: r, label: r }))}
+          value={region}
+          onChange={setRegion}
+          counts={regionCounts}
+          maxRows={7}
+        />
+      </Facet>
 
       <div className="space-y-2">
         <Label>Verification</Label>

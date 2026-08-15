@@ -16,13 +16,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
+import {
+  Facet,
+  FilterLayout,
+  FilterOption,
+  FilterOptionList,
+  MultiFacet,
+} from "@/components/shell/filter-dock";
 import { Pagination } from "@/components/ui/pagination";
 import { usePagedList } from "@/lib/use-paged-list";
 import { POPULAR_BRANDS, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, GHANA_REGIONS } from "@/lib/constants";
 import type { SampleVehicle } from "@/lib/sample-data";
 import {
-  type MultiFacet,
   type RangeBand,
   type VehicleFilters,
   type VehicleSort,
@@ -33,26 +38,8 @@ import {
   activeFilterCount,
   bandToRange,
   filtersToQuery,
-  isSelected,
   matchesFilters,
-  toggleValue,
 } from "@/lib/vehicle-search";
-
-/**
- * A heading with its choices underneath, left aligned to the same edge.
- *
- * The alignment is the whole point: heading, radio and label all start on one
- * line down the column, so the eye runs straight down it instead of stepping
- * around boxes of different widths.
- */
-function Facet({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
-    </div>
-  );
-}
 
 const CONDITIONS = [
   { value: "NEW", label: "Brand New" },
@@ -206,45 +193,6 @@ export function VehicleBrowser({
   const paged = usePagedList(filtered, query);
 
   /**
-   * A facet you may tick more than one of.
-   *
-   * Rendered as checkboxes because that is what they are: within a facet the
-   * choices are an OR, so "Toyota and Honda" returns both rather than nothing.
-   * The leading "Any …" row is checked whenever the facet is empty and clears
-   * it when clicked, which keeps the reset in the same place as on the
-   * single-choice facets instead of introducing a second kind of control.
-   */
-  const multi = (
-    facet: MultiFacet,
-    anyLabel: string,
-    options: readonly { value: string; label: string }[],
-    countMap: Record<string, number>,
-    maxRows?: number,
-  ) => (
-    <FilterOptionList maxRows={maxRows}>
-      <FilterOption
-        name={facet}
-        label={anyLabel}
-        multiple
-        checked={filters[facet] === ""}
-        onSelect={() => set(facet, "")}
-        count={countMap.any}
-      />
-      {options.map((o) => (
-        <FilterOption
-          key={o.value}
-          name={facet}
-          label={o.label}
-          multiple
-          checked={isSelected(filters[facet], o.value)}
-          onSelect={() => set(facet, toggleValue(filters[facet], o.value))}
-          count={countMap[o.value] ?? 0}
-        />
-      ))}
-    </FilterOptionList>
-  );
-
-  /**
    * Every facet is the same shape: a heading, then its choices listed under it,
    * left aligned with the heading and with the count of what each would leave.
    *
@@ -270,17 +218,27 @@ export function VehicleBrowser({
       </div>
 
       <Facet label="Brand">
-        {multi(
-          "brand",
-          "Any brand",
-          POPULAR_BRANDS.map((b) => ({ value: b, label: b })),
-          counts.brand,
-          7,
-        )}
+        <MultiFacet
+          name="brand"
+          anyLabel="Any brand"
+          options={POPULAR_BRANDS.map((b) => ({ value: b, label: b }))}
+          value={filters.brand}
+          onChange={(v) => set("brand", v)}
+          counts={counts.brand}
+          maxRows={7}
+        />
       </Facet>
 
       <Facet label="Body type">
-        {multi("bodyType", "Any body type", BODY_TYPES, counts.bodyType, 6)}
+        <MultiFacet
+          name="bodyType"
+          anyLabel="Any body type"
+          options={BODY_TYPES}
+          value={filters.bodyType}
+          onChange={(v) => set("bodyType", v)}
+          counts={counts.bodyType}
+          maxRows={6}
+        />
       </Facet>
 
       <Facet label="Price">
@@ -328,25 +286,48 @@ export function VehicleBrowser({
       </Facet>
 
       <Facet label="Condition">
-        {multi("condition", "Any condition", CONDITIONS, counts.condition)}
+        <MultiFacet
+          name="condition"
+          anyLabel="Any condition"
+          options={CONDITIONS}
+          value={filters.condition}
+          onChange={(v) => set("condition", v)}
+          counts={counts.condition}
+        />
       </Facet>
 
       <Facet label="Fuel type">
-        {multi("fuelType", "Any fuel", FUEL_TYPES, counts.fuelType)}
+        <MultiFacet
+          name="fuelType"
+          anyLabel="Any fuel"
+          options={FUEL_TYPES}
+          value={filters.fuelType}
+          onChange={(v) => set("fuelType", v)}
+          counts={counts.fuelType}
+        />
       </Facet>
 
       <Facet label="Transmission">
-        {multi("transmission", "Any transmission", TRANSMISSIONS, counts.transmission)}
+        <MultiFacet
+          name="transmission"
+          anyLabel="Any transmission"
+          options={TRANSMISSIONS}
+          value={filters.transmission}
+          onChange={(v) => set("transmission", v)}
+          counts={counts.transmission}
+        />
       </Facet>
 
       <Facet label="Region">
-        {multi(
-          "region",
-          "Any region",
-          GHANA_REGIONS.map((r) => ({ value: r, label: r })),
-          counts.region,
-          7,
-        )}
+        <MultiFacet
+          name="region"
+          anyLabel="Any region"
+          options={GHANA_REGIONS.map((r) => ({ value: r, label: r }))}
+          value={filters.region}
+          onChange={(v) => set("region", v)}
+          counts={counts.region}
+          maxRows={7}
+        />
       </Facet>
 
       <Button variant="outline" className="w-full" onClick={reset}>

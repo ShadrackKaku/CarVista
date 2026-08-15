@@ -12,6 +12,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
+import { isSelected, toggleValue } from "@/lib/multi-select";
 import { usesFilterDock } from "@/lib/modules";
 import { cn } from "@/lib/utils";
 
@@ -230,6 +232,80 @@ export function FilterOption({
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span>
       )}
     </label>
+  );
+}
+
+/**
+ * A heading with its choices underneath, left aligned to the same edge.
+ *
+ * The alignment is the whole point: heading, control and label all start on one
+ * line down the column, so the eye runs straight down it instead of stepping
+ * around boxes of different widths. Every browser on the platform builds its
+ * panel out of these, so the marketplace does not change shape when you move
+ * between cars, parts and dealers.
+ */
+export function Facet({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A facet you may tick more than one of.
+ *
+ * Checkboxes because that is what these are: within a facet the choices are an
+ * OR, so ticking a second brand widens the search rather than emptying it. The
+ * leading "Any …" row is checked whenever the facet is empty and clears it when
+ * clicked, which keeps the reset in the same place as on the single-choice
+ * facets instead of introducing a second kind of control.
+ *
+ * `counts` is optional but worth supplying: it is what makes a list better than
+ * the dropdown it replaces rather than merely taller, because a buyer can see
+ * where the stock is without opening anything.
+ */
+export function MultiFacet({
+  name,
+  anyLabel,
+  options,
+  value,
+  onChange,
+  counts,
+  maxRows,
+}: {
+  name: string;
+  anyLabel: string;
+  options: readonly { value: string; label: string }[];
+  /** Comma-joined chosen values. */
+  value: string;
+  onChange: (next: string) => void;
+  counts?: Record<string, number>;
+  maxRows?: number;
+}) {
+  return (
+    <FilterOptionList maxRows={maxRows}>
+      <FilterOption
+        name={name}
+        label={anyLabel}
+        multiple
+        checked={value === ""}
+        onSelect={() => onChange("")}
+        count={counts?.any}
+      />
+      {options.map((o) => (
+        <FilterOption
+          key={o.value}
+          name={name}
+          label={o.label}
+          multiple
+          checked={isSelected(value, o.value)}
+          onSelect={() => onChange(toggleValue(value, o.value))}
+          count={counts?.[o.value]}
+        />
+      ))}
+    </FilterOptionList>
   );
 }
 
