@@ -79,6 +79,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         quotedDuty: true,
         quotedShipping: true,
         actualDutyGhs: true,
+        clearedById: true,
         listing: {
           select: {
             make: true,
@@ -250,7 +251,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     // purpose: the passport helpers swallow their own errors, and a car that
     // exists with a thin history is recoverable, whereas losing the vehicle
     // because one event failed to write is not.
-    const backfill = passportBackfill(request.trackingEvents);
+    const backfill = passportBackfill(request.trackingEvents, {
+      clearedById: request.clearedById,
+    });
     for (const event of backfill) {
       await addVehicleEvent({
         vehicleId: vehicle.id,
@@ -260,7 +263,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         occurredAt: event.occurredAt,
         verified: true,
         source: "import",
-        recordedById: user.id,
+        // Not the person crossing the bridge: a replayed clearance belongs to
+        // the licensed broker who recorded it, or to nobody at all.
+        recordedById: event.recordedById,
       });
     }
 

@@ -118,6 +118,16 @@ export interface BackfillEvent {
   title: string;
   notes: string | null;
   occurredAt: Date;
+  /**
+   * Who attested to this, when we actually know.
+   *
+   * Almost always null. A backfill replays somebody else's history — the
+   * importer who bought the car, the broker who cleared it — and the person
+   * pressing "add to inventory" attested to none of it. Stamping their name on
+   * a customs clearance would put the buyer's name against the one event whose
+   * whole value is that an independent licensed party recorded it.
+   */
+  recordedById: string | null;
 }
 
 /**
@@ -135,7 +145,11 @@ export interface BackfillEvent {
  * at the first of them. The rest stay on the import's own event feed, which is
  * where operational detail belongs.
  */
-export function passportBackfill(events: TrackingLike[]): BackfillEvent[] {
+export function passportBackfill(
+  events: TrackingLike[],
+  /** The broker who cleared it, if one is recorded — the only attribution we can honestly make. */
+  attribution?: { clearedById?: string | null },
+): BackfillEvent[] {
   const earliest = new Map<ImportStage, TrackingLike>();
 
   for (const event of events) {
@@ -148,13 +162,18 @@ export function passportBackfill(events: TrackingLike[]): BackfillEvent[] {
     .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
     .map((event) => {
       const mapped = STAGE_TO_PASSPORT[event.stage]!;
-      // The operator's own words are the useful part; the location grounds it.
-      const notes = [event.title, event.location].filter(Boolean).join(" · ");
+      // The fuller account when the operator wrote one — a clearance update
+      // carries the entry number and the duty in its description, and that is
+      // the part worth keeping. The title is the fallback. Location grounds it.
+      const body = event.description?.trim() || event.title;
+      const notes = [body, event.location].filter(Boolean).join(" · ");
       return {
         type: mapped.type,
         title: mapped.title,
         notes: notes || null,
         occurredAt: event.timestamp,
+        recordedById:
+          mapped.type === "CLEARED" ? (attribution?.clearedById ?? null) : null,
       };
     });
 }

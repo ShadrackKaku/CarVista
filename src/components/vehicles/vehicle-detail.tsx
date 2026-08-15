@@ -20,6 +20,7 @@ import { ContactSellerDialog } from "@/components/messages/contact-seller-dialog
 import { InspectionBookingDialog } from "@/components/bookings/inspection-booking-dialog";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { VehiclePassport } from "@/components/vehicles/vehicle-passport";
+import { VehicleProvenance } from "@/components/vehicles/vehicle-provenance";
 import { FinancingWidget } from "@/components/vehicles/financing-widget";
 import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
@@ -344,6 +345,11 @@ export async function VehicleDetail({ slug, inShell = false }: VehicleDetailProp
           </div>
         </aside>
       </div>
+
+      {/* What this car can prove about where it came from. Absent entirely for
+          a vehicle we did not import, which is what makes its presence mean
+          something. */}
+      <VehicleProvenance vehicleId={vehicle.id} />
 
       {/* Vehicle Passport — verified history timeline */}
       <VehiclePassport vehicleId={vehicle.id} sellerId={vehicle.sellerId} />

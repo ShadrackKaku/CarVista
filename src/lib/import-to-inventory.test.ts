@@ -153,6 +153,40 @@ describe("replaying the shipment onto the passport", () => {
     expect(purchase?.notes).toBe("Won at Nagoya · Nagoya");
   });
 
+  it("keeps the fuller account when the operator wrote one", () => {
+    // A clearance update carries the entry number and the duty in its
+    // description; dropping it in favour of the bare title would throw away
+    // the part that makes the passport checkable.
+    const withDetail = passportBackfill([
+      {
+        stage: "CUSTOMS_CLEARANCE" as const,
+        title: "Customs cleared",
+        description: "Entry TEMA-2026-114857. Duty paid GH₵82,000.",
+        location: "Tema",
+        timestamp: new Date("2026-07-02"),
+      },
+    ]);
+    expect(withDetail[0].notes).toMatch(/TEMA-2026-114857/);
+  });
+
+  it("does not put the buyer's name against somebody else's clearance", () => {
+    // The bug this closes: every replayed event was stamped with whoever
+    // pressed "add to inventory", so a public passport read "Customs cleared
+    // — by Kwame Mensah", the dealer. He did not clear it; a licensed broker
+    // did, and that independence is the entire value of the record.
+    const backfill = passportBackfill(events, { clearedById: "agent-user-1" });
+    const cleared = backfill.find((e) => e.type === "CLEARED");
+    expect(cleared?.recordedById).toBe("agent-user-1");
+    for (const other of backfill.filter((e) => e.type !== "CLEARED")) {
+      expect(other.recordedById, `${other.title} must not be attributed`).toBeNull();
+    }
+  });
+
+  it("attributes nothing when no broker is on file", () => {
+    // Honest silence beats a confident wrong name.
+    expect(passportBackfill(events).every((e) => e.recordedById === null)).toBe(true);
+  });
+
   it("returns them oldest first, whatever order they arrived in", () => {
     const shuffled = [...events].reverse();
     const backfill = passportBackfill(shuffled);

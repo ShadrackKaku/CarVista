@@ -15,6 +15,7 @@ import { Prisma } from "@prisma/client";
 import { formatNumber } from "@/lib/utils";
 import { isMilestonePayable } from "@/lib/escrow";
 import { holdingWhere } from "@/lib/reservations";
+import { buildProvenance, type Provenance } from "@/lib/provenance";
 import {
   getExpandedVehicles,
   SAMPLE_PARTS,
@@ -816,6 +817,54 @@ export interface PassportEvent {
 export interface VehiclePassportView {
   vin: string;
   events: PassportEvent[];
+}
+
+/**
+ * What this car can prove about its origin, assembled from the import behind
+ * it. Null for a vehicle that was never imported through the platform — which
+ * is most of them, and the panel simply does not appear.
+ */
+export async function getVehicleProvenance(vehicleId: string): Promise<Provenance | null> {
+  try {
+    const request = await prisma.importRequest.findFirst({
+      where: { vehicleId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        countryOfOrigin: true,
+        auctionSource: true,
+        clearedAt: true,
+        actualDutyGhs: true,
+        customsEntryNumber: true,
+        clearingAgent: { select: { businessName: true, licenceNumber: true } },
+        listing: { select: { auctionGrade: true, auctionSource: true, chassisNumber: true } },
+        trackingEvents: {
+          where: { stage: { in: ["PURCHASED", "ARRIVED_AT_PORT"] } },
+          orderBy: { timestamp: "asc" },
+          select: { stage: true, timestamp: true },
+        },
+      },
+    });
+    if (!request) return null;
+
+    const first = (stage: string) =>
+      request.trackingEvents.find((e) => e.stage === stage)?.timestamp ?? null;
+
+    return buildProvenance({
+      countryOfOrigin: request.countryOfOrigin,
+      auctionSource: request.listing?.auctionSource ?? request.auctionSource,
+      auctionGrade: request.listing?.auctionGrade ?? null,
+      chassisNumber: request.listing?.chassisNumber ?? null,
+      clearedAt: request.clearedAt,
+      actualDutyGhs: request.actualDutyGhs ? num(request.actualDutyGhs) : null,
+      customsEntryNumber: request.customsEntryNumber,
+      agentName: request.clearingAgent?.businessName ?? null,
+      agentLicenceNumber: request.clearingAgent?.licenceNumber ?? null,
+      purchasedAt: first("PURCHASED"),
+      arrivedAt: first("ARRIVED_AT_PORT"),
+    });
+  } catch {
+    return null;
+  }
 }
 
 /** The public trust timeline for a listed vehicle, newest first. */
