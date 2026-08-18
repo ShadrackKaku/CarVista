@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { StockCard } from "@/components/import-stock/stock-card";
+import { ListingGrid } from "@/components/ui/listing-card";
 import {
   Facet,
   FilterLayout,
@@ -121,11 +122,11 @@ export function StockBrowser({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ListingGrid className="mt-5">
             {paged.items.map((l) => (
               <StockCard key={l.id} listing={l} basePath={basePath} />
             ))}
-          </div>
+          </ListingGrid>
           <Pagination
             page={paged.page}
             pageCount={paged.pageCount}

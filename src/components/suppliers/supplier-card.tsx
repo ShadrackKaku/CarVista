@@ -42,7 +42,7 @@ export function SupplierCard({ supplier, basePath = "/suppliers" }: SupplierCard
 
   return (
     <ListingCard>
-      <ListingCardMedia src={supplier.cover} alt="" sizes="(max-width: 768px) 100vw, 25vw" />
+      <ListingCardMedia src={supplier.cover} alt="" />
 
       <ListingCardBody>
         <ListingCardTags tags={tags} />

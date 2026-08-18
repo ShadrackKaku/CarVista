@@ -24,6 +24,7 @@ import { VehicleProvenance } from "@/components/vehicles/vehicle-provenance";
 import { FinancingWidget } from "@/components/vehicles/financing-widget";
 import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
+import { ListingGrid } from "@/components/ui/listing-card";
 import { ViewBeacon } from "@/components/vehicles/view-beacon";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -362,11 +363,11 @@ export async function VehicleDetail({ slug, inShell = false }: VehicleDetailProp
       {similar.length > 0 && (
         <section className="mt-14">
           <h2 className="mb-6 text-2xl font-bold">Similar vehicles</h2>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ListingGrid>
             {similar.map((v) => (
               <VehicleCard key={v.id} vehicle={v} basePath={vehiclesBase} />
             ))}
-          </div>
+          </ListingGrid>
         </section>
       )}
     </div>

@@ -42,12 +42,7 @@ export function PartCard({ part, basePath = "/parts" }: PartCardProps) {
     <ListingCard>
       {/* Square: a part is photographed on a white background and a landscape
           crop would cut it. */}
-      <ListingCardMedia
-        src={part.image}
-        alt={part.name}
-        aspect="aspect-square"
-        sizes="(max-width: 768px) 50vw, 25vw"
-      />
+      <ListingCardMedia src={part.image} alt={part.name} aspect="aspect-square" />
 
       <ListingCardBody>
         <ListingCardTags tags={tags} />

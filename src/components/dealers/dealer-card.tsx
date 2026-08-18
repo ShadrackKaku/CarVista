@@ -34,7 +34,7 @@ export function DealerCard({ dealer, basePath = "/dealers" }: DealerCardProps) {
           gradient whose only job was making a "Verified" pill legible; the pill
           is a tag now, so the gradient had nothing left to do but dim the
           picture. */}
-      <ListingCardMedia src={dealer.cover} alt={dealer.name} sizes="(max-width: 768px) 100vw, 25vw" />
+      <ListingCardMedia src={dealer.cover} alt={dealer.name} />
 
       <ListingCardBody>
         <ListingCardTags tags={tags} />

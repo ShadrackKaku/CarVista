@@ -1,19 +1,34 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { ListingGrid } from "@/components/ui/listing-card";
 
-/** A responsive grid of placeholder cards used by list-page loading states. */
+/**
+ * The placeholder a browse page shows while its cards are still coming.
+ *
+ * It lays out through `ListingGrid` rather than describing its own columns,
+ * because a skeleton that disagrees with the grid it stands in for is worse than
+ * no skeleton: the page settles into one shape and then jumps to another. Every
+ * caller here used to pass its own column string, and three of the four had
+ * drifted from what their page actually rendered — the vehicles placeholder
+ * promised three across, the parts one five.
+ *
+ * The block is shaped like the real card too — same radius, same flush
+ * photograph, same padding — so what arrives is the thing that was standing
+ * there.
+ */
 export function CardGridSkeleton({
   count = 8,
-  aspect = "aspect-[4/3]",
-  columns = "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+  aspect = "aspect-[16/11]",
+  className,
 }: {
   count?: number;
+  /** Matches whatever `ListingCardMedia` this page's card asks for. */
   aspect?: string;
-  columns?: string;
+  className?: string;
 }) {
   return (
-    <div className={`grid grid-cols-1 gap-5 ${columns}`}>
+    <ListingGrid className={className}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="overflow-hidden rounded-2xl border bg-card shadow-soft">
+        <div key={i} className="overflow-hidden rounded-xl border bg-card shadow-soft">
           <Skeleton className={`w-full rounded-none ${aspect}`} />
           <div className="space-y-3 p-4">
             <Skeleton className="h-4 w-3/4" />
@@ -26,6 +41,6 @@ export function CardGridSkeleton({
           </div>
         </div>
       ))}
-    </div>
+    </ListingGrid>
   );
 }

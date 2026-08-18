@@ -25,6 +25,39 @@ import { cn } from "@/lib/utils";
  * `motion-safe`, so anyone who has asked their system for reduced motion gets
  * the colour and the shadow and none of the travel.
  */
+/**
+ * The grid a page lays its cards out in.
+ *
+ * Six browse pages had each written out `grid gap-5 sm:grid-cols-2
+ * lg:grid-cols-3` by hand, so the column count was six decisions rather than
+ * one — and the two that had already gone to four across (a dealer's inventory,
+ * the saved list) had drifted there alone.
+ *
+ * Four across from `xl`. Three cards on a wide screen leave a listing wider than
+ * its own photograph is interesting, and the row you can take in at a glance is
+ * the unit of browsing: four of them is one more comparison per glance without
+ * the card losing anything, because nothing in it was sized to the column in the
+ * first place — the title truncates, the specs are already a two-up grid, and
+ * the price is a fixed size by design.
+ *
+ * The gap comes down with it. Twenty pixels between three cards reads as
+ * breathing room; between four it reads as a hole, because the cards either side
+ * of it are narrower than the ones it was measured against.
+ */
+export function ListingGrid({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", className)}>
+      {children}
+    </div>
+  );
+}
+
 export function ListingCard({
   children,
   className,
@@ -60,7 +93,10 @@ export function ListingCard({
 export function ListingCardMedia({
   src,
   alt,
-  sizes = "(max-width: 768px) 100vw, 33vw",
+  // Tracks `ListingGrid`'s columns. Not cosmetic: `sizes` is the only thing
+  // telling the browser how big the file needs to be, so a card that says 33vw
+  // in a four-column row downloads a third more picture than it can draw.
+  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw",
   aspect = "aspect-[16/11]",
   muted = false,
   fallback,
@@ -138,11 +174,18 @@ export interface ListingTag {
  * two of them is most of what made the badges shout — the tint alone separates
  * "Ghana Used" from "Duty Paid". Any glyph keeps the tone's colour, so the
  * shield still reads as a mark of trust rather than decoration.
+ *
+ * Small enough that two of them fit on one line in the narrowest column the
+ * grid ever makes — a card beside the filter dock at 1280, about 196px. At the
+ * old size "Refurbished" and "Reduced" wrapped to a second row there, and
+ * because the row's other cards did not, that card's title, price and specs all
+ * sat a line lower than its neighbours'. The grid stretches cards to equal
+ * heights, so nothing looked broken; the row just stopped being readable across.
  */
 export function ListingCardTags({ tags }: { tags: readonly ListingTag[] }) {
   if (!tags.length) return null;
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1">
       {tags.map((tag) => {
         const tone = tag.tone ?? "muted";
         const Icon = tag.icon;
@@ -150,7 +193,8 @@ export function ListingCardTags({ tags }: { tags: readonly ListingTag[] }) {
           <span
             key={tag.label}
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-foreground",
+              "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5",
+              "text-[11px] font-semibold text-foreground",
               TAG_TONES[tone],
             )}
           >
@@ -183,10 +227,18 @@ export function ListingCardTitle({
 }) {
   return (
     <div className="mt-2.5 flex items-start justify-between gap-2">
-      <h3 className="min-w-0 flex-1 font-semibold leading-tight">
+      {/* Two lines, always — clamped so it can never run to three, and floored
+          so it never collapses to one. On a four-across row a single truncated
+          line cuts nearly every car mid-word ("2021 Toyota Ca…"), which is the
+          trim level, the very thing that separates one listing from the next.
+          Reserving the second line costs twenty pixels on the cards with short
+          names and buys the thing that makes a row readable: the price and the
+          specs sit on the same line across all four, so the eye compares them
+          without reading them. */}
+      <h3 className="min-h-[2.5rem] min-w-0 flex-1 font-semibold leading-tight">
         <Link
           href={href}
-          className="block truncate transition-colors after:absolute after:inset-0 group-hover:text-brand-600"
+          className="line-clamp-2 transition-colors after:absolute after:inset-0 group-hover:text-brand-600"
         >
           {children}
         </Link>
@@ -238,7 +290,7 @@ export interface ListingSpec {
 export function ListingCardSpecs({ items }: { items: readonly ListingSpec[] }) {
   if (!items.length) return null;
   return (
-    <div className="mt-3 grid grid-cols-2 gap-y-2 text-xs text-muted-foreground">
+    <div className="mt-3 grid grid-cols-2 gap-x-2 gap-y-2 text-xs text-muted-foreground">
       {items.map(({ icon: Icon, label }, i) => (
         <span key={i} className="flex min-w-0 items-center gap-1.5">
           <Icon className="h-3.5 w-3.5 shrink-0" />

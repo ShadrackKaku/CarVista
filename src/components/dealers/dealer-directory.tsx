@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search, ShieldCheck, X } from "lucide-react";
 import { DealerCard } from "@/components/dealers/dealer-card";
+import { ListingGrid } from "@/components/ui/listing-card";
 import {
   Facet,
   FilterLayout,
@@ -141,11 +142,11 @@ export function DealerDirectory({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ListingGrid className="mt-5">
             {paged.items.map((dealer) => (
               <DealerCard key={dealer.id} dealer={dealer} basePath={basePath} />
             ))}
-          </div>
+          </ListingGrid>
           <Pagination
             page={paged.page}
             pageCount={paged.pageCount}

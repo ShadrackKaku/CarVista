@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { ServiceCard } from "@/components/services/service-card";
+import { ListingGrid } from "@/components/ui/listing-card";
 import { Facet, FilterLayout, MultiFacet } from "@/components/shell/filter-dock";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
@@ -64,11 +65,11 @@ export function ServicesBrowser({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ListingGrid className="mt-5">
             {paged.items.map((s) => (
               <ServiceCard key={s.id} service={s} basePath={basePath} />
             ))}
-          </div>
+          </ListingGrid>
           <Pagination
             page={paged.page}
             pageCount={paged.pageCount}

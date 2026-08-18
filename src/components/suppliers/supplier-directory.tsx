@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Facet, FilterLayout, MultiFacet } from "@/components/shell/filter-dock";
 import { Pagination } from "@/components/ui/pagination";
 import { SupplierCard } from "@/components/suppliers/supplier-card";
+import { ListingGrid } from "@/components/ui/listing-card";
 import { SUPPLIER_CATEGORIES, SUPPLIER_CATEGORY_LABELS } from "@/lib/suppliers";
 import { matchesAnyOf, selectedValues } from "@/lib/multi-select";
 import { usePagedList } from "@/lib/use-paged-list";
@@ -130,11 +131,11 @@ export function SupplierDirectory({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ListingGrid className="mt-4">
             {paged.items.map((s) => (
               <SupplierCard key={s.id} supplier={s} basePath={basePath} />
             ))}
-          </div>
+          </ListingGrid>
           <Pagination
             page={paged.page}
             pageCount={paged.pageCount}

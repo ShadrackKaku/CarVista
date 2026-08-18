@@ -13,7 +13,7 @@ export default function Loading() {
           <Skeleton key={i} className="h-10 w-32" />
         ))}
       </div>
-      <CardGridSkeleton count={9} columns="sm:grid-cols-2 lg:grid-cols-3" />
+      <CardGridSkeleton count={8} />
     </div>
   );
 }
