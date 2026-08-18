@@ -36,6 +36,13 @@ const gridClasses = (() => {
   return match?.[1] ?? "";
 })();
 
+/** The narrowest track the grid will make, and the space between two, in px. */
+const track = (() => {
+  const min = CARD.match(/const MIN_CARD = "([\d.]+)rem"/);
+  const gap = CARD.match(/const GRID_GAP = "([\d.]+)rem"/);
+  return { min: Number(min?.[1]) * 16, gap: Number(gap?.[1]) * 16 };
+})();
+
 /** The `sizes` every card gets unless it says otherwise. */
 const defaultSizes = (() => {
   const match = CARD.match(/sizes = "([^"]+)"/);
@@ -62,8 +69,10 @@ const DELIBERATE_EXCEPTIONS = ["app/(main)/page.tsx", "app/dashboard/page.tsx"];
 
 describe("the listing grid", () => {
   it("is the one place a browse page's columns are decided", () => {
-    expect(gridClasses, "ListingGrid's class string was not found — the parse below is vacuous")
-      .toContain("grid-cols");
+    expect(
+      gridClasses,
+      "ListingGrid's class string was not found — the parse below is vacuous",
+    ).toContain("grid");
 
     const offenders: string[] = [];
     for (const file of walk(SRC)) {
@@ -90,22 +99,42 @@ describe("the listing grid", () => {
     ).toEqual([]);
   });
 
+  it("counts its own columns instead of being told at breakpoints", () => {
+    // A viewport breakpoint measures the window; what decides how many cards
+    // fit is the width of the results column, and the same grid does not have
+    // that twice — the public page gives up 272px to a sidebar, the shell 344px
+    // to a rail and a dock. Any `grid-cols-N` here is that mistake returning.
+    expect(gridClasses).not.toMatch(/grid-cols-\d/);
+
+    // The template itself, rather than any mention of it in prose above.
+    const template = CARD.match(/gridTemplateColumns: `([^`]+)`/)?.[1] ?? "";
+    expect(template, "no gridTemplateColumns found on ListingGrid").toContain("repeat(");
+    expect(template).toContain("auto-fill");
+    // `auto-fit` collapses empty tracks, so three results would draw enormous
+    // and four would draw normal. Results must not resize with their count.
+    expect(template).not.toContain("auto-fit");
+    expect(track.min, "MIN_CARD did not parse").toBeGreaterThan(100);
+  });
+
   it("asks for as much picture as the widest card can draw, and no more", () => {
-    // Every column count the grid declares, smallest first: 1, 2, 3, 4.
-    const columns = [...gridClasses.matchAll(/grid-cols-(\d+)/g)]
-      .map((m) => Number(m[1]))
-      .sort((a, b) => a - b);
-    expect(columns.length, "no column steps parsed out of ListingGrid").toBeGreaterThan(1);
+    // With `auto-fill` a track is at its widest just before one more column
+    // fits: n tracks sharing what n+1 would have needed.
+    const widestAt = (n: number) => ((n + 1) * (track.min + track.gap)) / n - track.gap;
 
-    // Every viewport fraction `sizes` declares, largest first: 100, 50, 33, 25.
-    const fractions = [...defaultSizes.matchAll(/(\d+)vw/g)]
-      .map((m) => Number(m[1]))
-      .sort((a, b) => b - a);
+    // What `sizes` promises above the last viewport condition it names.
+    const cap = Number(defaultSizes.match(/(\d+)px\s*$/)?.[1]);
+    expect(cap, `sizes="${defaultSizes}" must end in a fixed px bound`).toBeGreaterThan(0);
 
+    // Above 1024px every surface is at three columns or more — the public
+    // page's results column is 688px there, which already takes three.
     expect(
-      fractions,
-      `sizes="${defaultSizes}" does not match a ${columns.join("/")}-column grid`,
-    ).toEqual(columns.map((n) => Math.round(100 / n)));
+      cap,
+      `sizes caps cards at ${cap}px but a three-column row can make them ` +
+        `${Math.ceil(widestAt(3))}px, so the picture would be asked for too small`,
+    ).toBeGreaterThanOrEqual(Math.ceil(widestAt(3)));
+
+    // And not wastefully above it — this is the number every phone pays for.
+    expect(cap).toBeLessThan(widestAt(3) + track.min);
   });
 
   it("keeps the skeleton in the same shape as the cards it stands in for", () => {

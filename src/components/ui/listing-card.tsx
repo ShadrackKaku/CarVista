@@ -26,6 +26,20 @@ import { cn } from "@/lib/utils";
  * the colour and the shadow and none of the travel.
  */
 /**
+ * The narrowest a listing card may be, and the space between two of them.
+ *
+ * `MIN_CARD` is the only measurement left in the layout, and it is a measured
+ * limit rather than a preference: it is the narrowest card in which every
+ * bounded line still reads in full. Below it a six-figure mileage becomes
+ * "105,000 …" and loses its unit, and a two-pill tag row wraps to a second
+ * line — which pushes that card's title, price and specs a line lower than its
+ * neighbours', invisible as a height difference because the grid stretches
+ * cards to match, and fatal to reading a row across.
+ */
+const MIN_CARD = "12.75rem"; // 204px
+const GRID_GAP = "0.75rem"; // 12px, Tailwind's gap-3
+
+/**
  * The grid a page lays its cards out in.
  *
  * Six browse pages had each written out `grid gap-5 sm:grid-cols-2
@@ -33,18 +47,32 @@ import { cn } from "@/lib/utils";
  * one — and the two that had already gone to four across (a dealer's inventory,
  * the saved list) had drifted there alone.
  *
- * Four across from `xl`. Three cards on a wide screen leave a listing wider than
- * its own photograph is interesting, and the row you can take in at a glance is
- * the unit of browsing: four of them is one more comparison per glance without
- * the card losing anything, because nothing in it was sized to the column in the
- * first place — the title truncates, the specs are already a two-up grid, and
- * the price is a fixed size by design.
+ * It counts its own columns now, rather than being told at viewport
+ * breakpoints. Breakpoints were the wrong instrument: they measure the window,
+ * and what decides how many cards fit is the width of *this column* — which the
+ * same grid does not have twice. The public browse page gives up 272px to a
+ * filter sidebar; the same page inside the app shell gives up 344px to a rail
+ * and a docked filter panel. One `xl:grid-cols-4` served both, so it was either
+ * too eager for the shell or too shy for the public page, and it was too shy:
+ * a 1200px window went to three across while its results column had room for
+ * four.
  *
- * The gap comes down with it, from twenty pixels to twelve. Twenty between three
- * cards reads as breathing room; between four it reads as a hole, because the
- * cards either side of it are narrower than the ones it was measured against.
- * Each card carries its own border and shadow, so the space between them is
- * doing less work than it would between borderless tiles.
+ * `auto-fill` takes as many `MIN_CARD`-wide tracks as fit and shares the
+ * remainder between them, so the count follows the room actually available, on
+ * both surfaces, at every width, with no step to tune. A phone gets one card, a
+ * small tablet two, and a wide screen four — and if the sidebar is ever
+ * widened or the shell grows another rail, the grid answers on its own.
+ *
+ * `auto-fill` rather than `auto-fit`: with `auto-fit` the empty tracks collapse,
+ * so a search returning three results would draw them enormous while a search
+ * returning four drew them normal. A row of results should not change size with
+ * how many results there are.
+ *
+ * The gap is twelve pixels. Twenty between three cards reads as breathing room;
+ * between four it reads as a hole, because the cards either side of it are
+ * narrower than the ones it was measured against. Each card carries its own
+ * border and shadow, so the space between them is doing less work than it would
+ * between borderless tiles.
  */
 export function ListingGrid({
   children,
@@ -54,7 +82,14 @@ export function ListingGrid({
   className?: string;
 }) {
   return (
-    <div className={cn("grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", className)}>
+    <div
+      className={cn("grid gap-3", className)}
+      // `min(100%, …)` so a container narrower than one card still yields a
+      // single track instead of one that overflows it.
+      style={{
+        gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${MIN_CARD}), 1fr))`,
+      }}
+    >
       {children}
     </div>
   );
@@ -95,10 +130,17 @@ export function ListingCard({
 export function ListingCardMedia({
   src,
   alt,
-  // Tracks `ListingGrid`'s columns. Not cosmetic: `sizes` is the only thing
-  // telling the browser how big the file needs to be, so a card that says 33vw
-  // in a four-column row downloads a third more picture than it can draw.
-  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw",
+  // Derived from `ListingGrid`, not guessed. `sizes` is the only thing telling
+  // the browser how big the file needs to be, so it has to bound the widest a
+  // card can ever get — under-ask and the picture is soft, over-ask and every
+  // phone on a Ghanaian data bundle pays for pixels it cannot draw.
+  //
+  // With `auto-fill`, a track is at its widest just before another column
+  // fits: ((n+1) × (MIN_CARD + gap)) / n − gap. That is 318px at two columns
+  // and 281px at three, and it only shrinks from there. Above 1024px the grid
+  // is never below three columns, so 288px covers it; below that the column
+  // count is low enough that the viewport fractions are the tighter bound.
+  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 288px",
   aspect = "aspect-[16/11]",
   muted = false,
   fallback,
@@ -292,10 +334,19 @@ export interface ListingSpec {
 export function ListingCardSpecs({ items }: { items: readonly ListingSpec[] }) {
   if (!items.length) return null;
   return (
-    <div className="mt-3 grid grid-cols-2 gap-x-2 gap-y-2 text-xs text-muted-foreground">
+    // The tightest line on the card, and the one that decides how narrow a
+    // column may be: two cells side by side, each an icon plus a bounded value.
+    // A dealer's name may be any length and truncating it is fair, but "105,000
+    // km" is a fixed shape and cutting it to "105,000 …" loses the unit — so
+    // the icon sits close to its label and the two cells sit close together,
+    // which buys about ten pixels and takes the floor under a listing card down
+    // with it.
+    <div className="mt-3 grid grid-cols-2 gap-x-1.5 gap-y-2 text-xs text-muted-foreground">
       {items.map(({ icon: Icon, label }, i) => (
-        <span key={i} className="flex min-w-0 items-center gap-1.5">
-          <Icon className="h-3.5 w-3.5 shrink-0" />
+        <span key={i} className="flex min-w-0 items-center gap-1">
+          {/* Matched to the 12px text beside it rather than set a size above
+              it, which is what an icon in a caption should be anyway. */}
+          <Icon className="h-3 w-3 shrink-0" />
           <span className="truncate">{label}</span>
         </span>
       ))}
