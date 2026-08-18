@@ -1,14 +1,13 @@
-import Image from "next/image";
 import { Car, MapPin, ShieldCheck, Star } from "lucide-react";
 import {
   ListingCard,
-  ListingCardAction,
   ListingCardBody,
   ListingCardFooter,
   ListingCardMedia,
   ListingCardSpecs,
   ListingCardTags,
   ListingCardTitle,
+  type ListingTag,
 } from "@/components/ui/listing-card";
 import { formatNumber } from "@/lib/utils";
 import type { SampleDealer } from "@/lib/sample-data";
@@ -25,52 +24,40 @@ export interface DealerCardProps {
 export function DealerCard({ dealer, basePath = "/dealers" }: DealerCardProps) {
   const href = `${basePath}/${dealer.slug}`;
 
+  // One tag: a second wraps and leaves the grid ragged. Verification rides in
+  // the footer beside the rating.
+  const tags: ListingTag[] = [{ label: dealer.region, tone: "brand" }];
+
   return (
     <ListingCard>
       {/* The cover photograph, with nothing on it. It used to carry a dark
           gradient whose only job was making a "Verified" pill legible; the pill
-          has moved below, so the gradient had nothing left to do but dim the
+          is a tag now, so the gradient had nothing left to do but dim the
           picture. */}
-      <ListingCardMedia
-        src={dealer.cover}
-        alt={dealer.name}
-        aspect="aspect-[16/9]"
-        sizes="(max-width: 640px) 100vw, 25vw"
-      />
+      <ListingCardMedia src={dealer.cover} alt={dealer.name} sizes="(max-width: 768px) 100vw, 25vw" />
 
       <ListingCardBody>
-        <ListingCardTags
-          tags={[
-            { label: dealer.region, tone: "brand" },
-            ...(dealer.verified ? [{ label: "Verified", tone: "success" as const }] : []),
-          ]}
-        />
+        <ListingCardTags tags={tags} />
 
-        <ListingCardTitle href={href} reserveTwoLines={false}>
-          <span className="inline-flex items-center gap-2">
-            {/* The mark beside the name rather than straddling the edge of the
-                photograph: a business is read by both together. */}
-            <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-md border bg-background">
-              <Image src={dealer.logo} alt="" fill sizes="28px" className="object-cover" />
-            </span>
-            {dealer.name}
-          </span>
-        </ListingCardTitle>
+        <ListingCardTitle href={href}>{dealer.name}</ListingCardTitle>
 
         <ListingCardSpecs
           items={[
-            { icon: MapPin, label: `${dealer.city}, ${dealer.region}` },
+            { icon: MapPin, label: `${dealer.city}` },
             { icon: Car, label: `${formatNumber(dealer.vehicleCount)} in stock` },
-            { icon: Star, label: `${dealer.rating.toFixed(1)} (${dealer.reviewCount})` },
           ]}
         />
 
-        <ListingCardFooter className="mt-5">
-          <p className="inline-flex items-center gap-1.5 text-[14px] font-medium text-brand-700 dark:text-brand-400">
-            <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
-            {dealer.verified ? "Verified Dealer" : "Dealer"}
-          </p>
-          <ListingCardAction />
+        <ListingCardFooter>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Star className="h-3.5 w-3.5 shrink-0 text-warning" />
+            {dealer.rating.toFixed(1)} ({dealer.reviewCount})
+          </span>
+          {dealer.verified && (
+            <span className="flex shrink-0 items-center gap-1 font-medium text-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-success" /> Verified
+            </span>
+          )}
         </ListingCardFooter>
       </ListingCardBody>
     </ListingCard>

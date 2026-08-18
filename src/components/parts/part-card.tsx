@@ -6,7 +6,6 @@ import {
   ListingCardFooter,
   ListingCardMedia,
   ListingCardPrice,
-  ListingCardSeller,
   ListingCardSpecs,
   ListingCardTags,
   ListingCardTitle,
@@ -47,7 +46,7 @@ export function PartCard({ part, basePath = "/parts" }: PartCardProps) {
         src={part.image}
         alt={part.name}
         aspect="aspect-square"
-        sizes="(max-width: 640px) 50vw, 25vw"
+        sizes="(max-width: 768px) 50vw, 25vw"
       />
 
       <ListingCardBody>
@@ -55,10 +54,10 @@ export function PartCard({ part, basePath = "/parts" }: PartCardProps) {
 
         <ListingCardTitle href={href}>{part.name}</ListingCardTitle>
 
-        <ListingCardPrice className="flex items-baseline gap-2">
+        <ListingCardPrice className="flex items-baseline gap-1.5">
           {formatCurrency(hasDiscount ? part.discountPrice! : part.price)}
           {hasDiscount && (
-            <span className="text-[14px] font-medium text-muted-foreground line-through">
+            <span className="text-xs font-medium text-muted-foreground line-through">
               {formatCurrency(part.price)}
             </span>
           )}
@@ -67,24 +66,19 @@ export function PartCard({ part, basePath = "/parts" }: PartCardProps) {
         <ListingCardSpecs
           items={[
             { icon: Tag, label: part.brand },
-            {
-              icon: Star,
-              label: `${part.rating.toFixed(1)} (${part.reviewCount})`,
-            },
+            { icon: Star, label: `${part.rating.toFixed(1)} (${part.reviewCount})` },
           ]}
         />
 
-        <ListingCardFooter className="mt-5">
-          <ListingCardSeller
-            name={part.store.name}
-            verified={part.store.verified}
-            verifiedLabel="Verified Store"
-            icon={ShieldCheck}
-          />
+        <ListingCardFooter>
+          <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+            {part.store.verified && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-success" />}
+            <span className="truncate">{part.store.name}</span>
+          </span>
         </ListingCardFooter>
 
         {/* Above the card-wide link, so adding to the cart never navigates. */}
-        <div className="relative z-10 mt-4">
+        <div className="relative z-10 mt-3">
           <AddToCartButton part={part} className="w-full" />
         </div>
       </ListingCardBody>

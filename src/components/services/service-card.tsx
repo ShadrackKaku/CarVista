@@ -1,13 +1,13 @@
 import { MapPin, ShieldCheck, Star, Wrench } from "lucide-react";
 import {
   ListingCard,
-  ListingCardAction,
   ListingCardBody,
   ListingCardFooter,
   ListingCardMedia,
   ListingCardSpecs,
   ListingCardTags,
   ListingCardTitle,
+  type ListingTag,
 } from "@/components/ui/listing-card";
 import type { SampleService } from "@/lib/sample-data";
 
@@ -23,25 +23,21 @@ export interface ServiceCardProps {
 export function ServiceCard({ service, basePath = "/services" }: ServiceCardProps) {
   const href = `${basePath}/${service.slug}`;
 
+  // One tag, so the row never wraps. Verification rides in the footer.
+  const tags: ListingTag[] = [{ label: service.typeLabel, tone: "brand" }];
+
   return (
     <ListingCard>
-      <ListingCardMedia src={service.image} alt={service.name} aspect="aspect-[16/10]" />
+      <ListingCardMedia src={service.image} alt={service.name} />
 
       <ListingCardBody>
-        <ListingCardTags
-          tags={[
-            { label: service.typeLabel, tone: "brand" },
-            ...(service.verified ? [{ label: "Verified", tone: "success" as const }] : []),
-          ]}
-        />
+        <ListingCardTags tags={tags} />
 
-        <ListingCardTitle href={href} reserveTwoLines={false}>
-          {service.name}
-        </ListingCardTitle>
+        <ListingCardTitle href={href}>{service.name}</ListingCardTitle>
 
         <ListingCardSpecs
           items={[
-            { icon: MapPin, label: `${service.city}, ${service.region}` },
+            { icon: MapPin, label: service.city },
             { icon: Star, label: `${service.rating.toFixed(1)} (${service.reviewCount})` },
             ...(service.services.length
               ? [{ icon: Wrench, label: service.services.slice(0, 2).join(", ") }]
@@ -49,12 +45,12 @@ export function ServiceCard({ service, basePath = "/services" }: ServiceCardProp
           ]}
         />
 
-        <ListingCardFooter className="mt-5">
-          <p className="inline-flex items-center gap-1.5 text-[14px] font-medium text-brand-700 dark:text-brand-400">
-            <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
-            {service.priceRange}
-          </p>
-          <ListingCardAction />
+        <ListingCardFooter>
+          <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+            {service.verified && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-success" />}
+            <span className="truncate">{service.region}</span>
+          </span>
+          <span className="shrink-0 font-medium text-foreground">{service.priceRange}</span>
         </ListingCardFooter>
       </ListingCardBody>
     </ListingCard>

@@ -1,7 +1,6 @@
-import { Gauge, MapPin, Ship, ShieldCheck } from "lucide-react";
+import { Gauge, MapPin, ShieldCheck, Ship } from "lucide-react";
 import {
   ListingCard,
-  ListingCardAction,
   ListingCardBody,
   ListingCardFooter,
   ListingCardMedia,
@@ -40,10 +39,6 @@ export function StockCard({
     ...(listing.auctionGrade
       ? [{ label: `Grade ${listing.auctionGrade}`, tone: "muted" as const }]
       : []),
-    {
-      label: soldOut ? "All units reserved" : `${available} of ${listing.quantity} free`,
-      tone: soldOut ? ("muted" as const) : ("success" as const),
-    },
   ];
 
   const specs: ListingSpec[] = [
@@ -57,11 +52,10 @@ export function StockCard({
     <ListingCard>
       {/* Stock with nothing left is desaturated rather than covered by a panel
           reading "All units reserved". The picture says it, and the words are
-          in the tags where the rest of the status lives. */}
+          in the footer where the rest of the availability lives. */}
       <ListingCardMedia
         src={listing.images[0]}
         alt={listing.title}
-        aspect="aspect-[16/10]"
         muted={soldOut}
         fallback={<Ship className="h-8 w-8" />}
       />
@@ -73,13 +67,13 @@ export function StockCard({
 
         <ListingCardPrice className="flex items-baseline gap-1.5">
           {formatSourceAmount(listing.fobAmount, listing.fobCurrency)}
-          <span className="text-[14px] font-semibold text-muted-foreground">FOB</span>
+          <span className="text-xs font-semibold text-muted-foreground">FOB</span>
         </ListingCardPrice>
 
         {/* Say the cedi figure is missing rather than dropping the line. Three
             cards carrying one and a fourth carrying nothing reads as "cheaper",
             not as "we don't know". */}
-        <p className="mt-1 text-[13px] text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           {fobGhs != null
             ? `≈ ${formatCurrency(fobGhs)} before shipping and duty`
             : "Cedi price on request"}
@@ -87,12 +81,20 @@ export function StockCard({
 
         <ListingCardSpecs items={specs} />
 
-        <ListingCardFooter className="mt-5">
-          <p className="inline-flex min-w-0 items-center gap-1.5 text-[14px] font-medium text-brand-700 dark:text-brand-400">
-            {listing.importer.verified && <ShieldCheck className="h-[18px] w-[18px] shrink-0" />}
+        <ListingCardFooter>
+          <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+            {listing.importer.verified && (
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-success" />
+            )}
             <span className="truncate">{listing.importer.name}</span>
-          </p>
-          <ListingCardAction />
+          </span>
+          <span
+            className={
+              soldOut ? "shrink-0 text-muted-foreground" : "shrink-0 font-medium text-foreground"
+            }
+          >
+            {soldOut ? "Reserved" : `${available} of ${listing.quantity} free`}
+          </span>
         </ListingCardFooter>
       </ListingCardBody>
     </ListingCard>

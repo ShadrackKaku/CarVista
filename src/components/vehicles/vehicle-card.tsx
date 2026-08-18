@@ -2,12 +2,10 @@ import { Fuel, Gauge, MapPin, Settings2, ShieldCheck } from "lucide-react";
 import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import {
   ListingCard,
-  ListingCardAction,
   ListingCardBody,
   ListingCardFooter,
   ListingCardMedia,
   ListingCardPrice,
-  ListingCardSeller,
   ListingCardSpecs,
   ListingCardTags,
   ListingCardTitle,
@@ -37,10 +35,13 @@ export interface VehicleCardProps {
 export function VehicleCard({ vehicle, basePath = "/vehicles" }: VehicleCardProps) {
   const href = `${basePath}/${vehicle.slug}`;
 
+  // What used to be stamped on the photograph. Two at most, deliberately: a
+  // third wraps to a second row, which makes that one card taller than its
+  // neighbours and leaves the grid ragged — the bulk coming back in by the
+  // side door. Verification is about the seller rather than the car, so it
+  // rides beside the dealer's name in the footer where it belongs.
   const tags: ListingTag[] = [
     { label: CONDITION_LABELS[vehicle.condition] ?? vehicle.condition, tone: "brand" },
-    // Duty paid is the fact a Ghanaian buyer checks first: it is the difference
-    // between a price and a price plus a surprise at Tema.
     ...(vehicle.importStatus === "CLEARED"
       ? [{ label: "Duty Paid", tone: "success" as const }]
       : []),
@@ -62,20 +63,20 @@ export function VehicleCard({ vehicle, basePath = "/vehicles" }: VehicleCardProp
         <ListingCardSpecs
           items={[
             { icon: Gauge, label: `${formatNumber(vehicle.mileage)} km` },
-            { icon: Settings2, label: enumLabel(vehicle.transmission) },
             { icon: Fuel, label: enumLabel(vehicle.fuelType) },
+            { icon: Settings2, label: enumLabel(vehicle.transmission) },
             { icon: MapPin, label: vehicle.city },
           ]}
         />
 
-        <ListingCardFooter className="mt-5">
-          <ListingCardSeller
-            name={vehicle.dealer.name}
-            verified={vehicle.dealer.verified}
-            verifiedLabel="Verified Dealer"
-            icon={ShieldCheck}
-          />
-          <ListingCardAction />
+        <ListingCardFooter>
+          <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+            {vehicle.dealer.verified && (
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-success" aria-label="Verified dealer" />
+            )}
+            <span className="truncate">{vehicle.dealer.name}</span>
+          </span>
+          <span className="shrink-0 font-medium text-foreground">{vehicle.year}</span>
         </ListingCardFooter>
       </ListingCardBody>
     </ListingCard>
