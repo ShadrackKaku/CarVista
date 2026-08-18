@@ -40,9 +40,11 @@ import { cn } from "@/lib/utils";
  * first place — the title truncates, the specs are already a two-up grid, and
  * the price is a fixed size by design.
  *
- * The gap comes down with it. Twenty pixels between three cards reads as
- * breathing room; between four it reads as a hole, because the cards either side
- * of it are narrower than the ones it was measured against.
+ * The gap comes down with it, from twenty pixels to twelve. Twenty between three
+ * cards reads as breathing room; between four it reads as a hole, because the
+ * cards either side of it are narrower than the ones it was measured against.
+ * Each card carries its own border and shadow, so the space between them is
+ * doing less work than it would between borderless tiles.
  */
 export function ListingGrid({
   children,
@@ -52,7 +54,7 @@ export function ListingGrid({
   className?: string;
 }) {
   return (
-    <div className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", className)}>
+    <div className={cn("grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", className)}>
       {children}
     </div>
   );

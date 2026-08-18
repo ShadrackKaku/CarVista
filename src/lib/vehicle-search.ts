@@ -238,13 +238,21 @@ export interface RangeBand {
 }
 
 /** Pitched at the Ghanaian market: a tidy Corolla up to an imported Land Cruiser. */
+/**
+ * The currency is not repeated on every row: the facet's heading carries it
+ * once, as "Price (GH₵)". Six rows each opening with the same three characters
+ * is noise the eye has to step over on every line, and it cost about fifty
+ * pixels of a column that the cards want back — enough that the widest band no
+ * longer fits a narrow sidebar without being quietly truncated to
+ * "GH₵200,000 – 30…". The figures themselves stay exact, because this is money.
+ */
 export const PRICE_BANDS: readonly RangeBand[] = [
-  { id: "u100", label: "Under GH₵100,000", max: 99_999 },
-  { id: "100-200", label: "GH₵100,000 – 200,000", min: 100_000, max: 200_000 },
-  { id: "200-300", label: "GH₵200,000 – 300,000", min: 200_001, max: 300_000 },
-  { id: "300-500", label: "GH₵300,000 – 500,000", min: 300_001, max: 500_000 },
-  { id: "500-800", label: "GH₵500,000 – 800,000", min: 500_001, max: 800_000 },
-  { id: "o800", label: "Over GH₵800,000", min: 800_001 },
+  { id: "u100", label: "Under 100,000", max: 99_999 },
+  { id: "100-200", label: "100,000 – 200,000", min: 100_000, max: 200_000 },
+  { id: "200-300", label: "200,000 – 300,000", min: 200_001, max: 300_000 },
+  { id: "300-500", label: "300,000 – 500,000", min: 300_001, max: 500_000 },
+  { id: "500-800", label: "500,000 – 800,000", min: 500_001, max: 800_000 },
+  { id: "o800", label: "Over 800,000", min: 800_001 },
 ];
 
 /**

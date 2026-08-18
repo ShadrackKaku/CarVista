@@ -70,15 +70,19 @@ export function FilterDock() {
     <aside
       className={cn(
         "hidden h-full shrink-0 flex-col bg-card lg:flex",
-        // Narrower at lg, where three cards have to fit in what is left, and
-        // wider from xl where there is room for both.
-        filled ? "w-64 border-r xl:w-72" : "w-0 overflow-hidden border-0",
+        // One width at every size. It used to widen to 18rem from xl, on the
+        // reasoning that a wide screen had room for both — but xl is exactly
+        // where the results go to four across, so the extra 2rem was taken from
+        // the four cards that needed it most. 16rem holds the longest label any
+        // panel has ("Verified dealers only", "Workshop equipment") without
+        // truncating it.
+        filled ? "w-64 border-r" : "w-0 overflow-hidden border-0",
       )}
       // A collapsed dock is not just narrow, it is absent: leaving the heading
       // reachable would announce a filter panel that has no filters.
       aria-hidden={!filled}
     >
-      <div className="shrink-0 px-5 pb-4 pt-5">
+      <div className="shrink-0 px-4 pb-4 pt-5">
         <p className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
           <SlidersHorizontal className="h-[18px] w-[18px] text-brand-600" />
           Filters
@@ -92,7 +96,7 @@ export function FilterDock() {
       <div
         id={DOCK_BODY_ID}
         ref={bodyRef}
-        className="no-scrollbar flex-1 overflow-y-auto px-5 pb-6"
+        className="no-scrollbar flex-1 overflow-y-auto px-4 pb-6"
       />
     </aside>
   );
@@ -149,7 +153,11 @@ export function FilterLayout({
   }
 
   return (
-    <div className={cn("grid gap-8 lg:grid-cols-[280px_1fr]", className)}>
+    // 248px, not a round Tailwind step: it is the narrowest this column goes
+    // before the longest option on any of the six panels starts truncating,
+    // measured rather than guessed. The 32px it gives up, plus 8px off the gap
+    // beside it, goes to the cards.
+    <div className={cn("grid gap-6 lg:grid-cols-[248px_1fr]", className)}>
       <aside className="hidden lg:block">
         {/* Its own scrolling column, capped to the viewport.
             `sticky` alone stops meaning anything once the panel is taller than
@@ -161,7 +169,9 @@ export function FilterLayout({
         <div
           className={cn(
             "no-scrollbar sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto",
-            "rounded-xl border bg-card p-5 shadow-soft",
+            // Same 16px inset as a card body, which is also what keeps the
+            // longest option on any panel off the edge in a narrower column.
+            "rounded-xl border bg-card p-4 shadow-soft",
           )}
         >
           <h2 className="mb-4 flex items-center gap-2 font-semibold">

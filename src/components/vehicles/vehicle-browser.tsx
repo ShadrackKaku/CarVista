@@ -242,7 +242,7 @@ export function VehicleBrowser({
         />
       </Facet>
 
-      <Facet label="Price">
+      <Facet label="Price (GH₵)">
         <FilterOptionList>
           <FilterOption
             name="price"

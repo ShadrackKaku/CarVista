@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import {
   EMPTY_FILTERS,
@@ -69,6 +71,28 @@ describe.each([
   it("have unique ids and labels", () => {
     expect(new Set(bands.map((b) => b.id)).size).toBe(bands.length);
     expect(new Set(bands.map((b) => b.label)).size).toBe(bands.length);
+  });
+});
+
+describe("the price band labels", () => {
+  it("say the currency once, in the heading, rather than on every row", () => {
+    // Six rows each opening with the same three characters is noise the eye
+    // steps over on every line, and it is about fifty pixels of a sidebar the
+    // cards now use. Put it back on the rows and the widest band no longer fits
+    // the column — where the label is `truncate`, so it is cut in silence
+    // rather than reported.
+    for (const band of PRICE_BANDS) {
+      expect(band.label, `${band.label} repeats the currency`).not.toMatch(/GH₵|GHS|₵/);
+    }
+
+    const browser = readFileSync(
+      join(process.cwd(), "src", "components", "vehicles", "vehicle-browser.tsx"),
+      "utf8",
+    );
+    expect(
+      browser,
+      "the facet heading is the only place the currency is stated — without it the rows read as bare numbers",
+    ).toContain('<Facet label="Price (GH₵)">');
   });
 });
 
