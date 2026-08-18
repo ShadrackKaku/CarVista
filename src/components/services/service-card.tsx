@@ -1,12 +1,12 @@
-import { Check } from "lucide-react";
-import { StarRating } from "@/components/star-rating";
+import { MapPin, ShieldCheck, Star, Wrench } from "lucide-react";
 import {
   ListingCard,
+  ListingCardAction,
   ListingCardBody,
-  ListingCardEyebrow,
   ListingCardFooter,
   ListingCardMedia,
-  ListingCardMeta,
+  ListingCardSpecs,
+  ListingCardTags,
   ListingCardTitle,
 } from "@/components/ui/listing-card";
 import type { SampleService } from "@/lib/sample-data";
@@ -28,39 +28,33 @@ export function ServiceCard({ service, basePath = "/services" }: ServiceCardProp
       <ListingCardMedia src={service.image} alt={service.name} aspect="aspect-[16/10]" />
 
       <ListingCardBody>
-        {/* The type badge that used to sit on the photograph. */}
-        <ListingCardEyebrow>{service.typeLabel}</ListingCardEyebrow>
+        <ListingCardTags
+          tags={[
+            { label: service.typeLabel, tone: "brand" },
+            ...(service.verified ? [{ label: "Verified", tone: "success" as const }] : []),
+          ]}
+        />
 
         <ListingCardTitle href={href} reserveTwoLines={false}>
-          <span className="inline-flex items-center gap-1.5">
-            {service.name}
-            {service.verified && (
-              <Check className="h-4 w-4 shrink-0 text-success" aria-label="Verified provider" />
-            )}
-          </span>
+          {service.name}
         </ListingCardTitle>
 
-        <ListingCardMeta>
-          {service.city}, {service.region}
-        </ListingCardMeta>
+        <ListingCardSpecs
+          items={[
+            { icon: MapPin, label: `${service.city}, ${service.region}` },
+            { icon: Star, label: `${service.rating.toFixed(1)} (${service.reviewCount})` },
+            ...(service.services.length
+              ? [{ icon: Wrench, label: service.services.slice(0, 2).join(", ") }]
+              : []),
+          ]}
+        />
 
-        {/* What they actually do, as one line rather than a row of chips. Three
-            bordered pills for "Diagnostics", "Servicing", "Brakes" is three
-            boxes to draw and read where a sentence does it in one. */}
-        {service.services.length > 0 && (
-          <p className="mt-2 line-clamp-1 text-[13px] text-muted-foreground">
-            {service.services.slice(0, 3).join("  ·  ")}
+        <ListingCardFooter className="mt-5">
+          <p className="inline-flex items-center gap-1.5 text-[14px] font-medium text-brand-700 dark:text-brand-400">
+            <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
+            {service.priceRange}
           </p>
-        )}
-
-        <ListingCardFooter className="items-center">
-          <StarRating
-            rating={service.rating}
-            reviewCount={service.reviewCount}
-            size={13}
-            showValue
-          />
-          <span className="shrink-0 text-[13px] text-muted-foreground">{service.priceRange}</span>
+          <ListingCardAction />
         </ListingCardFooter>
       </ListingCardBody>
     </ListingCard>

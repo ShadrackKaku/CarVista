@@ -1,13 +1,16 @@
-import { Check } from "lucide-react";
-import { StarRating } from "@/components/star-rating";
+import { ShieldCheck, Star, Tag } from "lucide-react";
 import { AddToCartButton } from "@/components/parts/add-to-cart-button";
 import {
   ListingCard,
   ListingCardBody,
-  ListingCardEyebrow,
+  ListingCardFooter,
   ListingCardMedia,
   ListingCardPrice,
+  ListingCardSeller,
+  ListingCardSpecs,
+  ListingCardTags,
   ListingCardTitle,
+  type ListingTag,
 } from "@/components/ui/listing-card";
 import { formatCurrency } from "@/lib/utils";
 import type { SamplePart } from "@/lib/sample-data";
@@ -31,10 +34,15 @@ export function PartCard({ part, basePath = "/parts" }: PartCardProps) {
   const href = `${basePath}/${part.slug}`;
   const hasDiscount = Boolean(part.discountPrice && part.discountPrice < part.price);
 
+  const tags: ListingTag[] = [
+    { label: CONDITION_LABELS[part.condition] ?? part.condition, tone: "brand" },
+    ...(hasDiscount ? [{ label: "Reduced", tone: "success" as const }] : []),
+  ];
+
   return (
     <ListingCard>
-      {/* Square, because a part is photographed on a white background and a
-          landscape crop would cut it. */}
+      {/* Square: a part is photographed on a white background and a landscape
+          crop would cut it. */}
       <ListingCardMedia
         src={part.image}
         alt={part.name}
@@ -43,45 +51,41 @@ export function PartCard({ part, basePath = "/parts" }: PartCardProps) {
       />
 
       <ListingCardBody>
-        {/* Brand, condition and the fact of a discount — everything the two
-            badges on the photograph used to say, said here instead. */}
-        <ListingCardEyebrow>
-          {part.brand}
-          {part.condition !== "NEW" && (
-            <span className="text-muted-foreground/60">
-              {" · "}
-              {CONDITION_LABELS[part.condition] ?? part.condition}
-            </span>
-          )}
-          {hasDiscount && <span className="text-muted-foreground/60"> · Reduced</span>}
-        </ListingCardEyebrow>
+        <ListingCardTags tags={tags} />
 
         <ListingCardTitle href={href}>{part.name}</ListingCardTitle>
 
         <ListingCardPrice className="flex items-baseline gap-2">
           {formatCurrency(hasDiscount ? part.discountPrice! : part.price)}
           {hasDiscount && (
-            <span className="text-[13px] font-normal text-muted-foreground line-through">
+            <span className="text-[14px] font-medium text-muted-foreground line-through">
               {formatCurrency(part.price)}
             </span>
           )}
         </ListingCardPrice>
 
-        <div className="mt-2">
-          <StarRating rating={part.rating} reviewCount={part.reviewCount} size={12} />
-        </div>
+        <ListingCardSpecs
+          items={[
+            { icon: Tag, label: part.brand },
+            {
+              icon: Star,
+              label: `${part.rating.toFixed(1)} (${part.reviewCount})`,
+            },
+          ]}
+        />
 
-        <div className="mt-auto pt-5">
-          <p className="flex items-center gap-1 truncate text-[13px] font-medium">
-            {part.store.name}
-            {part.store.verified && (
-              <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-label="Verified store" />
-            )}
-          </p>
-          {/* Above the card-wide link, so adding to the cart never navigates. */}
-          <div className="relative z-10">
-            <AddToCartButton part={part} className="mt-3 w-full" />
-          </div>
+        <ListingCardFooter className="mt-5">
+          <ListingCardSeller
+            name={part.store.name}
+            verified={part.store.verified}
+            verifiedLabel="Verified Store"
+            icon={ShieldCheck}
+          />
+        </ListingCardFooter>
+
+        {/* Above the card-wide link, so adding to the cart never navigates. */}
+        <div className="relative z-10 mt-4">
+          <AddToCartButton part={part} className="w-full" />
         </div>
       </ListingCardBody>
     </ListingCard>

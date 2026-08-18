@@ -1,13 +1,14 @@
-import { Check } from "lucide-react";
-import { StarRating } from "@/components/star-rating";
+import { Clock, MapPin, Package, ShieldCheck, Star } from "lucide-react";
 import {
   ListingCard,
+  ListingCardAction,
   ListingCardBody,
-  ListingCardEyebrow,
   ListingCardFooter,
   ListingCardMedia,
-  ListingCardMeta,
+  ListingCardSpecs,
+  ListingCardTags,
   ListingCardTitle,
+  type ListingSpec,
 } from "@/components/ui/listing-card";
 import { SUPPLIER_CATEGORY_LABELS } from "@/lib/suppliers";
 import type { SupplierRow } from "@/lib/queries";
@@ -21,11 +22,26 @@ export interface SupplierCardProps {
 export function SupplierCard({ supplier, basePath = "/suppliers" }: SupplierCardProps) {
   const href = `${basePath}/${supplier.slug}`;
 
-  // The terms a wholesale buyer is actually deciding on, as one line.
-  const terms = [
-    supplier.minimumOrder ? `Min. order ${supplier.minimumOrder}` : null,
-    supplier.leadTimeDays != null ? `${supplier.leadTimeDays}-day lead time` : null,
-  ].filter(Boolean);
+  // The terms a wholesale buyer is actually deciding on.
+  const specs: ListingSpec[] = [
+    ...(supplier.city
+      ? [
+          {
+            icon: MapPin,
+            label: `${supplier.city}${supplier.region ? `, ${supplier.region}` : ""}`,
+          },
+        ]
+      : []),
+    ...(supplier.minimumOrder
+      ? [{ icon: Package, label: `Min. order ${supplier.minimumOrder}` }]
+      : []),
+    ...(supplier.leadTimeDays != null
+      ? [{ icon: Clock, label: `${supplier.leadTimeDays}-day lead time` }]
+      : []),
+    ...(supplier.reviewCount > 0
+      ? [{ icon: Star, label: `${supplier.rating.toFixed(1)} (${supplier.reviewCount})` }]
+      : []),
+  ];
 
   return (
     <ListingCard>
@@ -37,41 +53,28 @@ export function SupplierCard({ supplier, basePath = "/suppliers" }: SupplierCard
       />
 
       <ListingCardBody>
-        {/* What they stock — the chips, said as a line. */}
-        {supplier.categories.length > 0 && (
-          <ListingCardEyebrow>
-            {supplier.categories
-              .slice(0, 3)
-              .map((c) => SUPPLIER_CATEGORY_LABELS[c] ?? c)
-              .join(" · ")}
-          </ListingCardEyebrow>
-        )}
+        <ListingCardTags
+          tags={[
+            ...supplier.categories
+              .slice(0, 2)
+              .map((c) => ({ label: SUPPLIER_CATEGORY_LABELS[c] ?? c, tone: "brand" as const })),
+            ...(supplier.verified ? [{ label: "Verified", tone: "success" as const }] : []),
+          ]}
+        />
 
         <ListingCardTitle href={href} reserveTwoLines={false}>
-          <span className="inline-flex items-center gap-1.5">
-            {supplier.name}
-            {supplier.verified && (
-              <Check className="h-4 w-4 shrink-0 text-success" aria-label="Verified supplier" />
-            )}
-          </span>
+          {supplier.name}
         </ListingCardTitle>
 
-        {supplier.city && (
-          <ListingCardMeta>
-            {supplier.city}
-            {supplier.region ? `, ${supplier.region}` : ""}
-          </ListingCardMeta>
-        )}
+        <ListingCardSpecs items={specs} />
 
-        {terms.length > 0 && (
-          <p className="mt-1 text-[13px] text-muted-foreground">{terms.join("  ·  ")}</p>
-        )}
-
-        {supplier.reviewCount > 0 && (
-          <ListingCardFooter className="items-center">
-            <StarRating rating={supplier.rating} reviewCount={supplier.reviewCount} showValue />
-          </ListingCardFooter>
-        )}
+        <ListingCardFooter className="mt-5">
+          <p className="inline-flex items-center gap-1.5 text-[14px] font-medium text-brand-700 dark:text-brand-400">
+            <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
+            {supplier.verified ? "Verified Supplier" : "Wholesale supplier"}
+          </p>
+          <ListingCardAction>Get a quote</ListingCardAction>
+        </ListingCardFooter>
       </ListingCardBody>
     </ListingCard>
   );

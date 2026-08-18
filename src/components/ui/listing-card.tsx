@@ -1,33 +1,26 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
  * The shell every listing card on the platform shares.
  *
  * Cars, parts, dealers, services, suppliers and import stock had each grown
- * their own copy of the same six classes, and the copies had drifted: three
- * different corner radii, two body paddings, a half-pixel lift on some and a
- * full one on others, and — on all of them — `hover:shadow-card`, which the
- * theme defines as the same value as the resting `shadow-soft`, so the shadow
- * never actually changed. Defining it here means a grid of parts and a grid of
- * cars feel like the same product, and the next card type gets it for free.
+ * their own copy of the same card, and the copies had drifted. Defining it here
+ * means a grid of parts and a grid of cars feel like the same product, and the
+ * next card type gets it for free.
  *
- * Three rules, and every detail follows from them.
+ * Two rules survive every revision of the look.
  *
  * **Nothing is laid over the photograph.** `ListingCardMedia` takes no
  * children, so an overlay is not something a card can add without deleting that
- * decision on purpose. Anything a badge used to say belongs in the body, where
- * text belongs.
- *
- * **Colour means interaction, not emphasis.** Prices are plain; the brand
- * colour is kept for hover and focus, so when something turns blue it means you
- * can do something to it.
+ * decision on purpose. Tags sit under the picture, where text belongs.
  *
  * **One movement, slowly.** The card rises and its shadow deepens; the
- * photograph drifts three per cent over most of a second. The 5%-in-500ms zoom
- * this replaces is a lurch, and a wall of them lurching in turn is visual
- * fatigue. All of it sits behind `motion-safe`.
+ * photograph drifts three per cent over most of a second. All of it behind
+ * `motion-safe`, so anyone who has asked their system for reduced motion gets
+ * the colour and the shadow and none of the travel.
  */
 export function ListingCard({
   children,
@@ -39,7 +32,10 @@ export function ListingCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-soft",
+        // The padding is the point: the photograph is inset rather than
+        // bleeding to the border, so the card reads as a mount around a picture
+        // instead of a picture with a caption stuck underneath.
+        "group relative flex flex-col rounded-2xl border bg-card p-3 shadow-soft",
         "transition-[transform,box-shadow] duration-300 ease-out hover:shadow-lift",
         "motion-safe:hover:-translate-y-1",
         className,
@@ -51,14 +47,14 @@ export function ListingCard({
 }
 
 /**
- * The photograph, alone.
+ * The photograph, alone, with its own corners inside the card's.
  *
- * Deliberately accepts no children. A card is bought with the eyes first, and
+ * Deliberately accepts no children. A car is bought with the eyes first, and
  * anything on top of the image competes with the only thing on the card that
  * actually sells it.
  *
  * `muted` desaturates it — for stock with nothing left to reserve, where the
- * picture should read as unavailable without a word being written across it.
+ * picture should read as unavailable without a word written across it.
  */
 export function ListingCardMedia({
   src,
@@ -77,7 +73,7 @@ export function ListingCardMedia({
   fallback?: React.ReactNode;
 }) {
   return (
-    <div className={cn("relative overflow-hidden bg-muted", aspect)}>
+    <div className={cn("relative overflow-hidden rounded-xl bg-muted", aspect)}>
       {src ? (
         <Image
           src={src}
@@ -100,7 +96,7 @@ export function ListingCardMedia({
   );
 }
 
-/** The text half. One padding, everywhere. */
+/** The text half. */
 export function ListingCardBody({
   children,
   className,
@@ -108,68 +104,99 @@ export function ListingCardBody({
   children: React.ReactNode;
   className?: string;
 }) {
-  return <div className={cn("flex flex-1 flex-col p-5", className)}>{children}</div>;
+  return <div className={cn("flex flex-1 flex-col px-2 pb-1 pt-4", className)}>{children}</div>;
+}
+
+export type TagTone = "brand" | "success" | "muted";
+
+const TAG_TONES: Record<TagTone, string> = {
+  brand: "bg-brand-100 dark:bg-brand-900/40",
+  success: "bg-success/[0.18]",
+  muted: "bg-muted",
+};
+
+export interface ListingTag {
+  label: string;
+  tone?: TagTone;
 }
 
 /**
- * The small line above the title.
+ * The pills under the photograph.
  *
- * Where the badges went. Everything they said — the condition, the sale, the
- * source market, whether anything is left — reads here in one quiet line
- * instead of being stamped across the picture.
+ * They carry a tinted background so each reads as its own chip, but the text is
+ * plain foreground rather than the tint's own colour. Coloured text on a
+ * coloured ground is two signals for one fact, and a grid of cards each showing
+ * two of them was most of what made the old design shout — the tint alone is
+ * enough to separate "Ghana used" from "Duty paid".
  */
-export function ListingCardEyebrow({ children }: { children: React.ReactNode }) {
+export function ListingCardTags({ tags }: { tags: readonly ListingTag[] }) {
+  if (!tags.length) return null;
   return (
-    <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-      {children}
-    </p>
+    <div className="flex flex-wrap gap-2">
+      {tags.map((tag) => (
+        <span
+          key={tag.label}
+          className={cn(
+            "inline-flex items-center rounded-full px-3 py-1 text-[13px] font-semibold text-foreground",
+            TAG_TONES[tag.tone ?? "muted"],
+          )}
+        >
+          {tag.label}
+        </span>
+      ))}
+    </div>
   );
 }
 
 /**
- * The title, which is also the card's link.
+ * The title, which is also the card's link, with room beside it for one action.
  *
- * `after:absolute after:inset-0` stretches its hit area over the whole card, so
- * the entire card is clickable without nesting anchors — and anything genuinely
- * interactive inside the card (a save button, an add-to-cart) only has to sit
- * on `relative z-10` to stay above it. Two lines are reserved from the
- * breakpoint where cards sit side by side, so the rows below them line up
- * across a grid; a ragged grid is its own kind of noise.
+ * `after:absolute after:inset-0` stretches the link's hit area over the whole
+ * card, so the entire card is clickable without nesting anchors — and anything
+ * genuinely interactive inside it (a save button, an add-to-cart) only has to
+ * sit on `relative z-10` to stay above.
  */
 export function ListingCardTitle({
   href,
   children,
+  action,
   reserveTwoLines = true,
 }: {
   href: string;
   children: React.ReactNode;
+  /** Rendered to the right of the title — a save button, typically. */
+  action?: React.ReactNode;
   reserveTwoLines?: boolean;
 }) {
   return (
-    <h3
-      className={cn(
-        "mt-1.5 text-[17px] font-semibold leading-[1.35] tracking-[-0.01em]",
-        reserveTwoLines && "sm:min-h-[2.75rem]",
-      )}
-    >
-      <Link
-        href={href}
-        className="line-clamp-2 transition-colors after:absolute after:inset-0 group-hover:text-brand-700 dark:group-hover:text-brand-400"
+    <div className="mt-3 flex items-start justify-between gap-3">
+      <h3
+        className={cn(
+          "min-w-0 flex-1 text-[19px] font-bold leading-[1.3] tracking-[-0.015em]",
+          reserveTwoLines && "sm:min-h-[3rem]",
+        )}
       >
-        {children}
-      </Link>
-    </h3>
+        <Link
+          href={href}
+          className="line-clamp-2 transition-colors after:absolute after:inset-0 group-hover:text-brand-700 dark:group-hover:text-brand-400"
+        >
+          {children}
+        </Link>
+      </h3>
+      {action && <div className="relative z-10 shrink-0">{action}</div>}
+    </div>
   );
 }
 
 /**
  * The price.
  *
- * Body face rather than the display one: `font-display` is Sora, drawn for page
- * headings, and at card size it stopped being the loudest thing on the card and
- * became the loudest thing on the screen. Tabular figures so prices align digit
- * for digit down a column, which is what lets the eye compare a row of cards
- * without reading them.
+ * Brand-coloured, because on a marketplace card it is the one figure the whole
+ * card exists to deliver. Body face rather than the display one — `font-display`
+ * is Sora, drawn for page headings, and at card size it stopped being the
+ * loudest thing on the card and became the loudest thing on the screen.
+ * Tabular figures so prices align digit for digit down a column, which is what
+ * lets the eye compare a row of cards without reading them.
  */
 export function ListingCardPrice({
   children,
@@ -179,18 +206,49 @@ export function ListingCardPrice({
   className?: string;
 }) {
   return (
-    <p className={cn("mt-3 text-xl font-semibold tracking-tight tabular-nums", className)}>
+    <p
+      className={cn(
+        "mt-1 text-xl font-bold tracking-tight tabular-nums text-brand-700 dark:text-brand-400",
+        className,
+      )}
+    >
       {children}
     </p>
   );
 }
 
-/** The quiet sentence of facts under the price. */
-export function ListingCardMeta({ children }: { children: React.ReactNode }) {
-  return <p className="mt-2 text-[13px] text-muted-foreground">{children}</p>;
+export interface ListingSpec {
+  icon: React.ComponentType<{ className?: string }>;
+  label: React.ReactNode;
 }
 
-/** Who is selling, pinned to the bottom so cards in a row end together. */
+/**
+ * The facts, each with its glyph.
+ *
+ * A flex wrap rather than a fixed grid, so a card with two facts does not leave
+ * a hole where the third would be and a long place name drops to its own line
+ * instead of squeezing its neighbours.
+ */
+export function ListingCardSpecs({ items }: { items: readonly ListingSpec[] }) {
+  if (!items.length) return null;
+  return (
+    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2.5 text-[14px] text-muted-foreground">
+      {items.map(({ icon: Icon, label }, i) => (
+        <span key={i} className="inline-flex min-w-0 items-center gap-2">
+          <Icon className="h-[18px] w-[18px] shrink-0" />
+          <span className="truncate">{label}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Who is selling, and the way in.
+ *
+ * Pinned to the bottom so cards in a row end together, above a hairline that
+ * separates what the thing is from who is offering it.
+ */
 export function ListingCardFooter({
   children,
   className,
@@ -199,8 +257,50 @@ export function ListingCardFooter({
   className?: string;
 }) {
   return (
-    <div className={cn("mt-auto flex items-end justify-between gap-3 pt-5", className)}>
+    <div className={cn("mt-auto flex items-center justify-between gap-3 border-t pt-4", className)}>
       {children}
+    </div>
+  );
+}
+
+/**
+ * The "View details" affordance.
+ *
+ * The whole card is already a link, so this navigates nothing on its own — it
+ * is a signpost, telling a first-time visitor that the card is a door. Its
+ * arrow leans in on hover, which is the only place on the card besides the
+ * photograph where anything moves.
+ */
+export function ListingCardAction({ children = "View details" }: { children?: React.ReactNode }) {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-2 text-[14px] font-semibold text-brand-700 dark:text-brand-400">
+      {children}
+      <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out motion-safe:group-hover:translate-x-1" />
+    </span>
+  );
+}
+
+/** The seller line: name, then their standing beneath it. */
+export function ListingCardSeller({
+  name,
+  verified,
+  verifiedLabel = "Verified Dealer",
+  icon: Icon,
+}: {
+  name: string;
+  verified?: boolean;
+  verifiedLabel?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="truncate text-[15px] font-bold">{name}</p>
+      {verified && (
+        <p className="mt-0.5 inline-flex items-center gap-1.5 text-[14px] font-medium text-brand-700 dark:text-brand-400">
+          {Icon && <Icon className="h-[18px] w-[18px] shrink-0" />}
+          {verifiedLabel}
+        </p>
+      )}
     </div>
   );
 }

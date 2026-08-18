@@ -1,23 +1,26 @@
-import { Check } from "lucide-react";
+import { Fuel, Gauge, MapPin, Settings2, ShieldCheck } from "lucide-react";
 import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
 import {
   ListingCard,
+  ListingCardAction,
   ListingCardBody,
-  ListingCardEyebrow,
   ListingCardFooter,
   ListingCardMedia,
-  ListingCardMeta,
   ListingCardPrice,
+  ListingCardSeller,
+  ListingCardSpecs,
+  ListingCardTags,
   ListingCardTitle,
+  type ListingTag,
 } from "@/components/ui/listing-card";
 import { enumLabel } from "@/lib/constants";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import type { SampleVehicle } from "@/lib/sample-data";
 
 const CONDITION_LABELS: Record<string, string> = {
-  NEW: "Brand new",
-  FOREIGN_USED: "Foreign used",
-  GHANA_USED: "Ghana used",
+  NEW: "Brand New",
+  FOREIGN_USED: "Foreign Used",
+  GHANA_USED: "Ghana Used",
   SALVAGE: "Salvage",
 };
 
@@ -31,57 +34,48 @@ export interface VehicleCardProps {
   basePath?: string;
 }
 
-/**
- * A car in a grid.
- *
- * The shape, the elevation and the hover all come from `ListingCard`, shared
- * with every other card on the platform. What is left here is what makes a car
- * a car: the eye falls down it in four stops — picture, name, price, details.
- */
 export function VehicleCard({ vehicle, basePath = "/vehicles" }: VehicleCardProps) {
   const href = `${basePath}/${vehicle.slug}`;
 
-  // Read as one sentence, in the order someone asks: how far has it gone, how
-  // does it drive, what does it drink. No icons — a gauge glyph beside
-  // "62,400 km" adds no information and costs a fixation.
-  const specs = [
-    `${formatNumber(vehicle.mileage)} km`,
-    enumLabel(vehicle.transmission),
-    enumLabel(vehicle.fuelType),
-  ].filter(Boolean);
+  const tags: ListingTag[] = [
+    { label: CONDITION_LABELS[vehicle.condition] ?? vehicle.condition, tone: "brand" },
+    // Duty paid is the fact a Ghanaian buyer checks first: it is the difference
+    // between a price and a price plus a surprise at Tema.
+    ...(vehicle.importStatus === "CLEARED"
+      ? [{ label: "Duty Paid", tone: "success" as const }]
+      : []),
+  ];
 
   return (
     <ListingCard>
       <ListingCardMedia src={vehicle.images[0]} alt={vehicle.title} />
 
       <ListingCardBody>
-        <ListingCardEyebrow>
-          {CONDITION_LABELS[vehicle.condition] ?? vehicle.condition}
-          {vehicle.importStatus === "CLEARED" && (
-            <span className="text-muted-foreground/60"> · Duty paid</span>
-          )}
-        </ListingCardEyebrow>
+        <ListingCardTags tags={tags} />
 
-        <ListingCardTitle href={href}>{vehicle.title}</ListingCardTitle>
+        <ListingCardTitle href={href} action={<SaveVehicleButton vehicleId={vehicle.id} />}>
+          {vehicle.title}
+        </ListingCardTitle>
 
         <ListingCardPrice>{formatCurrency(vehicle.price)}</ListingCardPrice>
-        <ListingCardMeta>{specs.join("  ·  ")}</ListingCardMeta>
 
-        <ListingCardFooter>
-          <div className="min-w-0">
-            <p className="flex items-center gap-1 truncate text-[13px] font-medium">
-              {vehicle.dealer.name}
-              {vehicle.dealer.verified && (
-                <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-label="Verified dealer" />
-              )}
-            </p>
-            <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{vehicle.city}</p>
-          </div>
+        <ListingCardSpecs
+          items={[
+            { icon: Gauge, label: `${formatNumber(vehicle.mileage)} km` },
+            { icon: Settings2, label: enumLabel(vehicle.transmission) },
+            { icon: Fuel, label: enumLabel(vehicle.fuelType) },
+            { icon: MapPin, label: vehicle.city },
+          ]}
+        />
 
-          {/* Sits above the card-wide link, so saving never navigates. */}
-          <div className="relative z-10 shrink-0">
-            <SaveVehicleButton vehicleId={vehicle.id} />
-          </div>
+        <ListingCardFooter className="mt-5">
+          <ListingCardSeller
+            name={vehicle.dealer.name}
+            verified={vehicle.dealer.verified}
+            verifiedLabel="Verified Dealer"
+            icon={ShieldCheck}
+          />
+          <ListingCardAction />
         </ListingCardFooter>
       </ListingCardBody>
     </ListingCard>
