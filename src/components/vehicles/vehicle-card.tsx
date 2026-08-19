@@ -1,17 +1,19 @@
-import Link from "next/link";
-import Image from "next/image";
 import { Fuel, Gauge, MapPin, Settings2, ShieldCheck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { SaveVehicleButton } from "@/components/vehicles/save-vehicle-button";
+import {
+  ListingCard,
+  ListingCardBody,
+  ListingCardFooter,
+  ListingCardMedia,
+  ListingCardPrice,
+  ListingCardSpecs,
+  ListingCardTags,
+  ListingCardTitle,
+  type ListingTag,
+} from "@/components/ui/listing-card";
+import { enumLabel } from "@/lib/constants";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import type { SampleVehicle } from "@/lib/sample-data";
-
-const IMPORT_STATUS_LABELS: Record<string, string> = {
-  CLEARED: "Duty Paid",
-  AVAILABLE_FOR_IMPORT: "Import to Order",
-  IMPORT_IN_PROGRESS: "In Transit",
-  NOT_IMPORTED: "Local",
-};
 
 const CONDITION_LABELS: Record<string, string> = {
   NEW: "Brand New",
@@ -32,65 +34,51 @@ export interface VehicleCardProps {
 
 export function VehicleCard({ vehicle, basePath = "/vehicles" }: VehicleCardProps) {
   const href = `${basePath}/${vehicle.slug}`;
+
+  // What used to be stamped on the photograph. Two at most, deliberately: a
+  // third wraps to a second row, which makes that one card taller than its
+  // neighbours and leaves the grid ragged — the bulk coming back in by the
+  // side door. Verification is about the seller rather than the car, so it
+  // rides beside the dealer's name in the footer where it belongs.
+  const tags: ListingTag[] = [
+    { label: CONDITION_LABELS[vehicle.condition] ?? vehicle.condition, tone: "brand" },
+    ...(vehicle.importStatus === "CLEARED"
+      ? [{ label: "Duty Paid", tone: "success" as const }]
+      : []),
+  ];
+
   return (
-    <div className="group relative overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card">
-      <Link href={href} className="block">
-        <div className="relative aspect-[16/11] overflow-hidden bg-muted">
-          <Image
-            src={vehicle.images[0]}
-            alt={vehicle.title}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-            <Badge variant="brand">{CONDITION_LABELS[vehicle.condition]}</Badge>
-            {vehicle.importStatus === "CLEARED" && (
-              <Badge variant="success">{IMPORT_STATUS_LABELS[vehicle.importStatus]}</Badge>
+    <ListingCard>
+      <ListingCardMedia src={vehicle.images[0]} alt={vehicle.title} />
+
+      <ListingCardBody>
+        <ListingCardTags tags={tags} />
+
+        <ListingCardTitle href={href} action={<SaveVehicleButton vehicleId={vehicle.id} />}>
+          {vehicle.title}
+        </ListingCardTitle>
+
+        <ListingCardPrice>{formatCurrency(vehicle.price)}</ListingCardPrice>
+
+        <ListingCardSpecs
+          items={[
+            { icon: Gauge, label: `${formatNumber(vehicle.mileage)} km` },
+            { icon: Fuel, label: enumLabel(vehicle.fuelType) },
+            { icon: Settings2, label: enumLabel(vehicle.transmission) },
+            { icon: MapPin, label: vehicle.city },
+          ]}
+        />
+
+        <ListingCardFooter>
+          <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+            {vehicle.dealer.verified && (
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-success" aria-label="Verified dealer" />
             )}
-          </div>
-          {vehicle.verified && (
-            <Badge className="absolute right-3 top-3 bg-white/95 text-brand-700" variant="secondary">
-              <ShieldCheck className="h-3.5 w-3.5" /> Verified
-            </Badge>
-          )}
-        </div>
-      </Link>
-
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <Link href={href} className="min-w-0">
-            <h3 className="truncate font-semibold leading-tight transition-colors group-hover:text-brand-600">
-              {vehicle.title}
-            </h3>
-          </Link>
-          <SaveVehicleButton vehicleId={vehicle.id} className="-mr-1 -mt-1" />
-        </div>
-
-        <p className="mt-2 font-display text-base font-bold text-brand-700 transition-colors group-hover:text-foreground dark:text-brand-400">
-          {formatCurrency(vehicle.price)}
-        </p>
-
-        <div className="mt-3 grid grid-cols-2 gap-y-2 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Gauge className="h-3.5 w-3.5" /> {formatNumber(vehicle.mileage)} km
+            <span className="truncate">{vehicle.dealer.name}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <Fuel className="h-3.5 w-3.5" /> {vehicle.fuelType.toLowerCase()}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Settings2 className="h-3.5 w-3.5" /> {vehicle.transmission.toLowerCase()}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5" /> {vehicle.city}
-          </span>
-        </div>
-
-        <div className="mt-3 flex items-center justify-between border-t pt-3 text-xs">
-          <span className="text-muted-foreground">{vehicle.dealer.name}</span>
-          <span className="font-medium text-foreground">{vehicle.year}</span>
-        </div>
-      </div>
-    </div>
+          <span className="shrink-0 font-medium text-foreground">{vehicle.year}</span>
+        </ListingCardFooter>
+      </ListingCardBody>
+    </ListingCard>
   );
 }

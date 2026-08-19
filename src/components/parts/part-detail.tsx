@@ -8,6 +8,7 @@ import { StarRating } from "@/components/star-rating";
 import { AddToCartButton } from "@/components/parts/add-to-cart-button";
 import { BuyNowButton } from "@/components/parts/buy-now-button";
 import { PartCard } from "@/components/parts/part-card";
+import { ListingGrid } from "@/components/ui/listing-card";
 import { getPartBySlug, getParts } from "@/lib/queries";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { formatCurrency, safeJsonLd } from "@/lib/utils";
@@ -206,11 +207,11 @@ export async function PartDetail({ slug, inShell = false }: PartDetailProps) {
         <section className="mt-14">
           <Separator className="mb-8" />
           <h2 className="mb-6 text-2xl font-bold">Related parts</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <ListingGrid>
             {related.map((p) => (
               <PartCard key={p.id} part={p} basePath={partsBase} />
             ))}
-          </div>
+          </ListingGrid>
         </section>
       )}
     </div>

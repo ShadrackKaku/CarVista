@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
+import { ListingGrid } from "@/components/ui/listing-card";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { getDealerBySlug, getVehicles } from "@/lib/queries";
 import { SITE } from "@/lib/constants";
@@ -128,11 +129,11 @@ export async function DealerDetail({ slug, inShell = false }: DealerDetailProps)
         <section className="mt-10 pb-10">
           <h2 className="mb-6 text-xl font-bold">Available inventory</h2>
           {vehicles.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <ListingGrid>
               {vehicles.map((v) => (
                 <VehicleCard key={v.id} vehicle={v} basePath={vehiclesBase} />
               ))}
-            </div>
+            </ListingGrid>
           ) : (
             <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
               This dealer has no active listings right now. Check back soon.

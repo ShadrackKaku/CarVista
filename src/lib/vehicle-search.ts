@@ -7,6 +7,8 @@
  * source of truth for a search.
  */
 
+import { describeValues, matchesAny, selectedValues } from "@/lib/multi-select";
+
 export interface VehicleFilters {
   q: string;
   brand: string;
@@ -74,20 +76,74 @@ export function queryToFilters(source: ParamSource): { filters: VehicleFilters; 
   return { filters, sort };
 }
 
-/** How many filters are set — for the "active filters" badge. */
+/**
+ * Facets where more than one value may be chosen at once.
+ *
+ * These are the questions with an honest "or" in them — somebody shopping for
+ * a family car will take a RAV4 or a CR-V, and forcing them to run the search
+ * twice is the interface being difficult about it. Price and year are
+ * deliberately absent: they are ranges, and two disjoint bands ("under
+ * GH₵100,000 or over GH₵800,000") is not a search anybody means to run.
+ *
+ * Values are stored comma-joined in the same single string the fields always
+ * used, so `brand=Toyota` from a saved search made before this existed still
+ * parses and still matches.
+ */
+export const MULTI_FACETS = [
+  "brand",
+  "bodyType",
+  "fuelType",
+  "transmission",
+  "condition",
+  "region",
+] as const satisfies readonly (keyof VehicleFilters)[];
+
+export type MultiFacet = (typeof MULTI_FACETS)[number];
+
+// The set helpers are shared with every other browser on the platform.
+export { selectedValues, isSelected, toggleValue } from "@/lib/multi-select";
+
+/**
+ * How many filters are set — for the "active filters" badge.
+ *
+ * Counted as a person would: each chosen value in a multi-select facet is one
+ * filter, and a price or year band is one filter rather than the two fields it
+ * happens to write. The old count said "2 filters" for a single price band,
+ * which made the badge quietly untrustworthy.
+ */
 export function activeFilterCount(filters: VehicleFilters): number {
-  return FILTER_KEYS.reduce((n, key) => (filters[key].trim() ? n + 1 : n), 0);
+  let n = 0;
+  for (const key of FILTER_KEYS) {
+    const value = filters[key].trim();
+    if (!value) continue;
+    if (key === "maxPrice" || key === "maxYear") continue; // counted with their floor
+    if ((MULTI_FACETS as readonly string[]).includes(key)) n += selectedValues(value).length;
+    else n += 1;
+  }
+  // A band with only a ceiling ("Under GH₵100,000") sets no floor, so it would
+  // otherwise slip through the skip above.
+  if (!filters.minPrice.trim() && filters.maxPrice.trim()) n += 1;
+  if (!filters.minYear.trim() && filters.maxYear.trim()) n += 1;
+  return n;
 }
 
 /** A short human summary of a saved search, e.g. "Toyota · SUV · ≤ GHS 200,000". */
 export function describeQuery(query: string): string {
   const p = new URLSearchParams(query);
   const parts: string[] = [];
+  // Multi-select facets read back as "Toyota or Honda" rather than the raw
+  // comma-joined value, so a saved search describes itself the way it was made.
+  const list = (key: string, tidy?: (s: string) => string) => describeValues(p.get(key) ?? "", tidy);
+
   if (p.get("q")) parts.push(`"${p.get("q")}"`);
-  if (p.get("brand")) parts.push(p.get("brand")!);
-  if (p.get("bodyType")) parts.push(p.get("bodyType")!);
-  if (p.get("condition")) parts.push(p.get("condition")!.replace(/_/g, " ").toLowerCase());
-  if (p.get("region")) parts.push(p.get("region")!);
+  const brand = list("brand");
+  if (brand) parts.push(brand);
+  const bodyType = list("bodyType");
+  if (bodyType) parts.push(bodyType);
+  const condition = list("condition", (s) => s.replace(/_/g, " ").toLowerCase());
+  if (condition) parts.push(condition);
+  const region = list("region");
+  if (region) parts.push(region);
   if (p.get("minPrice") || p.get("maxPrice")) {
     const min = p.get("minPrice");
     const max = p.get("maxPrice");
@@ -120,31 +176,113 @@ export interface FilterableVehicle {
 /**
  * Whether a vehicle survives the active filters.
  *
- * `ignore` drops one facet from the test, which is what makes per-option counts
- * honest: the number beside "Ghana Used" has to mean "how many results if I
- * pick this", so it must respect every *other* filter while ignoring the
- * condition already chosen. Counting against the unfiltered list instead would
- * promise 22 cars and deliver 3.
+ * `ignore` drops one or more facets from the test, which is what makes
+ * per-option counts honest: the number beside "Ghana Used" has to mean "how
+ * many results if I pick this", so it must respect every *other* filter while
+ * ignoring the condition already chosen. Counting against the unfiltered list
+ * instead would promise 22 cars and deliver 3.
+ *
+ * It takes a list as well as a single key because price and year are one choice
+ * spread over two fields — counting a price band while still applying the
+ * band's own floor and ceiling would report only the cars already showing.
  */
 export function matchesFilters(
   v: FilterableVehicle,
   filters: VehicleFilters,
-  ignore?: keyof VehicleFilters,
+  ignore?: keyof VehicleFilters | readonly (keyof VehicleFilters)[],
 ): boolean {
+  const ignored = ignore == null ? [] : Array.isArray(ignore) ? ignore : [ignore];
   const on = <K extends keyof VehicleFilters>(key: K) =>
-    ignore === key ? "" : filters[key];
+    (ignored as readonly string[]).includes(key) ? "" : filters[key];
+
+  // Within a facet the chosen values are an OR; across facets they are an AND.
+  // "Toyota or Honda, and an SUV" is what a person means by ticking three
+  // boxes, and it is the only reading that can ever return anything.
+  const anyOf = (facet: MultiFacet, actual: string | undefined) => matchesAny(on(facet), actual);
 
   const q = on("q");
   if (q && !`${v.title} ${v.brand} ${v.model}`.toLowerCase().includes(q.toLowerCase())) return false;
-  if (on("brand") && v.brand !== filters.brand) return false;
-  if (on("bodyType") && v.bodyType !== filters.bodyType) return false;
-  if (on("fuelType") && v.fuelType !== filters.fuelType) return false;
-  if (on("transmission") && v.transmission !== filters.transmission) return false;
-  if (on("condition") && v.condition !== filters.condition) return false;
-  if (on("region") && v.region !== filters.region) return false;
+  if (!anyOf("brand", v.brand)) return false;
+  if (!anyOf("bodyType", v.bodyType)) return false;
+  if (!anyOf("fuelType", v.fuelType)) return false;
+  if (!anyOf("transmission", v.transmission)) return false;
+  if (!anyOf("condition", v.condition)) return false;
+  if (!anyOf("region", v.region)) return false;
   if (on("minPrice") && v.price < Number(filters.minPrice)) return false;
   if (on("maxPrice") && v.price > Number(filters.maxPrice)) return false;
   if (on("minYear") && v.year < Number(filters.minYear)) return false;
   if (on("maxYear") && v.year > Number(filters.maxYear)) return false;
   return true;
+}
+
+/**
+ * Price and year as a short list of bands rather than two empty number boxes.
+ *
+ * A pair of Min/Max fields asks the buyer to know the market before they can
+ * use it — someone shopping for their first car has no idea whether to type
+ * 80,000 or 300,000, so the commonest outcome is that they type nothing and the
+ * filter does no work. A band is a decision they can actually make, and it puts
+ * price on the same left-aligned rhythm as every other facet instead of being
+ * the one row with boxes in it.
+ *
+ * Bands set the same `minPrice`/`maxPrice` the fields did, so the query string,
+ * saved searches and the matcher are all untouched.
+ */
+export interface RangeBand {
+  id: string;
+  label: string;
+  /** Inclusive floor. Absent means "no lower bound". */
+  min?: number;
+  /** Inclusive ceiling. Absent means "no upper bound". */
+  max?: number;
+}
+
+/** Pitched at the Ghanaian market: a tidy Corolla up to an imported Land Cruiser. */
+/**
+ * The currency is not repeated on every row: the facet's heading carries it
+ * once, as "Price (GH₵)". Six rows each opening with the same three characters
+ * is noise the eye has to step over on every line, and it cost about fifty
+ * pixels of a column that the cards want back — enough that the widest band no
+ * longer fits a narrow sidebar without being quietly truncated to
+ * "GH₵200,000 – 30…". The figures themselves stay exact, because this is money.
+ */
+export const PRICE_BANDS: readonly RangeBand[] = [
+  { id: "u100", label: "Under 100,000", max: 99_999 },
+  { id: "100-200", label: "100,000 – 200,000", min: 100_000, max: 200_000 },
+  { id: "200-300", label: "200,000 – 300,000", min: 200_001, max: 300_000 },
+  { id: "300-500", label: "300,000 – 500,000", min: 300_001, max: 500_000 },
+  { id: "500-800", label: "500,000 – 800,000", min: 500_001, max: 800_000 },
+  { id: "o800", label: "Over 800,000", min: 800_001 },
+];
+
+/**
+ * Year bands, newest first.
+ *
+ * Deliberately open-ended at the top — "2023 and newer" keeps working next
+ * year, where a hardcoded "2023–2026" quietly starts hiding cars.
+ */
+export const YEAR_BANDS: readonly RangeBand[] = [
+  { id: "y2023", label: "2023 and newer", min: 2023 },
+  { id: "y2020", label: "2020 – 2022", min: 2020, max: 2022 },
+  { id: "y2017", label: "2017 – 2019", min: 2017, max: 2019 },
+  { id: "y2014", label: "2014 – 2016", min: 2014, max: 2016 },
+  { id: "y0", label: "Older than 2014", max: 2013 },
+];
+
+/** The band currently selected, or null when the range is unset or hand-edited. */
+export function activeBand(
+  bands: readonly RangeBand[],
+  min: string,
+  max: string,
+): RangeBand | null {
+  if (!min && !max) return null;
+  return (
+    bands.find((b) => String(b.min ?? "") === min && String(b.max ?? "") === max) ?? null
+  );
+}
+
+/** The two filter values a band sets. */
+export function bandToRange(band: RangeBand | null): { min: string; max: string } {
+  if (!band) return { min: "", max: "" };
+  return { min: band.min == null ? "" : String(band.min), max: band.max == null ? "" : String(band.max) };
 }

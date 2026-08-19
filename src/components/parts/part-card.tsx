@@ -1,11 +1,24 @@
-import Link from "next/link";
-import Image from "next/image";
-import { ShieldCheck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { StarRating } from "@/components/star-rating";
+import { ShieldCheck, Star, Tag } from "lucide-react";
 import { AddToCartButton } from "@/components/parts/add-to-cart-button";
+import {
+  ListingCard,
+  ListingCardBody,
+  ListingCardFooter,
+  ListingCardMedia,
+  ListingCardPrice,
+  ListingCardSpecs,
+  ListingCardTags,
+  ListingCardTitle,
+  type ListingTag,
+} from "@/components/ui/listing-card";
 import { formatCurrency } from "@/lib/utils";
 import type { SamplePart } from "@/lib/sample-data";
+
+const CONDITION_LABELS: Record<string, string> = {
+  NEW: "New",
+  USED: "Used",
+  REFURBISHED: "Refurbished",
+};
 
 export interface PartCardProps {
   part: SamplePart;
@@ -18,59 +31,52 @@ export interface PartCardProps {
 
 export function PartCard({ part, basePath = "/parts" }: PartCardProps) {
   const href = `${basePath}/${part.slug}`;
-  const hasDiscount = part.discountPrice && part.discountPrice < part.price;
+  const hasDiscount = Boolean(part.discountPrice && part.discountPrice < part.price);
+
+  const tags: ListingTag[] = [
+    { label: CONDITION_LABELS[part.condition] ?? part.condition, tone: "brand" },
+    ...(hasDiscount ? [{ label: "Reduced", tone: "success" as const }] : []),
+  ];
+
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card">
-      <Link href={href} className="relative aspect-square overflow-hidden bg-muted">
-        <Image
-          src={part.image}
-          alt={part.name}
-          fill
-          sizes="(max-width: 768px) 50vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        {hasDiscount && (
-          <Badge variant="destructive" className="absolute left-2.5 top-2.5">
-            Sale
-          </Badge>
-        )}
-        {part.condition !== "NEW" && (
-          <Badge variant="muted" className="absolute right-2.5 top-2.5 capitalize">
-            {part.condition.toLowerCase()}
-          </Badge>
-        )}
-      </Link>
+    <ListingCard>
+      {/* Square: a part is photographed on a white background and a landscape
+          crop would cut it. */}
+      <ListingCardMedia src={part.image} alt={part.name} aspect="aspect-square" />
 
-      <div className="flex flex-1 flex-col p-4">
-        <span className="text-xs font-medium text-brand-600">{part.brand}</span>
-        <Link href={href}>
-          <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-brand-600">
-            {part.name}
-          </h3>
-        </Link>
+      <ListingCardBody>
+        <ListingCardTags tags={tags} />
 
-        <div className="mt-2">
-          <StarRating rating={part.rating} reviewCount={part.reviewCount} size={12} />
-        </div>
+        <ListingCardTitle href={href}>{part.name}</ListingCardTitle>
 
-        <div className="mt-auto pt-3">
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-sm font-bold text-brand-700 transition-colors group-hover:text-foreground dark:text-brand-400">
-              {formatCurrency(hasDiscount ? part.discountPrice! : part.price)}
+        <ListingCardPrice className="flex items-baseline gap-1.5">
+          {formatCurrency(hasDiscount ? part.discountPrice! : part.price)}
+          {hasDiscount && (
+            <span className="text-xs font-medium text-muted-foreground line-through">
+              {formatCurrency(part.price)}
             </span>
-            {hasDiscount && (
-              <span className="text-xs text-muted-foreground line-through">
-                {formatCurrency(part.price)}
-              </span>
-            )}
-          </div>
-          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-            {part.store.verified && <ShieldCheck className="h-3 w-3 text-success" />}
-            {part.store.name}
-          </p>
-          <AddToCartButton part={part} className="mt-3 w-full" />
+          )}
+        </ListingCardPrice>
+
+        <ListingCardSpecs
+          items={[
+            { icon: Tag, label: part.brand },
+            { icon: Star, label: `${part.rating.toFixed(1)} (${part.reviewCount})` },
+          ]}
+        />
+
+        <ListingCardFooter>
+          <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+            {part.store.verified && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-success" />}
+            <span className="truncate">{part.store.name}</span>
+          </span>
+        </ListingCardFooter>
+
+        {/* Above the card-wide link, so adding to the cart never navigates. */}
+        <div className="relative z-10 mt-3">
+          <AddToCartButton part={part} className="w-full" />
         </div>
-      </div>
-    </div>
+      </ListingCardBody>
+    </ListingCard>
   );
 }

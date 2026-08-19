@@ -3,11 +3,19 @@
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { StockCard } from "@/components/import-stock/stock-card";
-import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
+import { ListingGrid } from "@/components/ui/listing-card";
+import {
+  Facet,
+  FilterLayout,
+  FilterOption,
+  FilterOptionList,
+  MultiFacet,
+} from "@/components/shell/filter-dock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
+import { matchesAny, selectedValues } from "@/lib/multi-select";
 import { usePagedList } from "@/lib/use-paged-list";
 import type { ImportStockRow } from "@/lib/queries";
 
@@ -39,13 +47,13 @@ export function StockBrowser({
     const term = q.trim().toLowerCase();
     return listings.filter((l) => {
       if (availableOnly && l.quantity - l.held < 1) return false;
-      if (origin && l.countryOfOrigin !== origin) return false;
+      if (!matchesAny(origin, l.countryOfOrigin)) return false;
       if (!term) return true;
       return `${l.title} ${l.make} ${l.model} ${l.trim ?? ""}`.toLowerCase().includes(term);
     });
   }, [listings, q, origin, availableOnly]);
 
-  const activeCount = (q ? 1 : 0) + (origin ? 1 : 0) + (availableOnly ? 0 : 1);
+  const activeCount = (q ? 1 : 0) + selectedValues(origin).length + (availableOnly ? 0 : 1);
   const paged = usePagedList(filtered, `${q}|${origin}|${availableOnly}`);
 
   function reset() {
@@ -70,28 +78,16 @@ export function StockBrowser({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Source market</Label>
-        <FilterOptionList>
-          <FilterOption
-            name="origin"
-            label="Anywhere"
-            checked={origin === ""}
-            onSelect={() => setOrigin("")}
-            count={listings.length}
-          />
-          {origins.map(([name, count]) => (
-            <FilterOption
-              key={name}
-              name="origin"
-              label={name}
-              checked={origin === name}
-              onSelect={() => setOrigin(name)}
-              count={count}
-            />
-          ))}
-        </FilterOptionList>
-      </div>
+      <Facet label="Source market">
+        <MultiFacet
+          name="origin"
+          anyLabel="Anywhere"
+          options={origins.map(([name]) => ({ value: name, label: name }))}
+          value={origin}
+          onChange={setOrigin}
+          counts={{ any: listings.length, ...Object.fromEntries(origins) }}
+        />
+      </Facet>
 
       <div className="space-y-2">
         <Label>Availability</Label>
@@ -126,11 +122,11 @@ export function StockBrowser({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ListingGrid className="mt-5">
             {paged.items.map((l) => (
               <StockCard key={l.id} listing={l} basePath={basePath} />
             ))}
-          </div>
+          </ListingGrid>
           <Pagination
             page={paged.page}
             pageCount={paged.pageCount}

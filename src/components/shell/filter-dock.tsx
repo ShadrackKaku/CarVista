@@ -12,6 +12,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
+import { isSelected, toggleValue } from "@/lib/multi-select";
 import { usesFilterDock } from "@/lib/modules";
 import { cn } from "@/lib/utils";
 
@@ -68,15 +70,19 @@ export function FilterDock() {
     <aside
       className={cn(
         "hidden h-full shrink-0 flex-col bg-card lg:flex",
-        // Narrower at lg, where three cards have to fit in what is left, and
-        // wider from xl where there is room for both.
-        filled ? "w-64 border-r xl:w-72" : "w-0 overflow-hidden border-0",
+        // One width at every size. It used to widen to 18rem from xl, on the
+        // reasoning that a wide screen had room for both — but xl is exactly
+        // where the results go to four across, so the extra 2rem was taken from
+        // the four cards that needed it most. 16rem holds the longest label any
+        // panel has ("Verified dealers only", "Workshop equipment") without
+        // truncating it.
+        filled ? "w-64 border-r" : "w-0 overflow-hidden border-0",
       )}
       // A collapsed dock is not just narrow, it is absent: leaving the heading
       // reachable would announce a filter panel that has no filters.
       aria-hidden={!filled}
     >
-      <div className="shrink-0 px-5 pb-4 pt-5">
+      <div className="shrink-0 px-4 pb-4 pt-5">
         <p className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
           <SlidersHorizontal className="h-[18px] w-[18px] text-brand-600" />
           Filters
@@ -90,7 +96,7 @@ export function FilterDock() {
       <div
         id={DOCK_BODY_ID}
         ref={bodyRef}
-        className="no-scrollbar flex-1 overflow-y-auto px-5 pb-6"
+        className="no-scrollbar flex-1 overflow-y-auto px-4 pb-6"
       />
     </aside>
   );
@@ -147,9 +153,27 @@ export function FilterLayout({
   }
 
   return (
-    <div className={cn("grid gap-8 lg:grid-cols-[280px_1fr]", className)}>
+    // 248px, not a round Tailwind step: it is the narrowest this column goes
+    // before the longest option on any of the six panels starts truncating,
+    // measured rather than guessed. The 32px it gives up, plus 8px off the gap
+    // beside it, goes to the cards.
+    <div className={cn("grid gap-6 lg:grid-cols-[248px_1fr]", className)}>
       <aside className="hidden lg:block">
-        <div className="sticky top-24 rounded-xl border bg-card p-5 shadow-soft">
+        {/* Its own scrolling column, capped to the viewport.
+            `sticky` alone stops meaning anything once the panel is taller than
+            the screen: it pins the top, the bottom runs off, and reaching the
+            last filter means scrolling the results past. Bounding the height
+            and letting the panel scroll inside itself keeps the filters where
+            they were left and the results moving independently — which is what
+            a docked column already does inside the app shell. */}
+        <div
+          className={cn(
+            "no-scrollbar sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto",
+            // Same 16px inset as a card body, which is also what keeps the
+            // longest option on any panel off the edge in a narrower column.
+            "rounded-xl border bg-card p-4 shadow-soft",
+          )}
+        >
           <h2 className="mb-4 flex items-center gap-2 font-semibold">
             <SlidersHorizontal className="h-4 w-4" /> Filters
           </h2>
@@ -221,9 +245,115 @@ export function FilterOption({
   );
 }
 
-/** The rows pulled back to the panel's edge, so controls line up with labels. */
-export function FilterOptionList({ children }: { children: React.ReactNode }) {
-  return <div className="-mx-1.5 flex flex-col">{children}</div>;
+/**
+ * A heading with its choices underneath, left aligned to the same edge.
+ *
+ * The alignment is the whole point: heading, control and label all start on one
+ * line down the column, so the eye runs straight down it instead of stepping
+ * around boxes of different widths. Every browser on the platform builds its
+ * panel out of these, so the marketplace does not change shape when you move
+ * between cars, parts and dealers.
+ */
+export function Facet({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A facet you may tick more than one of.
+ *
+ * Checkboxes because that is what these are: within a facet the choices are an
+ * OR, so ticking a second brand widens the search rather than emptying it. The
+ * leading "Any …" row is checked whenever the facet is empty and clears it when
+ * clicked, which keeps the reset in the same place as on the single-choice
+ * facets instead of introducing a second kind of control.
+ *
+ * `counts` is optional but worth supplying: it is what makes a list better than
+ * the dropdown it replaces rather than merely taller, because a buyer can see
+ * where the stock is without opening anything.
+ */
+export function MultiFacet({
+  name,
+  anyLabel,
+  options,
+  value,
+  onChange,
+  counts,
+  maxRows,
+}: {
+  name: string;
+  anyLabel: string;
+  options: readonly { value: string; label: string }[];
+  /** Comma-joined chosen values. */
+  value: string;
+  onChange: (next: string) => void;
+  counts?: Record<string, number>;
+  maxRows?: number;
+}) {
+  return (
+    <FilterOptionList maxRows={maxRows}>
+      <FilterOption
+        name={name}
+        label={anyLabel}
+        multiple
+        checked={value === ""}
+        onSelect={() => onChange("")}
+        count={counts?.any}
+      />
+      {options.map((o) => (
+        <FilterOption
+          key={o.value}
+          name={name}
+          label={o.label}
+          multiple
+          checked={isSelected(value, o.value)}
+          onSelect={() => onChange(toggleValue(value, o.value))}
+          count={counts?.[o.value]}
+        />
+      ))}
+    </FilterOptionList>
+  );
+}
+
+/**
+ * The rows pulled back to the panel's edge, so controls line up with labels.
+ *
+ * `maxRows` caps a long facet and lets it scroll inside itself. Sixteen regions
+ * laid out in full would push everything below them off the screen, and a
+ * sidebar you have to scroll past to reach the next filter is the thing a
+ * dropdown was solving. Capping keeps every heading visible at once — which is
+ * what makes the column feel calm — while the choices stay in place, left
+ * aligned with the label above them, instead of hiding behind a control you
+ * have to open.
+ */
+export function FilterOptionList({
+  children,
+  maxRows,
+}: {
+  children: React.ReactNode;
+  maxRows?: number;
+}) {
+  if (!maxRows) return <div className="-mx-1.5 flex flex-col">{children}</div>;
+
+  return (
+    <div
+      // A row is 2.25rem: 1.25rem of text plus py-2 either side.
+      style={{ maxHeight: `${maxRows * 2.25}rem` }}
+      className={cn(
+        "-mx-1.5 flex flex-col overflow-y-auto",
+        // A hairline the scroll can run under, so it reads as a window onto a
+        // longer list rather than as a box drawn around some options.
+        "[scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full",
+        "[&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar]:w-1.5",
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 /** Below `lg` there is no room for a column, so the same panel opens in a sheet. */

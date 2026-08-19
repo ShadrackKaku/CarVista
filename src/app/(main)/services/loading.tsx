@@ -8,7 +8,7 @@ export default function Loading() {
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-4 w-full max-w-xl" />
       </div>
-      <CardGridSkeleton count={8} columns="sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
+      <CardGridSkeleton count={8} />
     </div>
   );
 }

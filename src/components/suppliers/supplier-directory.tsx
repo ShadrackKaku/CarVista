@@ -5,10 +5,12 @@ import { Building2, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
+import { Facet, FilterLayout, MultiFacet } from "@/components/shell/filter-dock";
 import { Pagination } from "@/components/ui/pagination";
 import { SupplierCard } from "@/components/suppliers/supplier-card";
+import { ListingGrid } from "@/components/ui/listing-card";
 import { SUPPLIER_CATEGORIES, SUPPLIER_CATEGORY_LABELS } from "@/lib/suppliers";
+import { matchesAnyOf, selectedValues } from "@/lib/multi-select";
 import { usePagedList } from "@/lib/use-paged-list";
 import type { SupplierRow } from "@/lib/queries";
 
@@ -26,12 +28,12 @@ export function SupplierDirectory({
   basePath?: string;
 }) {
   const [q, setQ] = useState("");
-  const [category, setCategory] = useState<string | null>(null);
+  const [category, setCategory] = useState("");
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     return suppliers.filter((s) => {
-      if (category && !s.categories.includes(category as never)) return false;
+      if (!matchesAnyOf(category, s.categories)) return false;
       if (!term) return true;
       return (
         s.name.toLowerCase().includes(term) ||
@@ -42,12 +44,12 @@ export function SupplierDirectory({
   }, [suppliers, q, category]);
 
   // Before the early return below: hooks cannot sit behind a condition.
-  const activeCount = (q ? 1 : 0) + (category ? 1 : 0);
-  const paged = usePagedList(filtered, `${q}|${category ?? ""}`);
+  const activeCount = (q ? 1 : 0) + selectedValues(category).length;
+  const paged = usePagedList(filtered, `${q}|${category}`);
 
   function reset() {
     setQ("");
-    setCategory(null);
+    setCategory("");
   }
 
   // Respect the search box, so a category's number matches what picking it
@@ -91,28 +93,24 @@ export function SupplierDirectory({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Category</Label>
-        <FilterOptionList>
-          <FilterOption
-            name="supplierCategory"
-            label="All"
-            checked={category === null}
-            onSelect={() => setCategory(null)}
-            count={byText.length}
-          />
-          {SUPPLIER_CATEGORIES.map((c) => (
-            <FilterOption
-              key={c}
-              name="supplierCategory"
-              label={SUPPLIER_CATEGORY_LABELS[c]}
-              checked={category === c}
-              onSelect={() => setCategory(c)}
-              count={byText.filter((s) => s.categories.includes(c as never)).length}
-            />
-          ))}
-        </FilterOptionList>
-      </div>
+      <Facet label="Category">
+        <MultiFacet
+          name="supplierCategory"
+          anyLabel="All categories"
+          options={SUPPLIER_CATEGORIES.map((c) => ({ value: c, label: SUPPLIER_CATEGORY_LABELS[c] }))}
+          value={category}
+          onChange={setCategory}
+          counts={{
+            any: byText.length,
+            ...Object.fromEntries(
+              SUPPLIER_CATEGORIES.map((c) => [
+                c,
+                byText.filter((s) => s.categories.includes(c as never)).length,
+              ]),
+            ),
+          }}
+        />
+      </Facet>
 
       {(q || category) && (
         <Button variant="outline" className="w-full" onClick={reset}>
@@ -133,11 +131,11 @@ export function SupplierDirectory({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ListingGrid className="mt-4">
             {paged.items.map((s) => (
               <SupplierCard key={s.id} supplier={s} basePath={basePath} />
             ))}
-          </div>
+          </ListingGrid>
           <Pagination
             page={paged.page}
             pageCount={paged.pageCount}

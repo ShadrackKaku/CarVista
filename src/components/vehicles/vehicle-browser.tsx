@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Bookmark, X } from "lucide-react";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
+import { ListingGrid } from "@/components/ui/listing-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,17 +17,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FilterLayout, FilterOption, FilterOptionList } from "@/components/shell/filter-dock";
+import {
+  Facet,
+  FilterLayout,
+  FilterOption,
+  FilterOptionList,
+  MultiFacet,
+} from "@/components/shell/filter-dock";
 import { Pagination } from "@/components/ui/pagination";
 import { usePagedList } from "@/lib/use-paged-list";
 import { POPULAR_BRANDS, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, GHANA_REGIONS } from "@/lib/constants";
 import type { SampleVehicle } from "@/lib/sample-data";
 import {
+  type RangeBand,
   type VehicleFilters,
   type VehicleSort,
   EMPTY_FILTERS,
-  filtersToQuery,
+  PRICE_BANDS,
+  YEAR_BANDS,
+  activeBand,
   activeFilterCount,
+  bandToRange,
+  filtersToQuery,
   matchesFilters,
 } from "@/lib/vehicle-search";
 
@@ -111,23 +123,92 @@ export function VehicleBrowser({
     return result;
   }, [vehicles, filters, sort]);
 
-  // What each condition would leave, honouring every other active filter. The
-  // count beside an option has to answer "how many if I pick this" — measured
-  // against the unfiltered list it would promise cars that aren't there.
-  const conditionCounts = useMemo(() => {
-    const pool = vehicles.filter((v) => matchesFilters(v, filters, "condition"));
-    const counts: Record<string, number> = { any: pool.length };
-    for (const c of CONDITIONS) counts[c.value] = pool.filter((v) => v.condition === c.value).length;
-    return counts;
+  /**
+   * How many results each option would leave, honouring every *other* active
+   * filter.
+   *
+   * The number beside an option has to answer "how many if I pick this" —
+   * measured against the unfiltered list it would promise cars that aren't
+   * there. It is also what makes a plain list better than the dropdown it
+   * replaces: a buyer can see that Kia has three and Toyota eighteen without
+   * opening anything, and never picks a filter that returns nothing.
+   */
+  const counts = useMemo(() => {
+    const facet = <T,>(
+      ignore: keyof VehicleFilters | readonly (keyof VehicleFilters)[],
+      options: readonly T[],
+      key: (o: T) => string,
+      test: (v: SampleVehicle, o: T) => boolean,
+    ) => {
+      const pool = vehicles.filter((v) => matchesFilters(v, filters, ignore));
+      const out: Record<string, number> = { any: pool.length };
+      for (const o of options) out[key(o)] = pool.filter((v) => test(v, o)).length;
+      return out;
+    };
+
+    return {
+      brand: facet("brand", POPULAR_BRANDS, (b) => b, (v, b) => v.brand === b),
+      bodyType: facet("bodyType", BODY_TYPES, (b) => b.value, (v, b) => v.bodyType === b.value),
+      condition: facet("condition", CONDITIONS, (c) => c.value, (v, c) => v.condition === c.value),
+      fuelType: facet("fuelType", FUEL_TYPES, (f) => f.value, (v, f) => v.fuelType === f.value),
+      transmission: facet(
+        "transmission",
+        TRANSMISSIONS,
+        (t) => t.value,
+        (v, t) => v.transmission === t.value,
+      ),
+      region: facet("region", GHANA_REGIONS, (r) => r, (v, r) => v.region === r),
+      // Price and year are one choice spread over two fields, so both halves
+      // have to be ignored or every band would report only what is already on
+      // screen.
+      price: facet(
+        ["minPrice", "maxPrice"] as const,
+        PRICE_BANDS,
+        (b) => b.id,
+        (v, b) => (b.min == null || v.price >= b.min) && (b.max == null || v.price <= b.max),
+      ),
+      year: facet(
+        ["minYear", "maxYear"] as const,
+        YEAR_BANDS,
+        (b) => b.id,
+        (v, b) => (b.min == null || v.year >= b.min) && (b.max == null || v.year <= b.max),
+      ),
+    };
   }, [vehicles, filters]);
+
+  const priceBand = activeBand(PRICE_BANDS, filters.minPrice, filters.maxPrice);
+  const yearBand = activeBand(YEAR_BANDS, filters.minYear, filters.maxYear);
+
+  function setPriceBand(band: RangeBand | null) {
+    const { min, max } = bandToRange(band);
+    setFilters((f) => ({ ...f, minPrice: min, maxPrice: max }));
+  }
+  function setYearBand(band: RangeBand | null) {
+    const { min, max } = bandToRange(band);
+    setFilters((f) => ({ ...f, minYear: min, maxYear: max }));
+  }
 
   const activeCount = activeFilterCount(filters);
   // The query string already changes on exactly the events that change the
   // result set, so it doubles as the signal to go back to page 1.
   const paged = usePagedList(filtered, query);
 
+  /**
+   * Every facet is the same shape: a heading, then its choices listed under it,
+   * left aligned with the heading and with the count of what each would leave.
+   *
+   * No dropdowns. A select hides its options behind a click, gives no sense of
+   * how much is inside, and — because the trigger is a bordered box the width
+   * of the column — puts a hard rectangle between every heading and the next,
+   * which is what made this sidebar feel busy next to the one calm list on it.
+   * Long facets scroll inside their own window instead, so every heading stays
+   * visible at once.
+   *
+   * Categorical facets take several answers; price and year take one, because
+   * they are ranges and two disjoint bands is not a search anybody means.
+   */
   const FilterPanel = (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="space-y-2">
         <Label>Keyword</Label>
         <Input
@@ -136,156 +217,120 @@ export function VehicleBrowser({
           onChange={(e) => set("q", e.target.value)}
         />
       </div>
-      <div className="space-y-2">
-        <Label>Brand</Label>
-        <Select value={filters.brand || "any"} onValueChange={(v) => set("brand", v === "any" ? "" : v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Any brand" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any brand</SelectItem>
-            {POPULAR_BRANDS.map((b) => (
-              <SelectItem key={b} value={b}>
-                {b}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label>Body type</Label>
-        <Select
-          value={filters.bodyType || "any"}
-          onValueChange={(v) => set("bodyType", v === "any" ? "" : v)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Any body type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any body type</SelectItem>
-            {BODY_TYPES.map((b) => (
-              <SelectItem key={b.value} value={b.value}>
-                {b.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label>Price range (GHS)</Label>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            placeholder="Min"
-            value={filters.minPrice}
-            onChange={(e) => set("minPrice", e.target.value)}
-          />
-          <span className="text-muted-foreground">–</span>
-          <Input
-            type="number"
-            placeholder="Max"
-            value={filters.maxPrice}
-            onChange={(e) => set("maxPrice", e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label>Year range</Label>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            placeholder="From"
-            value={filters.minYear}
-            onChange={(e) => set("minYear", e.target.value)}
-          />
-          <span className="text-muted-foreground">–</span>
-          <Input
-            type="number"
-            placeholder="To"
-            value={filters.maxYear}
-            onChange={(e) => set("maxYear", e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label>Condition</Label>
+
+      <Facet label="Brand">
+        <MultiFacet
+          name="brand"
+          anyLabel="Any brand"
+          options={POPULAR_BRANDS.map((b) => ({ value: b, label: b }))}
+          value={filters.brand}
+          onChange={(v) => set("brand", v)}
+          counts={counts.brand}
+          maxRows={7}
+        />
+      </Facet>
+
+      <Facet label="Body type">
+        <MultiFacet
+          name="bodyType"
+          anyLabel="Any body type"
+          options={BODY_TYPES}
+          value={filters.bodyType}
+          onChange={(v) => set("bodyType", v)}
+          counts={counts.bodyType}
+          maxRows={6}
+        />
+      </Facet>
+
+      <Facet label="Price (GH₵)">
         <FilterOptionList>
           <FilterOption
-            name="condition"
-            label="Any condition"
-            checked={filters.condition === ""}
-            onSelect={() => set("condition", "")}
-            count={conditionCounts.any}
+            name="price"
+            label="Any price"
+            checked={!filters.minPrice && !filters.maxPrice}
+            onSelect={() => setPriceBand(null)}
+            count={counts.price.any}
           />
-          {CONDITIONS.map((c) => (
+          {PRICE_BANDS.map((b) => (
             <FilterOption
-              key={c.value}
-              name="condition"
-              label={c.label}
-              checked={filters.condition === c.value}
-              onSelect={() => set("condition", c.value)}
-              count={conditionCounts[c.value] ?? 0}
+              key={b.id}
+              name="price"
+              label={b.label}
+              checked={priceBand?.id === b.id}
+              onSelect={() => setPriceBand(b)}
+              count={counts.price[b.id] ?? 0}
             />
           ))}
         </FilterOptionList>
-      </div>
-      <div className="space-y-2">
-        <Label>Fuel type</Label>
-        <Select
-          value={filters.fuelType || "any"}
-          onValueChange={(v) => set("fuelType", v === "any" ? "" : v)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Any" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any fuel</SelectItem>
-            {FUEL_TYPES.map((f) => (
-              <SelectItem key={f.value} value={f.value}>
-                {f.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label>Transmission</Label>
-        <Select
-          value={filters.transmission || "any"}
-          onValueChange={(v) => set("transmission", v === "any" ? "" : v)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Any" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any</SelectItem>
-            {TRANSMISSIONS.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
-                {t.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label>Region</Label>
-        <Select
-          value={filters.region || "any"}
-          onValueChange={(v) => set("region", v === "any" ? "" : v)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Any region" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any region</SelectItem>
-            {GHANA_REGIONS.map((r) => (
-              <SelectItem key={r} value={r}>
-                {r}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      </Facet>
+
+      <Facet label="Year">
+        <FilterOptionList>
+          <FilterOption
+            name="year"
+            label="Any year"
+            checked={!filters.minYear && !filters.maxYear}
+            onSelect={() => setYearBand(null)}
+            count={counts.year.any}
+          />
+          {YEAR_BANDS.map((b) => (
+            <FilterOption
+              key={b.id}
+              name="year"
+              label={b.label}
+              checked={yearBand?.id === b.id}
+              onSelect={() => setYearBand(b)}
+              count={counts.year[b.id] ?? 0}
+            />
+          ))}
+        </FilterOptionList>
+      </Facet>
+
+      <Facet label="Condition">
+        <MultiFacet
+          name="condition"
+          anyLabel="Any condition"
+          options={CONDITIONS}
+          value={filters.condition}
+          onChange={(v) => set("condition", v)}
+          counts={counts.condition}
+        />
+      </Facet>
+
+      <Facet label="Fuel type">
+        <MultiFacet
+          name="fuelType"
+          anyLabel="Any fuel"
+          options={FUEL_TYPES}
+          value={filters.fuelType}
+          onChange={(v) => set("fuelType", v)}
+          counts={counts.fuelType}
+        />
+      </Facet>
+
+      <Facet label="Transmission">
+        <MultiFacet
+          name="transmission"
+          anyLabel="Any transmission"
+          options={TRANSMISSIONS}
+          value={filters.transmission}
+          onChange={(v) => set("transmission", v)}
+          counts={counts.transmission}
+        />
+      </Facet>
+
+      <Facet label="Region">
+        <MultiFacet
+          name="region"
+          anyLabel="Any region"
+          options={GHANA_REGIONS.map((r) => ({ value: r, label: r }))}
+          value={filters.region}
+          onChange={(v) => set("region", v)}
+          counts={counts.region}
+          maxRows={7}
+        />
+      </Facet>
+
       <Button variant="outline" className="w-full" onClick={reset}>
         <X className="h-4 w-4" /> Clear filters
       </Button>
@@ -327,11 +372,11 @@ export function VehicleBrowser({
         </div>
       ) : (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ListingGrid className="mt-5">
             {paged.items.map((v) => (
               <VehicleCard key={v.id} vehicle={v} basePath={basePath} />
             ))}
-          </div>
+          </ListingGrid>
           <Pagination
             page={paged.page}
             pageCount={paged.pageCount}

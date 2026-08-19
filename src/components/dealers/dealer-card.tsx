@@ -1,8 +1,15 @@
-import Link from "next/link";
-import Image from "next/image";
-import { Car, MapPin, ShieldCheck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { StarRating } from "@/components/star-rating";
+import { Car, MapPin, ShieldCheck, Star } from "lucide-react";
+import {
+  ListingCard,
+  ListingCardBody,
+  ListingCardFooter,
+  ListingCardMedia,
+  ListingCardSpecs,
+  ListingCardTags,
+  ListingCardTitle,
+  type ListingTag,
+} from "@/components/ui/listing-card";
+import { formatNumber } from "@/lib/utils";
 import type { SampleDealer } from "@/lib/sample-data";
 
 export interface DealerCardProps {
@@ -16,45 +23,43 @@ export interface DealerCardProps {
 
 export function DealerCard({ dealer, basePath = "/dealers" }: DealerCardProps) {
   const href = `${basePath}/${dealer.slug}`;
+
+  // One tag: a second wraps and leaves the grid ragged. Verification rides in
+  // the footer beside the rating.
+  const tags: ListingTag[] = [{ label: dealer.region, tone: "brand" }];
+
   return (
-    <Link
-      href={href}
-      className="group overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card"
-    >
-      <div className="relative h-28 overflow-hidden bg-muted">
-        <Image
-          src={dealer.cover}
-          alt={dealer.name}
-          fill
-          sizes="(max-width: 768px) 100vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+    <ListingCard>
+      {/* The cover photograph, with nothing on it. It used to carry a dark
+          gradient whose only job was making a "Verified" pill legible; the pill
+          is a tag now, so the gradient had nothing left to do but dim the
+          picture. */}
+      <ListingCardMedia src={dealer.cover} alt={dealer.name} />
+
+      <ListingCardBody>
+        <ListingCardTags tags={tags} />
+
+        <ListingCardTitle href={href}>{dealer.name}</ListingCardTitle>
+
+        <ListingCardSpecs
+          items={[
+            { icon: MapPin, label: `${dealer.city}` },
+            { icon: Car, label: `${formatNumber(dealer.vehicleCount)} in stock` },
+          ]}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-      </div>
-      <div className="px-4 pb-4">
-        <div className="-mt-8 flex items-end justify-between">
-          <div className="relative h-16 w-16 overflow-hidden rounded-xl border-4 border-card bg-background">
-            <Image src={dealer.logo} alt={dealer.name} fill sizes="64px" className="object-cover" />
-          </div>
-          {dealer.verified && (
-            <Badge variant="brand" className="mb-1">
-              <ShieldCheck className="h-3.5 w-3.5" /> Verified
-            </Badge>
-          )}
-        </div>
-        <h3 className="mt-3 font-semibold transition-colors group-hover:text-brand-600">
-          {dealer.name}
-        </h3>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5" /> {dealer.city}, {dealer.region}
-        </p>
-        <div className="mt-3 flex items-center justify-between border-t pt-3">
-          <StarRating rating={dealer.rating} reviewCount={dealer.reviewCount} size={13} showValue />
-          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-            <Car className="h-3.5 w-3.5" /> {dealer.vehicleCount}
+
+        <ListingCardFooter>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Star className="h-3.5 w-3.5 shrink-0 text-warning" />
+            {dealer.rating.toFixed(1)} ({dealer.reviewCount})
           </span>
-        </div>
-      </div>
-    </Link>
+          {dealer.verified && (
+            <span className="flex shrink-0 items-center gap-1 font-medium text-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-success" /> Verified
+            </span>
+          )}
+        </ListingCardFooter>
+      </ListingCardBody>
+    </ListingCard>
   );
 }

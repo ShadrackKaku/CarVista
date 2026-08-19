@@ -13,11 +13,7 @@ export default function Loading() {
           <Skeleton key={i} className="h-9 w-24" />
         ))}
       </div>
-      <CardGridSkeleton
-        count={10}
-        aspect="aspect-square"
-        columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-      />
+      <CardGridSkeleton count={8} aspect="aspect-square" />
     </div>
   );
 }

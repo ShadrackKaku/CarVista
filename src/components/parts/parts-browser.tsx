@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { PartCard } from "@/components/parts/part-card";
-import { FilterLayout } from "@/components/shell/filter-dock";
+import { ListingGrid } from "@/components/ui/listing-card";
+import { Facet, FilterLayout, MultiFacet } from "@/components/shell/filter-dock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
 import {
   Select,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { PART_CATEGORIES, POPULAR_BRANDS } from "@/lib/constants";
 import { usePagedList } from "@/lib/use-paged-list";
+import { matchesAny, matchesAnyOf, selectedValues } from "@/lib/multi-select";
 import type { SamplePart } from "@/lib/sample-data";
 
 export function PartsBrowser({
@@ -38,8 +39,10 @@ export function PartsBrowser({
   const filtered = useMemo(() => {
     let result = parts.filter((p) => {
       if (q && !`${p.name} ${p.brand}`.toLowerCase().includes(q.toLowerCase())) return false;
-      if (category && p.categorySlug !== category) return false;
-      if (make && !p.compatibleMakes.includes(make)) return false;
+      if (!matchesAny(category, p.categorySlug)) return false;
+      // A part lists every make it fits, so the buyer's chosen makes and the
+      // part's own list only have to overlap somewhere.
+      if (!matchesAnyOf(make, p.compatibleMakes)) return false;
       if (oem && p.oemNumber && !p.oemNumber.toLowerCase().includes(oem.toLowerCase())) return false;
       if (oem && !p.oemNumber) return false;
       return true;
@@ -50,6 +53,39 @@ export function PartsBrowser({
     return result;
   }, [parts, q, category, make, oem, sort]);
 
+  /**
+   * What each option would leave, honouring every other active filter — the
+   * same contract as the vehicle browser, so a number means the same thing
+   * wherever it appears on the platform.
+   */
+  const counts = useMemo(() => {
+    const pool = (ignore: "category" | "make") =>
+      parts.filter((p) => {
+        if (q && !`${p.name} ${p.brand}`.toLowerCase().includes(q.toLowerCase())) return false;
+        if (ignore !== "category" && !matchesAny(category, p.categorySlug)) return false;
+        if (ignore !== "make" && !matchesAnyOf(make, p.compatibleMakes)) return false;
+        if (oem && !p.oemNumber?.toLowerCase().includes(oem.toLowerCase())) return false;
+        return true;
+      });
+
+    const byCategory = pool("category");
+    const byMake = pool("make");
+    return {
+      category: {
+        any: byCategory.length,
+        ...Object.fromEntries(
+          PART_CATEGORIES.map((c) => [c.slug, byCategory.filter((p) => p.categorySlug === c.slug).length]),
+        ),
+      },
+      make: {
+        any: byMake.length,
+        ...Object.fromEntries(
+          POPULAR_BRANDS.map((b) => [b, byMake.filter((p) => p.compatibleMakes.includes(b)).length]),
+        ),
+      },
+    };
+  }, [parts, q, category, make, oem]);
+
   function reset() {
     setQ("");
     setCategory("");
@@ -57,58 +93,48 @@ export function PartsBrowser({
     setOem("");
   }
 
-  const activeCount = [q, category, make, oem].filter(Boolean).length;
+  // Each ticked value is one filter, matching how the vehicle browser counts.
+  const activeCount =
+    [q, oem].filter(Boolean).length + selectedValues(category).length + selectedValues(make).length;
   const paged = usePagedList(filtered, `${q}|${category}|${make}|${oem}`);
 
   const FilterPanel = (
-    <div className="space-y-5">
-      <div className="space-y-2">
-        <Label>Vehicle make</Label>
-        <Select value={make || "any"} onValueChange={(v) => setMake(v === "any" ? "" : v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Any make" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any make</SelectItem>
-            {POPULAR_BRANDS.map((b) => (
-              <SelectItem key={b} value={b}>
-                {b}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="space-y-6">
+      <Facet label="Keyword">
+        <Input placeholder="e.g. brake pad" value={q} onChange={(e) => setQ(e.target.value)} />
+      </Facet>
 
-      <div className="space-y-2">
-        <Label>Category</Label>
-        <Select value={category || "any"} onValueChange={(v) => setCategory(v === "any" ? "" : v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Any category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any category</SelectItem>
-            {PART_CATEGORIES.map((c) => (
-              <SelectItem key={c.slug} value={c.slug}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Facet label="Vehicle make">
+        <MultiFacet
+          name="make"
+          anyLabel="Any make"
+          options={POPULAR_BRANDS.map((b) => ({ value: b, label: b }))}
+          value={make}
+          onChange={setMake}
+          counts={counts.make}
+          maxRows={7}
+        />
+      </Facet>
 
-      <div className="space-y-2">
-        <Label>OEM / Part number</Label>
+      <Facet label="Category">
+        <MultiFacet
+          name="category"
+          anyLabel="Any category"
+          options={PART_CATEGORIES.map((c) => ({ value: c.slug, label: c.name }))}
+          value={category}
+          onChange={setCategory}
+          counts={counts.category}
+          maxRows={7}
+        />
+      </Facet>
+
+      <Facet label="OEM / Part number">
         <Input
           placeholder="e.g. 04465-02220"
           value={oem}
           onChange={(e) => setOem(e.target.value)}
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Keyword</Label>
-        <Input placeholder="e.g. brake pad" value={q} onChange={(e) => setQ(e.target.value)} />
-      </div>
+      </Facet>
 
       {activeCount > 0 && (
         <Button variant="outline" className="w-full" onClick={reset}>
@@ -148,11 +174,11 @@ export function PartsBrowser({
         </div>
       ) : (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ListingGrid className="mt-5">
             {paged.items.map((p) => (
               <PartCard key={p.id} part={p} basePath={basePath} />
             ))}
-          </div>
+          </ListingGrid>
           <Pagination
             page={paged.page}
             pageCount={paged.pageCount}
